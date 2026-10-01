@@ -515,6 +515,55 @@ def test_side_stage(pg):
     return f"{r['steps'] / 60:.0f}s mô phỏng, {r['result']['stars']}★"
 
 @test
+def test_arena_endless(pg):
+    """Thí luyện vô tận: mở sau ải 1, đợt nối đợt, cứ 5 đợt một tướng, chết thì ghi kỷ lục và giữ tiền."""
+    new_game(pg, 0)
+    pg.evaluate("showMap(0, 'continue')")
+    assert pg.is_disabled('#mEndless') and pg.is_disabled('#mRush')
+    pg.evaluate("S.maxStage = 1; S.rec = {}; showMap(0, 'continue')")
+    assert pg.is_enabled('#mEndless') and pg.is_disabled('#mRush')
+    pg.click('#mEndless'); pg.click('#sGo')
+    assert pg.evaluate("[G.mode, G.stage, G.st.arena]") == ['play', -1, 'endless']
+    r = pg.evaluate(BOT, [60 * 150, True])
+    assert not r['log'], r['log']
+    assert r['mode'] == 'play' and r['wave'] >= 5 and 'bossBandit' in r['seen'], r
+    assert pg.evaluate("G.tier") > 2, 'giặc không mạnh dần'
+    pg.keyboard.press('KeyP'); pg.wait_for_timeout(100)
+    assert 'THÍ LUYỆN' in card_text(pg).upper() and 'vẫn giữ' in card_text(pg)
+    pg.keyboard.press('KeyP')
+    wave, coins = pg.evaluate("G.wave"), pg.evaluate("S.coins")
+    assert coins > 0
+    pg.evaluate("P.inv = 0; P.state = 'idle'; hurtPlayer(9999, 1); for (let i = 0; i < 300 && G.mode === 'play'; i++) update(1 / 60);")
+    txt = card_text(pg)
+    assert f'{wave} đợt' in txt and 'Kỷ lục mới' in txt, txt[:200]
+    assert pg.evaluate("S.rec.endless") == wave and pg.evaluate("S.coins") == coins and pg.evaluate("STORE.slots[0].rec.endless") == wave
+    pg.click('#aRe')
+    assert pg.evaluate("[G.mode, G.wave, enemies.length, G.st.waves.length]") == ['play', 0, 0, 0]
+    return f'{wave} đợt trong 150s mô phỏng'
+
+@test
+def test_arena_rush(pg):
+    """Đấu tướng: mở sau khi thắng Bạch Đằng, hạ đủ 7 tướng thì ghi thời gian."""
+    new_game(pg, 0)
+    pg.evaluate("S.maxStage = 5; S.stars = [1, 1, 1, 1, 1, 1]; S.rec = {}; showMap(0, 'continue')")
+    assert pg.is_enabled('#mRush')
+    pg.click('#mRush'); pg.click('#sGo')
+    c0 = pg.evaluate("S.coins")
+    r = pg.evaluate(BOT, [60 * 900, True])
+    assert not r['log'], r['log']
+    assert r['mode'] == 'card' and r['wave'] == 7, r
+    missing = [b for b in pg.evaluate("BOSS_ORDER") if b not in r['seen']]
+    assert not missing, missing
+    txt = card_text(pg)
+    assert 'Quét sạch' in txt and 'Kỷ lục mới' in txt, txt[:200]
+    rec = pg.evaluate("S.rec.rush")
+    assert rec > 0 and pg.evaluate("S.coins") >= c0 + 100
+    assert pg.evaluate("[S.stage, S.maxStage, S.stars.length]") == [0, 5, 6], 'võ đài không được đụng tới tiến trình'
+    pg.click('#aMap')
+    assert 'kỷ lục' in pg.inner_text('#mRush')
+    return f"{r['steps'] / 60:.0f}s mô phỏng"
+
+@test
 def test_stage1_fair_play(pg):
     """Không gian lận: bản lưu mới, chỉ có Chưởng. Bot ngây thơ (không né) phải qua được ải 1."""
     wins, notes = 0, []

@@ -13,7 +13,7 @@ const fmtDate = ts => ts ? new Date(ts).toLocaleString('vi-VN', { hour: '2-digit
 // Ải chính đi theo thứ tự; ải ngoại truyện (side) nằm ngoài tiến trình, mở bằng mốc sao
 const MAIN = STAGES.filter(s => !s.side).length;
 const unlocked = i => STAGES[i].side ? ms('side') : i <= S.maxStage;
-const stageLabel = i => STAGES[i].side ? 'Ngoại truyện' : `Ải ${i + 1}`;
+const stageLabel = i => i < 0 ? G.st.label : STAGES[i].side ? 'Ngoại truyện' : `Ải ${i + 1}`;
 const heroName = () => SPK[G.st.hero || 'hero'].short;
 
 function toTitle() {
@@ -229,6 +229,10 @@ function showMap(sel, reason) {
     <p class="dest" id="mDest"></p>
     <div id="mChal"></div>
     <details class="keyref"><summary>Phần thưởng theo tổng số sao (${totalStars(S)}★) · ${totalCh(S)}/${STAGES.length * CHALS.length} ấn</summary>${milesHtml()}</details>
+    <div class="chips modes" role="group" aria-label="Võ đài">
+      <button type="button" id="mEndless" ${arenaOpen('endless') ? '' : 'disabled'}>Thí luyện vô tận · ${arenaOpen('endless') ? recText('endless') : 'qua ải 1 để mở'}</button>
+      <button type="button" id="mRush" ${arenaOpen('rush') ? '' : 'disabled'}>Đấu tướng · ${arenaOpen('rush') ? recText('rush') : 'thắng Bạch Đằng để mở'}</button>
+    </div>
     <p class="note">Bản đồ phỏng theo, vị trí gần đúng, không theo tỉ lệ.</p>
     <div class="actions"><button class="btn ghost" id="mHome">Màn hình chính</button><button class="btn" id="mGo">Luyện công & lên đường</button></div>`, el => {
     const cvs = el.querySelector('#mapCv');
@@ -249,6 +253,8 @@ function showMap(sel, reason) {
     requestAnimationFrame(loop);
     el.querySelector('#mGo').onclick = () => { ac(); startMusic(); const i = sel; openShop(() => startStage(i)); };
     el.querySelector('#mHome').onclick = toTitle;
+    el.querySelector('#mEndless').onclick = () => { ac(); startMusic(); openShop(() => startArena('endless'), null, 'Vào võ đài'); };
+    el.querySelector('#mRush').onclick = () => { ac(); startMusic(); openShop(() => startArena('rush'), null, 'Vào võ đài'); };
   });
 }
 
@@ -362,6 +368,7 @@ function ending() {
   });
 }
 function gameOver() {
+  if (G.st.arena) return arenaOver(false);
   // thua sau khi đã tới boss: giữ tiền nhặt được tính đến điểm lưu và cho đánh lại từ đó
   const cp = G.cp, coins0 = G.coinsAtStart;
   S.coins = cp ? cp.coins : coins0; S.play = (S.play || 0) + playedNow(); save();
@@ -377,15 +384,57 @@ function gameOver() {
   });
 }
 
+/* ---------------- Võ đài: Thí luyện vô tận và Đấu tướng ---------------- */
+const arenaOpen = kind => kind === 'endless' ? S.maxStage >= 1 : (S.stars[MAIN - 1] || 0) > 0;
+const recText = kind => kind === 'endless' ? (S.rec.endless ? `kỷ lục ${S.rec.endless} đợt` : 'chưa có kỷ lục') : (S.rec.rush ? `kỷ lục ${fmtTime(S.rec.rush)}` : 'chưa có kỷ lục');
+const arenaProgress = () => G.st.arena === 'endless' ? `Đợt ${G.wave + 1} · ${recText('endless')}` : `Tướng ${Math.min(G.wave + 1, G.st.waves.length)}/${G.st.waves.length} · ${fmtTime(G.time)}`;
+function startArena(kind) {
+  resetWorld(makeArena(kind)); resumePlay(); banner(G.st.name, G.st.sub); SFX.gong();
+}
+// Xong một đợt (G.wave đã tăng): hồi nội lực, thả bánh chưng, báo đợt kế
+function arenaWaveDone() {
+  const st = G.st;
+  if (st.arena === 'rush' && G.wave >= st.waves.length) return arenaOver(true);
+  P.mp = P.maxMp; SFX.coin();
+  if (st.arena === 'rush' || G.wave % 2 === 0) dropItem('banh', clamp(P.x + 70, 60, W - 60), P.gy);
+  if (st.arena === 'endless') banner(`Đợt ${G.wave + 1}`, (G.wave + 1) % 5 === 0 ? 'Tướng giặc tới!' : 'Giặc mạnh dần lên', 1.5);
+  else banner(`Tướng thứ ${G.wave + 1}`, EDEF[st.waves[G.wave].list[0]].name, 1.5);
+}
+// Ghi kỷ lục; trả về true nếu vừa lập kỷ lục mới
+function arenaRecord(win) {
+  S.play = (S.play || 0) + G.time;
+  if (G.st.arena === 'endless') { if (G.wave > (S.rec.endless || 0)) { S.rec.endless = G.wave; return true; } return false; }
+  if (win && (!S.rec.rush || G.time < S.rec.rush)) { S.rec.rush = Math.round(G.time * 10) / 10; return true; }
+  return false;
+}
+function arenaOver(win) {
+  const kind = G.st.arena, best = arenaRecord(win), n = G.st.waves.length;
+  if (win) S.coins += RUSH_BONUS;
+  save();
+  const body = kind === 'endless'
+    ? `<p>${heroName()} trụ được <b>${G.wave} đợt</b> trong ${fmtTime(G.time)}.</p>`
+    : win ? `<p>Hạ đủ ${n} tướng giặc trong <b>${fmtTime(G.time)}</b>. Thưởng ${RUSH_BONUS} văn.</p>` : `<p>${heroName()} hạ được <b>${G.wave}/${n} tướng</b> rồi ngã xuống.</p>`;
+  showCard(`<p class="eyebrow">${G.st.label}</p><h2>${win ? 'Quét sạch tướng giặc!' : kind === 'endless' ? 'Hết sức rồi…' : 'Chưa xong đâu…'}</h2>
+    ${body}
+    <div class="result"><span class="stars">${best ? 'Kỷ lục mới!' : 'Kỷ lục'}</span><span>${recText(kind)}</span><span>Chuỗi dài nhất ${G.maxCombo} đòn</span><span>${S.coins} văn</span><span>Cấp ${S.lv}</span></div>
+    <p class="note">Tiền và kinh nghiệm kiếm được ở võ đài đều được giữ. Đã lưu vào ô ${STORE.cur + 1}.</p>
+    <div class="actions"><button class="btn ghost" id="aHome">Màn hình chính</button><button class="btn ghost" id="aMap">Bản đồ</button><button class="btn ghost" id="aShop">Luyện công</button><button class="btn" id="aRe">Đánh lại</button></div>`, el => {
+    el.querySelector('#aRe').onclick = () => startArena(kind);
+    el.querySelector('#aShop').onclick = () => openShop(() => startArena(kind));
+    el.querySelector('#aMap').onclick = () => showMap(S.stage, 'continue');
+    el.querySelector('#aHome').onclick = toTitle;
+  });
+}
+
 /* ---------------- Tạm dừng ---------------- */
 function showPause() {
   showCard(`<p class="eyebrow">${stageLabel(G.stage)} · ${G.st.name} · ${G.st.year}</p><h2>Tạm nghỉ</h2>
-    <p class="note">Ô lưu ${STORE.cur + 1} · lưu lúc ${fmtDate(S.updated)}. Game tự lưu ở đầu mỗi ải; nếu bỏ dở, lần sau sẽ đánh lại ải này từ đầu.</p>
+    <p class="note">Ô lưu ${STORE.cur + 1} · lưu lúc ${fmtDate(S.updated)}. ${G.st.arena ? 'Rời võ đài bây giờ vẫn giữ tiền, kinh nghiệm và kỷ lục đã đạt.' : 'Game tự lưu ở đầu mỗi ải; nếu bỏ dở, lần sau sẽ đánh lại ải này từ đầu.'}</p>
     <div class="actions"><button class="btn ghost" id="pHome">Về màn hình chính</button><button class="btn ghost" id="pSet">Cài đặt</button><button class="btn ghost" id="pSkill">Kỹ năng${S.sp ? ` (${S.sp})` : ''}</button><button class="btn" id="pGo">Tiếp tục</button></div>`, el => {
     el.querySelector('#pGo').onclick = togglePause;
     el.querySelector('#pSkill').onclick = () => openShop(showPause, 'tree', 'Quay lại', 'paused', true);
     el.querySelector('#pSet').onclick = () => settingsCard(showPause, 'paused');
-    el.querySelector('#pHome').onclick = () => { S.coins = G.coinsAtStart; S.play = (S.play || 0) + playedNow(); save(); toTitle(); };
+    el.querySelector('#pHome').onclick = () => { if (G.st.arena) { arenaRecord(false); save(); return toTitle(); } S.coins = G.coinsAtStart; S.play = (S.play || 0) + playedNow(); save(); toTitle(); };
   }, 'paused');
 }
 function togglePause() {

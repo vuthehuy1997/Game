@@ -22,7 +22,7 @@ const STORE_KEY = 'haokhi-dong-a-v3';
 const newSave = () => ({
   stage: 0, maxStage: 0, coins: 0, up: { atk: 0, hp: 0, mp: 0 }, stars: [], play: 0, updated: 0,
   lv: 1, xp: 0, sp: 1, skills: { chuong: 1 },   // cấp độ, kinh nghiệm, điểm kỹ năng chưa dùng, cấp từng kỹ năng
-  ch: [], ms: {},                                // ấn thử thách đã đạt theo ải, phần thưởng mốc sao đã nhận
+  ch: [], ms: {}, rec: {},                              // ấn thử thách đã đạt theo ải, phần thưởng mốc sao đã nhận
 });
 const DEFAULT_CFG = { music: 60, sfx: 80, diff: 1, shake: true, dmgNum: true, textSpeed: 2, touch: 'auto' };
 const DIFF = [
@@ -53,6 +53,7 @@ function useSlot(i, fresh) {
   if (!S.skills || !S.skills.chuong) S.skills = Object.assign({ chuong: 1 }, S.skills);
   if (!Array.isArray(S.ch)) S.ch = [];
   if (!S.ms) S.ms = {};
+  if (!S.rec) S.rec = {};
   if (fresh) save(); else persist();
 }
 // Mã lưu để chuyển sang máy khác

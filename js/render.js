@@ -222,7 +222,7 @@ function drawHUD() {
 
   ctx.textAlign = 'right';
   outlined(G.st.name, W - 18, 40, `26px ${FD}`, '#ffe6a8', 'rgba(20,14,10,.8)', 5);
-  outlined(`${G.st.side ? 'Ngoại truyện' : `Ải ${G.stage + 1}/${MAIN}`} · ${G.st.year}`, W - 18, 62, `15px ${FB}`, '#f4e7c9', 'rgba(20,14,10,.8)', 5);
+  outlined(G.st.arena ? arenaProgress() : `${G.st.side ? 'Ngoại truyện' : `Ải ${G.stage + 1}/${MAIN}`} · ${G.st.year}`, W - 18, 62, `15px ${FB}`, '#f4e7c9', 'rgba(20,14,10,.8)', 5);
   ell(ctx, W - 118, 84, 9, 9, '#e9b949'); ctx.fillStyle = '#6b4a14'; ctx.fillRect(W - 121, 81, 6, 6);
   outlined(`${S.coins} văn`, W - 18, 91, `18px ${FB}`, '#ffe6a8', 'rgba(20,14,10,.8)', 5);
   const prog = clamp(P.x / G.st.len, 0, 1);

@@ -156,3 +156,4 @@ canvas.map{width:min(100%,25em);margin-inline:auto;height:auto;aspect-ratio:640/
 .chal li.done,.miles li.done{color:var(--paper-ink)}
 .chal li.done b,.miles li.done b{color:var(--jade)}
 .chal em{font-style:normal;color:var(--lacquer);font-weight:600}
+.chips.modes button{border-color:var(--jade);border-radius:.5em}

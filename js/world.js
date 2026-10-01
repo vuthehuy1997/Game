@@ -14,8 +14,10 @@ function dropItem(kind, x, gy, val = 0) {
 }
 
 // cp: điểm lưu trước boss (xem updateWaves). Có cp thì vào thẳng đợt boss, giữ thời gian và số lần trúng đòn.
+// i: thứ tự ải, hoặc một võ đài tạo bằng makeArena (khi đó G.stage = -1)
 function resetWorld(i, cp) {
-  const st = STAGES[i];
+  const st = typeof i === 'object' ? i : STAGES[i];
+  if (st.arena) i = -1;
   G.stage = i; G.st = st; G.tier = st.tier ?? i; G.camX = 0; G.lock = false; G.lockX = 0; G.wave = 0; G.queue = []; G.spawnT = 0; G.boss = null;
   G.coinsAtStart = S.coins; G.clearT = 0; G.overT = 0; G.ultT = 0; G.banner = null; G.goBlink = 0; G.result = null;
   G.surviveT = 0; G.hazT = 2; G.tideOut = false; G.time = 0; G.hits = 0; G.lightning = 0;
@@ -49,14 +51,16 @@ function breakProp(p) {
 /* ---------------- Đợt địch ---------------- */
 function updateWaves(dt) {
   const st = G.st;
+  if (st.gen && G.wave >= st.waves.length) st.waves.push(st.gen(G.wave));
   if (!G.lock && G.wave < st.waves.length && P.x > st.waves[G.wave].at) {
     const wv = st.waves[G.wave];
     G.lock = true; G.lockX = clamp(wv.at - W * .45, 0, st.len - W);
-    G.queue = wv.list ? wv.list.slice() : []; G.spawnT = .3; G.side = 1;
+    G.queue = wv.list ? wv.list.slice() : []; G.spawnT = st.arena && G.wave ? 1.6 : .3; G.side = 1;
+    if (wv.tier != null) G.tier = wv.tier;
     G.surviveT = wv.survive || 0; G.hazT = 2;
     if (wv.label) banner(wv.label, wv.sub, 2.4);
     // điểm lưu trước boss: thua ở đây thì "Tái chiến" vào thẳng đợt này
-    if (wv.boss && !G.cp) G.cp = { wave: G.wave, time: G.time, hits: G.hits, maxCombo: G.maxCombo, minDiff: G.minDiff, coins: S.coins, coins0: G.coinsAtStart };
+    if (wv.boss && !G.cp && !st.arena) G.cp = { wave: G.wave, time: G.time, hits: G.hits, maxCombo: G.maxCombo, minDiff: G.minDiff, coins: S.coins, coins0: G.coinsAtStart };
     if (wv.boss && st.bossTalk && !G.cpUsed) {
       G.camX = G.lockX; P.x = clamp(P.x, G.camX + 24, G.camX + W - 24);
       if (ally) ally.x = clamp(P.x - 70, G.camX + 20, G.camX + W - 20);
@@ -76,7 +80,8 @@ function updateWaves(dt) {
   }
   if (G.surviveT <= 0 && !G.queue.length && !enemies.some(alive)) {
     G.lock = false; G.wave++;
-    if (wv.boss) stageCleared();
+    if (st.arena) arenaWaveDone();
+    else if (wv.boss) stageCleared();
     else { G.goBlink = 3; SFX.coin(); }
   }
 }

@@ -295,7 +295,7 @@ const MAP_POINTS = [
   { place: 'Vạn Kiếp', lat: 21.12, lon: 106.38 },
   { place: 'Vân Đồn', lat: 21.07, lon: 107.42 },
   { place: 'Bạch Đằng', lat: 20.92, lon: 106.78 },
-  { place: 'Đông Bộ Đầu', lat: 21.12, lon: 105.78 },
+  { place: 'Đông Bộ Đầu', lat: 21.17, lon: 105.73 },
 ];
 
 /* ---------------- Kỹ năng & cây kỹ năng ----------------
@@ -334,3 +334,26 @@ const MILESTONES = [
 ];
 const totalStars = sv => (sv.stars || []).reduce((a, b) => a + (b || 0), 0);
 const ms = id => totalStars(S) >= MILESTONES.find(m => m.id === id).need;
+
+/* ---------------- Võ đài (chế độ chơi lại) ----------------
+   Một "ải" tạm, không nằm trong STAGES: một khung hình, các đợt nối nhau, không có sao hay ấn.
+   endless: đợt sinh vô tận bằng gen(n), cứ 5 đợt một tướng, giặc mạnh dần theo tier. Kỷ lục = số đợt đã qua.
+   rush: lần lượt đấu cả 7 tướng. Kỷ lục = thời gian nhanh nhất. */
+const BOSS_ORDER = ['bossBandit', 'bossAju', 'bossCaptain', 'bossToaDo', 'bossLyHang', 'bossZhang', 'bossOMN'];
+const RUSH_BONUS = 100;
+function endlessWave(n) {
+  const tier = Math.min(10, n * .6);
+  if ((n + 1) % 5 === 0) return { at: 0, tier, boss: true, list: [BOSS_ORDER[((n + 1) / 5 - 1) % BOSS_ORDER.length], 'soldier', 'archer'] };
+  const pool = ['bandit', 'soldier', 'sword', 'archer'].concat(n >= 3 ? ['shield', 'lancer'] : [], n >= 6 ? ['heavy', 'potter'] : []);
+  const list = Array.from({ length: Math.min(3 + (n >> 1), 7) }, () => pick(pool));
+  if (n % 3 === 2) list[0] += ':cap';
+  if (n >= 8 && n % 4 === 0) list[1] += ':cmd';
+  if (n >= 6 && n % 2 === 0) list.push('drummer');
+  return { at: 0, tier, list };
+}
+function makeArena(kind) {
+  return kind === 'endless'
+    ? { arena: kind, label: 'Thí luyện', name: 'Thí luyện Vạn Kiếp', sub: 'Trụ được bao nhiêu đợt?', bg: 'forest', len: W, tier: 0, waves: [], gen: endlessWave }
+    : { arena: kind, label: 'Đấu tướng', name: 'Đấu tướng', sub: `Hạ lần lượt ${BOSS_ORDER.length} tướng giặc`, bg: 'citadel', len: W, tier: 0,
+        waves: BOSS_ORDER.map((b, k) => ({ at: 0, tier: Math.max(0, k - 1), boss: true, list: [b] })) };
+}
