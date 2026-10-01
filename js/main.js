@@ -25,6 +25,7 @@ function update(dt) {
   if (G.mode !== 'play' && G.mode !== 'clear') return; // hội thoại boss vừa mở
   if (ally) updateAlly(ally, dt);
   enemies.forEach(e => updateEnemy(e, dt));
+  updateStakes(dt);
   enemies = enemies.filter(e => !e.remove);
   if (G.boss && G.boss.remove) G.boss = null;
   updateProjs(dt); updateItems(dt); updateFx(dt); updateCamera(dt);

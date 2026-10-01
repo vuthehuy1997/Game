@@ -118,6 +118,14 @@ function drawProjs() {
   }
 }
 
+// Bãi cọc gỗ bịt sắt: nhô dần lên khi nước ròng; gãy sau khi tướng giặc mắc vào
+function drawStakes(s) {
+  if (!s.dead) { ctx.globalAlpha = .22 + Math.sin(G.t * 5) * .08; ell(ctx, s.x, s.gy + 3, 46, 9, '#e9b949'); ctx.globalAlpha = 1; }
+  for (let i = 0; i < 5; i++) {
+    const h = s.dead ? 7 + (i % 2) * 4 : (26 + ((i * 7) % 3) * 8) * s.up;
+    if (h > 2) stake(s.x - 30 + i * 15, s.gy + 4 - (i % 2) * 5, h);
+  }
+}
 function drawItem(it) {
   if (it.t > 11 && Math.sin(it.t * 20) < 0) return;
   shadow(it.x, it.gy, .4);
@@ -156,6 +164,7 @@ function render() {
   // vẽ theo chiều sâu: làn trong (gy nhỏ) trước, làn ngoài sau
   const draws = [];
   props.forEach(p => draws.push([p.gy - .5, () => drawProp(ctx, p)]));
+  G.stakes.forEach(s => draws.push([s.gy - .45, () => drawStakes(s)]));
   items.forEach(it => draws.push([it.gy - .4, () => drawItem(it)]));
   enemies.forEach(e => draws.push([e.gy - (alive(e) ? 0 : .3), () => drawEnemy(e)]));
   if (ally) draws.push([ally.gy - .1, () => {

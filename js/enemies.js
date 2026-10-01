@@ -141,7 +141,7 @@ function bossAI(e, dt) {
   const d = e.d, dx = P.x - e.x, dist = Math.abs(dx), enr = e.hp < e.maxHp * .5, sp = espd(e) * (enr ? 1.25 : 1);
   if (enr && !e.enraged) {
     e.enraged = true; floatText(e.x, e.y - 170, 'Nổi giận!', '#ff5a3c', 26);
-    if (d.phase2) { banner(d.phase2.banner, d.phase2.sub, 2.2); if (d.phase2.tideOut) G.tideOut = true; SFX.splash(); }
+    if (d.phase2) { banner(d.phase2.banner, d.phase2.sub, 2.2); if (d.phase2.tideOut) { G.tideOut = true; raiseStakes(); } SFX.splash(); }
   }
   const p3 = d.grand && e.hp < e.maxHp * .25;
   if (p3 && !e.phase3) { e.phase3 = true; banner(`${d.name} liều chết!`, 'Đại tướng dốc toàn lực', 2.2); floatText(e.x, e.y - 190, 'Giết!!', '#ff5a3c', 32); SFX.gong(); }

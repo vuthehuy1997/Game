@@ -186,6 +186,7 @@ const STAGES = [
       ['narr', 'Tháng 3 năm Mậu Tý (1288). Hết lương, quân Nguyên chia đường rút về. Đạo thủy quân của Ô Mã Nhi theo sông Bạch Đằng ra biển.'],
       ['hdv', 'Ta cho đóng cọc gỗ đầu bịt sắt dưới lòng sông. Nước triều lên thì cọc chìm, nước rút thì cọc nhô lên.'],
       ['hdv', 'Dụ thuyền giặc vào lúc triều cường, đánh lúc nước ròng. Tiểu Hổ, xông lên bắt sống Ô Mã Nhi!'],
+      ['hdv', 'Khi cọc nhô lên, hãy đứng sao cho bãi cọc nằm giữa ngươi và hắn. Hắn lao tới là mắc cọc.'],
       ['pnl', 'Quân bộ đã mai phục hai bên bờ. Chỉ chờ nước ròng!'],
     ],
     bossTalk: [
@@ -224,7 +225,7 @@ const EDEF = {
   bossToaDo:   { boss: true, rank: 'Đại tướng', grand: true, name: 'Toa Đô, Nguyên soái', hp: 600, spd: 160, reach: 118, dmg: 15, moves: ['charge', 'slam', 'volley'], moves2: ['summon', 'fury'], summon: ['shield', 'archer:cap', 'lancer'], coins: [70, 70], xp: 150 },
   bossLyHang:  { boss: true, rank: 'Tướng', name: 'Lý Hằng', hp: 600, spd: 175, reach: 104, dmg: 15, moves: ['charge', 'poison', 'slam'], moves2: ['summon', 'volley'], summon: ['lancer:cap', 'archer'], coins: [80, 80], xp: 150 },
   bossZhang:   { boss: true, rank: 'Tướng', name: 'Trương Văn Hổ', hp: 640, spd: 150, reach: 122, dmg: 15, moves: ['slam', 'pots', 'charge'], moves2: ['summon', 'pots'], summon: ['potter:cap', 'shield'], coins: [90, 90], xp: 160 },
-  bossOMN:     { boss: true, rank: 'Đại tướng', grand: true, name: 'Ô Mã Nhi', hp: 820, spd: 170, reach: 124, dmg: 16, moves: ['charge', 'slam', 'volley'], moves2: ['tide', 'summon', 'tide', 'fury'], summon: ['shield:cap', 'lancer', 'potter'], coins: [110, 110], xp: 220, phase2: { banner: 'Nước ròng!', sub: 'Cọc nhô lên, thuyền giặc vỡ tan', tideOut: true } },
+  bossOMN:     { boss: true, rank: 'Đại tướng', grand: true, name: 'Ô Mã Nhi', hp: 820, spd: 170, reach: 124, dmg: 16, moves: ['charge', 'slam', 'volley'], moves2: ['tide', 'summon', 'tide', 'fury'], summon: ['shield:cap', 'lancer', 'potter'], coins: [110, 110], xp: 220, phase2: { banner: 'Nước ròng!', sub: 'Cọc nhô lên: dụ Ô Mã Nhi lao vào bãi cọc cùng làn', tideOut: true } },
 };
 // Cấp bậc của lính thường: ghi trong đợt địch dạng 'soldier:cap' (đội trưởng) hoặc 'soldier:cmd' (chỉ huy)
 const RANKS = {

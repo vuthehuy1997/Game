@@ -360,6 +360,36 @@ def test_challenges_and_milestones(pg):
     assert pg.locator('.miles li').count() == 5
 
 @test
+def test_bachdang_stakes(pg):
+    """Nước ròng thì cọc nhô lên; tướng giặc lao qua bãi cọc cùng làn thì mắc cọc."""
+    new_game(pg, 5)
+    r = pg.evaluate("""() => {
+      const out = {}, step = n => { for (let i = 0; i < n; i++) { P.hp = P.maxHp; update(1 / 60); } };
+      G.wave = 4; G.lock = true; G.lockX = 1000; G.camX = 1000; P.x = 1100; P.lane = 0; P.gy = P.y = LANES[0];
+      const b = spawnEnemy('bossOMN', 1, 1); b.entering = false; b.x = 1500; b.cd = 99;
+      out.before = G.stakes.length;
+      b.hp = b.maxHp * .49; step(60); out.raised = G.stakes.length; out.up = G.stakes.every(s => s.up === 1);
+      const s = G.stakes[0], put = (lane, x) => { b.lane = lane; b.gy = b.y = LANES[lane]; b.x = x; b.state = 'charge'; b.st = .8; b.face = -1; b.vx = -660; b.hitDone = true; b.stakeT = 0; };
+      let hp = b.hp; put((s.lane + 1) % 3, s.x + 5); step(1); out.otherLane = hp - b.hp;
+      hp = b.hp; put(s.lane, s.x + 5); step(1); out.lost = (hp - b.hp) / b.maxHp; out.state = b.state; out.broken = s.dead;
+      // Tiểu Hổ đứng trên cọc không sao
+      const s2 = G.stakes[1]; P.x = s2.x; P.lane = s2.lane; P.gy = P.y = s2.gy; const hits = G.hits; b.x = 1900; b.state = 'recover'; b.st = 9; step(20); out.heroHurt = G.hits - hits;
+      // lính bị hất văng vào cọc
+      const m = spawnEnemy('heavy', 1, s2.lane); m.entering = false; m.x = s2.x + 10; m.gy = m.y = s2.gy; m.state = 'hurt'; m.st = .3; m.vx = 300;
+      hp = m.hp; step(1); out.minion = [hp - m.hp, m.state, s2.dead];
+      // boss sắp chết mắc cọc thì chết hẳn và ải kết thúc
+      enemies = enemies.filter(e => e === b); const s3 = G.stakes[2]; b.hp = 1; put(s3.lane, s3.x); step(1); out.killed = b.state;
+      step(30); out.mode = G.mode; out.result = !!G.result;
+      return out;
+    }""")
+    assert r['before'] == 0 and r['raised'] == 4 and r['up'], r
+    assert r['otherLane'] == 0, r
+    assert abs(r['lost'] - .08) < 1e-6 and r['state'] == 'hurt' and r['broken'], r
+    assert r['heroHurt'] == 0, r
+    assert r['minion'] == [30, 'down', False], r
+    assert r['killed'] == 'dead' and r['mode'] == 'clear' and r['result'], r
+
+@test
 def test_skills_cost_mana_and_cooldown(pg):
     new_game(pg, 0)
     r = pg.evaluate("""() => {

@@ -19,7 +19,7 @@ function resetWorld(i, cp) {
   G.stage = i; G.st = st; G.camX = 0; G.lock = false; G.lockX = 0; G.wave = 0; G.queue = []; G.spawnT = 0; G.boss = null;
   G.coinsAtStart = S.coins; G.clearT = 0; G.overT = 0; G.ultT = 0; G.banner = null; G.goBlink = 0; G.result = null;
   G.surviveT = 0; G.hazT = 2; G.tideOut = false; G.time = 0; G.hits = 0; G.lightning = 0;
-  G.cp = null; G.cpUsed = false; G.combo = 0; G.comboT = 0; G.maxCombo = 0; G.minDiff = CFG.diff; G.coinFrac = 0;
+  G.cp = null; G.cpUsed = false; G.combo = 0; G.comboT = 0; G.maxCombo = 0; G.minDiff = CFG.diff; G.coinFrac = 0; G.stakes = [];
   P = newPlayer(); enemies = []; projs = []; parts = []; texts = []; items = [];
   props = [];
   if (cp) {
@@ -78,6 +78,35 @@ function updateWaves(dt) {
     G.lock = false; G.wave++;
     if (wv.boss) stageCleared();
     else { G.goBlink = 3; SFX.coin(); }
+  }
+}
+
+/* ---------------- Bãi cọc Bạch Đằng ----------------
+   Nước ròng (Ô Mã Nhi dưới nửa máu) thì 4 bãi cọc nhô lên trong khu giao chiến. Giặc lao qua hoặc bị hất văng vào bãi
+   cọc cùng làn thì mắc cọc. Cọc là của quân ta: Tiểu Hổ và đồng đội đi qua không sao. */
+function raiseStakes() {
+  G.stakes = [[170, 1], [390, 0], [590, 2], [800, 1]].map(([dx, lane]) => ({ x: G.lockX + dx, lane, gy: LANES[lane], up: 0, dead: false }));
+}
+function updateStakes(dt) {
+  for (const s of G.stakes) {
+    s.up = Math.min(1, s.up + dt * 1.5);
+    if (s.dead || s.up < 1) continue;
+    for (const e of enemies) {
+      if (s.dead || !alive(e) || Math.abs(e.gy - s.gy) > 24 || Math.abs(e.x - s.x) > 36 || e.y < e.gy - 40 || e.stakeT > G.time) continue;
+      const thrown = (e.state === 'hurt' || e.state === 'down') && Math.abs(e.vx) > 120;
+      if (!thrown && !['charge', 'fury', 'lunge'].includes(e.state)) continue;
+      const dir = Math.sign(e.vx) || 1;
+      e.stakeT = G.time + 1; e.flash = .15; e.vx = 0;
+      floatText(e.x, e.y - 150 * (e.sc || 1), 'Mắc cọc!', '#ffd35a', e.d.boss ? 30 : 20);
+      spark(e.x, e.gy - 30, 14, '#d9c7a0', 380); SFX.crack(); SFX.heavy(); G.shake = Math.max(G.shake, e.d.boss ? 12 : 5);
+      if (e.d.boss) {   // tướng giặc: mất 8% máu, choáng, bãi cọc đó gãy
+        s.dead = true; e.hp -= e.maxHp * .08; G.hitstop = .12;
+        if (e.hp <= 0) killEnemy(e, dir); else { e.state = 'hurt'; e.st = 1.5; e.stag = 0; }
+      } else {
+        e.hp -= 30;
+        if (e.hp <= 0) killEnemy(e, dir); else { e.state = 'down'; e.st = .8; }
+      }
+    }
   }
 }
 
