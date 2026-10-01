@@ -215,7 +215,7 @@ function drawMap(cvs, sel, t) {
     c.strokeStyle = '#3a2616'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 9, 0, Math.PI * 2); c.stroke();
     c.fillStyle = won ? '#3a2616' : '#f4e7c9'; c.font = `bold 11px ${FB}`; c.textAlign = 'center'; c.fillText(side ? '✦' : String(i + 1), x, y + 4);
     // vị trí nhãn riêng cho từng điểm để Phù Ủng và Hàm Tử (rất gần nhau) không đè lên nhau
-    const [lx, ly, al] = [[14, 20, 'left'], [0, -15, 'center'], [-14, -10, 'right'], [0, -15, 'center'], [0, -15, 'center'], [0, -15, 'center'], [-14, -8, 'right']][i];
+    const [lx, ly, al] = [[14, 20, 'left'], [0, -15, 'center'], [-14, -10, 'right'], [0, -15, 'center'], [0, -15, 'center'], [0, -15, 'center'], [10, -18, 'center']][i];
     c.textAlign = al; c.font = `${i === sel ? 'bold ' : ''}14px ${FB}`; c.lineWidth = 4; c.strokeStyle = '#efe1bf';
     c.strokeText(MAP_POINTS[i].place, x + lx, y + ly); c.fillStyle = open ? '#3a2616' : 'rgba(58,38,22,.45)'; c.fillText(MAP_POINTS[i].place, x + lx, y + ly);
   });
