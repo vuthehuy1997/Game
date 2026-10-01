@@ -10,7 +10,7 @@ const espd = e => e.d.spd * (e.buff ? 1.2 : 1);
 // spec: 'soldier' (lính thường), 'soldier:cap' (đội trưởng), 'soldier:cmd' (chỉ huy), hoặc tên boss
 function spawnEnemy(spec, side, lane) {
   const [type, rk = 'n'] = spec.split(':'), d = EDEF[type], R = RANKS[rk] || RANKS.n;
-  const mul = (d.boss ? 1 : (1 + G.stage * .16)) * DIFF[CFG.diff].hp * R.hp;
+  const mul = (d.boss ? 1 : (1 + G.tier * .16)) * DIFF[CFG.diff].hp * R.hp;
   if (lane == null) lane = d.boss ? P.lane : (Math.random() * 3) | 0;
   const x = side > 0 ? G.camX + W + 50 : G.camX - 50;
   const e = {

@@ -10,12 +10,19 @@ function banner(text, sub, dur = 2.6) { G.banner = { text, sub, t: 0, dur }; }
 const playedNow = () => G.time - (G.cpUsed && G.cp ? G.cp.time : 0);
 const fmtDate = ts => ts ? new Date(ts).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
+// Ải chính đi theo thứ tự; ải ngoại truyện (side) nằm ngoài tiến trình, mở bằng mốc sao
+const MAIN = STAGES.filter(s => !s.side).length;
+const unlocked = i => STAGES[i].side ? ms('side') : i <= S.maxStage;
+const stageLabel = i => STAGES[i].side ? 'Ngoại truyện' : `Ải ${i + 1}`;
+const heroName = () => SPK[G.st.hero || 'hero'].short;
+
 function toTitle() {
   G.mode = 'title'; resetWorld(0); ally = null; P.x = 300; showOnly('menu');
 }
 function startStage(i) {
-  S.stage = i; S.maxStage = Math.max(S.maxStage || 0, i); save(); resetWorld(i);
-  runDialog(STAGES[i].intro, () => { resumePlay(); banner(`Ải ${i + 1} · ${STAGES[i].name}`, STAGES[i].year); SFX.gong(); });
+  if (!STAGES[i].side) { S.stage = i; S.maxStage = Math.max(S.maxStage || 0, i); }
+  save(); resetWorld(i);
+  runDialog(STAGES[i].intro, () => { resumePlay(); banner(`${stageLabel(i)} · ${STAGES[i].name}`, STAGES[i].year); SFX.gong(); });
 }
 
 /* ---------------- Hội thoại ---------------- */
@@ -195,30 +202,30 @@ function drawMap(cvs, sel, t) {
   // đường hành quân
   const pts = MAP_POINTS.map(m => proj(m.lon, m.lat));
   c.setLineDash([7, 6]); c.lineDashOffset = -t * 20; c.lineWidth = 2.5;
-  for (let i = 1; i < pts.length; i++) {
+  for (let i = 1; i < MAIN; i++) {
     c.strokeStyle = i <= S.maxStage ? '#a3261d' : 'rgba(58,38,22,.25)';
     c.beginPath(); c.moveTo(...pts[i - 1]); c.lineTo(...pts[i]); c.stroke();
   }
   c.setLineDash([]);
   // địa điểm
   pts.forEach(([x, y], i) => {
-    const open = i <= S.maxStage, won = (S.stars[i] || 0) > 0;
+    const open = unlocked(i), won = (S.stars[i] || 0) > 0, side = STAGES[i].side;
     if (i === sel) { c.strokeStyle = '#a3261d'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, 14 + Math.sin(t * 4) * 3, 0, Math.PI * 2); c.stroke(); }
-    ell(c, x, y, 9, 9, won ? '#e9b949' : open ? '#a3261d' : '#b5a586');
+    ell(c, x, y, 9, 9, won ? '#e9b949' : open ? (side ? '#3f8f78' : '#a3261d') : '#b5a586');
     c.strokeStyle = '#3a2616'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 9, 0, Math.PI * 2); c.stroke();
-    c.fillStyle = won ? '#3a2616' : '#f4e7c9'; c.font = `bold 11px ${FB}`; c.textAlign = 'center'; c.fillText(String(i + 1), x, y + 4);
+    c.fillStyle = won ? '#3a2616' : '#f4e7c9'; c.font = `bold 11px ${FB}`; c.textAlign = 'center'; c.fillText(side ? '✦' : String(i + 1), x, y + 4);
     // vị trí nhãn riêng cho từng điểm để Phù Ủng và Hàm Tử (rất gần nhau) không đè lên nhau
-    const [lx, ly, al] = [[14, 20, 'left'], [0, -15, 'center'], [-14, -10, 'right'], [0, -15, 'center'], [0, -15, 'center'], [0, -15, 'center']][i];
+    const [lx, ly, al] = [[14, 20, 'left'], [0, -15, 'center'], [-14, -10, 'right'], [0, -15, 'center'], [0, -15, 'center'], [0, -15, 'center'], [-14, -8, 'right']][i];
     c.textAlign = al; c.font = `${i === sel ? 'bold ' : ''}14px ${FB}`; c.lineWidth = 4; c.strokeStyle = '#efe1bf';
     c.strokeText(MAP_POINTS[i].place, x + lx, y + ly); c.fillStyle = open ? '#3a2616' : 'rgba(58,38,22,.45)'; c.fillText(MAP_POINTS[i].place, x + lx, y + ly);
   });
 }
 function showMap(sel, reason) {
-  sel = clamp(sel, 0, S.maxStage);
+  if (!STAGES[sel] || !unlocked(sel)) sel = clamp(sel, 0, S.maxStage);
   const title = reason === 'next' ? `Hành quân đến ${MAP_POINTS[sel].place}` : 'Chọn nơi xuất trận';
   showCard(`<p class="eyebrow">Bản đồ hành quân · ${S.coins} văn · ${totalStars(S)}/${STAGES.length * 3} ★</p><h2 id="mTitle">${title}</h2>
     <canvas id="mapCv" class="map" width="${MAP_W}" height="${MAP_H}" aria-label="Bản đồ các ải"></canvas>
-    <div class="chips" role="group" aria-label="Chọn ải">${STAGES.map((st, i) => `<button type="button" data-st="${i}" ${i > S.maxStage ? 'disabled' : ''} aria-pressed="${i === sel}">Ải ${i + 1}${S.stars[i] ? ' ' + starStr(S.stars[i]) : ''}</button>`).join('')}</div>
+    <div class="chips" role="group" aria-label="Chọn ải">${STAGES.map((st, i) => `<button type="button" data-st="${i}" ${unlocked(i) ? '' : 'disabled'} aria-pressed="${i === sel}">${stageLabel(i)}${S.stars[i] ? ' ' + starStr(S.stars[i]) : ''}${st.side && !unlocked(i) ? ` · cần ${MILESTONES.find(m => m.id === 'side').need}★` : ''}</button>`).join('')}</div>
     <p class="dest" id="mDest"></p>
     <div id="mChal"></div>
     <details class="keyref"><summary>Phần thưởng theo tổng số sao (${totalStars(S)}★) · ${totalCh(S)}/${STAGES.length * CHALS.length} ấn</summary>${milesHtml()}</details>
@@ -227,7 +234,7 @@ function showMap(sel, reason) {
     const cvs = el.querySelector('#mapCv');
     const setSel = i => {
       sel = i; const st = STAGES[i];
-      el.querySelector('#mDest').innerHTML = `<b>Ải ${i + 1} · ${st.name}</b> · ${st.year}${S.stars[i] ? ` · thành tích ${starStr(S.stars[i])}` : ''}`;
+      el.querySelector('#mDest').innerHTML = `<b>${stageLabel(i)} · ${st.name}</b> · ${st.year}${S.stars[i] ? ` · thành tích ${starStr(S.stars[i])}` : ''}`;
       el.querySelector('#mChal').innerHTML = chalHtml(i);
       el.querySelectorAll('[data-st]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.st === i));
     };
@@ -235,7 +242,7 @@ function showMap(sel, reason) {
     el.querySelectorAll('[data-st]').forEach(b => b.onclick = () => setSel(+b.dataset.st));
     cvs.addEventListener('click', ev => {
       const r = cvs.getBoundingClientRect(), mx = (ev.clientX - r.left) / r.width * MAP_W, my = (ev.clientY - r.top) / r.height * MAP_H;
-      MAP_POINTS.forEach((m, i) => { const [x, y] = proj(m.lon, m.lat); if (i <= S.maxStage && Math.hypot(mx - x, my - y) < 22) setSel(i); });
+      MAP_POINTS.forEach((m, i) => { const [x, y] = proj(m.lon, m.lat); if (unlocked(i) && Math.hypot(mx - x, my - y) < 22) setSel(i); });
     });
     const t0 = performance.now();
     const loop = now => { if (!document.body.contains(cvs)) return; drawMap(cvs, sel, (now - t0) / 1000); requestAnimationFrame(loop); };
@@ -247,7 +254,7 @@ function showMap(sel, reason) {
 
 /* ---------------- Sau trận ---------------- */
 function stageCleared() {
-  G.mode = 'clear'; G.clearT = 2.6; G.slow = 1.2; banner('Chiến thắng!', `Ải ${G.stage + 1} · ${G.st.name}`, 2.4); SFX.gong();
+  G.mode = 'clear'; G.clearT = 2.6; G.slow = 1.2; banner('Chiến thắng!', `${stageLabel(G.stage)} · ${G.st.name}`, 2.4); SFX.gong();
   // sao theo số lần trúng đòn; chơi Dễ (kể cả hạ xuống Dễ giữa trận) thì tối đa 2★
   let stars = G.hits <= 5 ? 3 : G.hits <= 12 ? 2 : 1;
   const capped = G.minDiff === 0 && stars === 3; if (capped) stars = 2;
@@ -265,7 +272,8 @@ function stageCleared() {
 function afterClear() {
   const i = G.stage, st = STAGES[i];
   runDialog(st.outro, () => historyCard(st, () => {
-    if (i >= STAGES.length - 1) { S.stage = 0; save(); ending(); }
+    if (st.side) showMap(i, 'continue');
+    else if (i >= MAIN - 1) { S.stage = 0; save(); ending(); }
     else { S.stage = i + 1; S.maxStage = Math.max(S.maxStage, i + 1); save(); showMap(i + 1, 'next'); }
   }));
 }
@@ -350,16 +358,16 @@ function ending() {
     <p>Cảm ơn bạn đã chơi <b>Hào Khí Việt Nam</b>.</p>
     <div class="actions"><button class="btn ghost" id="eMap">Bản đồ</button><button class="btn" id="eOk">Về màn hình chính</button></div>`, el => {
     el.querySelector('#eOk').onclick = toTitle;
-    el.querySelector('#eMap').onclick = () => showMap(STAGES.length - 1, 'continue');
+    el.querySelector('#eMap').onclick = () => showMap(MAIN - 1, 'continue');
   });
 }
 function gameOver() {
   // thua sau khi đã tới boss: giữ tiền nhặt được tính đến điểm lưu và cho đánh lại từ đó
   const cp = G.cp, coins0 = G.coinsAtStart;
   S.coins = cp ? cp.coins : coins0; S.play = (S.play || 0) + playedNow(); save();
-  showCard(`<p class="eyebrow">Ải ${G.stage + 1} · ${G.st.name}</p><h2>Tiểu Hổ ngã xuống…</h2><p>Thất bại là mẹ thành công. Lấy lại hơi thở, luyện thêm và quay lại trận này. ${cp ? 'Bạn đã tới chỗ tướng giặc: tái chiến sẽ vào thẳng trận đó, tiền nhặt trước đó vẫn còn.' : 'Tiền nhặt trong trận vừa rồi không được tính.'}</p>
+  showCard(`<p class="eyebrow">${stageLabel(G.stage)} · ${G.st.name}</p><h2>${heroName()} ngã xuống…</h2><p>Thất bại là mẹ thành công. Lấy lại hơi thở, luyện thêm và quay lại trận này. ${cp ? 'Bạn đã tới chỗ tướng giặc: tái chiến sẽ vào thẳng trận đó, tiền nhặt trước đó vẫn còn.' : 'Tiền nhặt trong trận vừa rồi không được tính.'}</p>
     <div class="actions"><button class="btn ghost" id="oHome">Màn hình chính</button><button class="btn ghost" id="oMap">Bản đồ</button><button class="btn ghost" id="oShop">Luyện công</button>${cp ? '<button class="btn ghost" id="oStart">Đánh lại từ đầu ải</button>' : ''}<button class="btn" id="oRe">${cp ? 'Tái chiến trước tướng giặc' : 'Tái chiến'}</button></div>`, el => {
-    const fromStart = () => { S.coins = coins0; save(); resetWorld(G.stage); resumePlay(); banner(`Ải ${G.stage + 1} · ${G.st.name}`, 'Tái chiến'); };
+    const fromStart = () => { S.coins = coins0; save(); resetWorld(G.stage); resumePlay(); banner(`${stageLabel(G.stage)} · ${G.st.name}`, 'Tái chiến'); };
     const retry = cp ? () => { resetWorld(G.stage, cp); resumePlay(); banner('Tái chiến', 'Trước mặt là tướng giặc'); } : fromStart;
     el.querySelector('#oRe').onclick = retry;
     if (cp) el.querySelector('#oStart').onclick = fromStart;
@@ -371,7 +379,7 @@ function gameOver() {
 
 /* ---------------- Tạm dừng ---------------- */
 function showPause() {
-  showCard(`<p class="eyebrow">Ải ${G.stage + 1} · ${G.st.name} · ${G.st.year}</p><h2>Tạm nghỉ</h2>
+  showCard(`<p class="eyebrow">${stageLabel(G.stage)} · ${G.st.name} · ${G.st.year}</p><h2>Tạm nghỉ</h2>
     <p class="note">Ô lưu ${STORE.cur + 1} · lưu lúc ${fmtDate(S.updated)}. Game tự lưu ở đầu mỗi ải; nếu bỏ dở, lần sau sẽ đánh lại ải này từ đầu.</p>
     <div class="actions"><button class="btn ghost" id="pHome">Về màn hình chính</button><button class="btn ghost" id="pSet">Cài đặt</button><button class="btn ghost" id="pSkill">Kỹ năng${S.sp ? ` (${S.sp})` : ''}</button><button class="btn" id="pGo">Tiếp tục</button></div>`, el => {
     el.querySelector('#pGo').onclick = togglePause;

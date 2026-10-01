@@ -1,5 +1,5 @@
 'use strict';
-// Cảnh nền cuộn nhiều lớp (parallax) cho 6 ải: làng, kinh thành, bến sông, rừng, biển, Bạch Đằng.
+// Cảnh nền cuộn nhiều lớp (parallax): làng, kinh thành, bến sông, rừng, biển, Bạch Đằng, bến Đông Bộ Đầu.
 // Cảnh xa vẽ trong hệ toạ độ có đường chân trời HZ rồi dịch lên cho khớp mép đất GT; mặt đất 3 làn vẽ riêng.
 const HZ = 455;
 
@@ -129,6 +129,7 @@ const GROUNDS = {
   forest: () => ground('#3b3a2a', '#2e4a2e', '#2a291e'),
   sea: () => deck(),
   bachdang: () => ground('#3f3327', '#2d3a2c', '#33291f'),
+  dongbodau: () => ground('#4a4034', '#3a4a3a', '#3a3128'),
 };
 function drawBG() {
   ctx.save(); ctx.translate(0, GT - HZ); drawScenery(); ctx.restore();
@@ -176,6 +177,16 @@ function drawScenery() {
     ctx.fillStyle = '#2f7a9a'; ctx.fillRect(0, 330, W, HZ - 330);
     ripples(340, 7, 16, 'rgba(255,255,255,.3)', 30);
     each(cx * .28 + G.t * 6, 360, (k, x) => boat(x, 356 + hash(k) * 16, .8 + hash(k * 5) * .3, hash(k * 9) < .55));
+  } else if (th === 'dongbodau') {
+    // đêm trên sông Hồng, xa xa là Thăng Long bỏ trống
+    sky(['#0f1424', '#2a2f52', '#8a5a5a']);
+    ell(ctx, 780, 100, 30, 30, '#f4ecd0');
+    hills(cx * .06, '#1f2538', 320, 110, 71, 180, .5);
+    ctx.fillStyle = '#1a2030'; each(cx * .18, 210, (k, x) => palaceSil(x, 345, hash(k) * 26 + 24));
+    ctx.fillStyle = '#263a52'; ctx.fillRect(0, 345, W, HZ - 345);
+    ripples(356, 7, 14, 'rgba(200,215,240,.22)', 18, 30, 86);
+    each(cx * .32 - G.t * 10, 340, (k, x) => boat(x, 372 + hash(k) * 22, .75 + hash(k * 2) * .3, false));
+    each(cx * .7, 90, (k, x) => { if (hash(k) < .5) reeds(x, HZ - 20, k); });
   } else {
     const out = G.tideOut ? 1 : 0;
     sky(['#10161f', '#283042', '#5e4450']);

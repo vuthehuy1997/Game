@@ -145,6 +145,7 @@ function drawEnemy(e) {
   } else if (!e.d.boss && alive(e) && e.hp < e.maxHp) { const bw = 40; ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(e.x - bw / 2, e.y - 124 * s, bw, 5); ctx.fillStyle = '#e04a3a'; ctx.fillRect(e.x - bw / 2, e.y - 124 * s, bw * Math.max(0, e.hp / e.maxHp), 5); }
   if (e.state === 'windup' && !e.d.boss) { ctx.textAlign = 'center'; outlined('!', e.x, e.y - 128 * s, `bold 24px ${FB}`, e.move === 'lunge' ? '#ff5a3c' : '#ffd35a'); }
 }
+const heroLook = () => LOOKS[G.st.hero || 'hero'];
 function drawPlayer() {
   shadow(P.x, P.gy);
   // vòng chỉ làn dưới chân để dễ thấy đang đứng làn nào
@@ -152,7 +153,7 @@ function drawPlayer() {
   if (P.state === 'ult') { const r = 60 + P.st * 80; ctx.save(); ctx.globalAlpha = .5; const g = ctx.createRadialGradient(P.x, P.y - 60, 10, P.x, P.y - 60, r); g.addColorStop(0, 'rgba(255,220,120,.9)'); g.addColorStop(1, 'rgba(255,120,40,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(P.x, P.y - 60, r, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
   if (P.state === 'guard') { ctx.save(); ctx.globalAlpha = .45 + Math.sin(G.t * 20) * .15; ctx.strokeStyle = '#ffe6a8'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(P.x, P.y - 55, 42, 66, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
   if (P.rage >= 100 && G.mode === 'play') { ctx.save(); ctx.globalAlpha = .25 + Math.sin(G.t * 6) * .12; ell(ctx, P.x, P.y - 55, 40, 64, '#ffd35a'); ctx.restore(); }
-  drawChibi(ctx, P.x, P.y, LOOKS.hero, poseP(P));
+  drawChibi(ctx, P.x, P.y, heroLook(), poseP(P));
 }
 
 function render() {
@@ -206,7 +207,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(20,14,10,.72)'; rr(ctx, 14, 12, 330, 88, 12); ctx.fill();
   ctx.strokeStyle = '#e9b949'; ctx.lineWidth = 1.5; rr(ctx, 14, 12, 330, 88, 12); ctx.stroke();
   ctx.save(); ctx.beginPath(); ctx.arc(56, 56, 34, 0, Math.PI * 2); ctx.fillStyle = '#e7d3a9'; ctx.fill(); ctx.clip();
-  drawChibi(ctx, 53, 56 + 80 * .95 + 4, LOOKS.hero, { scale: .95, t: G.t, armF: .2 });
+  drawChibi(ctx, 53, 56 + 80 * .95 + 4, heroLook(), { scale: .95, t: G.t, armF: .2 });
   ctx.restore();
   ctx.strokeStyle = '#a3261d'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(56, 56, 34, 0, Math.PI * 2); ctx.stroke();
   const bar = (y, v, max, col, lbl) => {
@@ -221,7 +222,7 @@ function drawHUD() {
 
   ctx.textAlign = 'right';
   outlined(G.st.name, W - 18, 40, `26px ${FD}`, '#ffe6a8', 'rgba(20,14,10,.8)', 5);
-  outlined(`Ải ${G.stage + 1}/${STAGES.length} · ${G.st.year}`, W - 18, 62, `15px ${FB}`, '#f4e7c9', 'rgba(20,14,10,.8)', 5);
+  outlined(`${G.st.side ? 'Ngoại truyện' : `Ải ${G.stage + 1}/${MAIN}`} · ${G.st.year}`, W - 18, 62, `15px ${FB}`, '#f4e7c9', 'rgba(20,14,10,.8)', 5);
   ell(ctx, W - 118, 84, 9, 9, '#e9b949'); ctx.fillStyle = '#6b4a14'; ctx.fillRect(W - 121, 81, 6, 6);
   outlined(`${S.coins} văn`, W - 18, 91, `18px ${FB}`, '#ffe6a8', 'rgba(20,14,10,.8)', 5);
   const prog = clamp(P.x / G.st.len, 0, 1);

@@ -16,7 +16,7 @@ function dropItem(kind, x, gy, val = 0) {
 // cp: điểm lưu trước boss (xem updateWaves). Có cp thì vào thẳng đợt boss, giữ thời gian và số lần trúng đòn.
 function resetWorld(i, cp) {
   const st = STAGES[i];
-  G.stage = i; G.st = st; G.camX = 0; G.lock = false; G.lockX = 0; G.wave = 0; G.queue = []; G.spawnT = 0; G.boss = null;
+  G.stage = i; G.st = st; G.tier = st.tier ?? i; G.camX = 0; G.lock = false; G.lockX = 0; G.wave = 0; G.queue = []; G.spawnT = 0; G.boss = null;
   G.coinsAtStart = S.coins; G.clearT = 0; G.overT = 0; G.ultT = 0; G.banner = null; G.goBlink = 0; G.result = null;
   G.surviveT = 0; G.hazT = 2; G.tideOut = false; G.time = 0; G.hits = 0; G.lightning = 0;
   G.cp = null; G.cpUsed = false; G.combo = 0; G.comboT = 0; G.maxCombo = 0; G.minDiff = CFG.diff; G.coinFrac = 0; G.stakes = [];
@@ -223,7 +223,7 @@ function updateFx(dt) {
   const th = G.st.bg;
   if (th === 'village' && Math.random() < dt * 3) parts.push({ kind: 'leaf', x: G.camX + rand(0, W + 200), y: -10, vx: rand(-60, -20), vy: rand(40, 80), life: 8, max: 8, col: pick(['#e79aa8', '#f3c4cc', '#8fbf5a']), size: rand(3, 5) });
   if (th === 'citadel' && Math.random() < dt * 10) parts.push({ kind: 'ember', x: G.camX + rand(0, W), y: H, vx: rand(-20, 20), vy: rand(-120, -50), life: 4, max: 4, col: pick(['#ffb347', '#ff7a2f', '#ffd35a']), size: rand(1.5, 3) });
-  if (th === 'forest' && Math.random() < dt * 4) parts.push({ kind: 'firefly', x: G.camX + rand(0, W), y: rand(150, GT + 40), vx: rand(-20, 20), vy: rand(-20, 20), life: 5, max: 5, col: '#d9f27a', size: 2.2 });
+  if ((th === 'forest' || th === 'dongbodau') && Math.random() < dt * (th === 'forest' ? 4 : 1.5)) parts.push({ kind: 'firefly', x: G.camX + rand(0, W), y: rand(150, GT + 40), vx: rand(-20, 20), vy: rand(-20, 20), life: 5, max: 5, col: '#d9f27a', size: 2.2 });
   if (th === 'sea' && Math.random() < dt * 4) parts.push({ kind: 'ember', x: G.camX + rand(0, W), y: GT - 30, vx: rand(-30, 30), vy: rand(-90, -40), life: 3, max: 3, col: pick(['#ffb347', '#ff7a2f']), size: rand(1.5, 2.5) });
   if (th === 'bachdang') { G.lightning -= dt; if (Math.random() < dt * .1) G.lightning = .22; }
 }

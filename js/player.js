@@ -78,7 +78,7 @@ function killEnemy(e, dir) {
 function hurtPlayer(dmg, dir, opts = {}) {
   if (P.inv > 0 || P.state === 'dash' || P.state === 'ult' || P.state === 'rush' || P.state === 'dead' || G.mode !== 'play') return false;
   if (P.state === 'guard') { counterAttack(); return false; }
-  dmg = Math.max(1, Math.round(dmg * (1 + G.stage * .1) * DIFF[CFG.diff].dmg * (ms('armor') ? .9 : 1)));
+  dmg = Math.max(1, Math.round(dmg * (1 + G.tier * .1) * DIFF[CFG.diff].dmg * (ms('armor') ? .9 : 1)));
   P.hp -= dmg; P.inv = .9; G.combo = 0; P.rage = Math.min(100, P.rage + 8 * (1 + .25 * sk('haokhi'))); G.hits++;
   if (opts.poison) { P.poison = 3.5; floatText(P.x, P.y - 132, 'Trúng độc!', '#8fe07a', 18); }
   if (CFG.dmgNum) floatText(P.x, P.y - 110, '-' + dmg, '#ff6a5a', 22);

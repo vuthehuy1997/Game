@@ -3,6 +3,11 @@
 
 const LOOKS = {
   hero:     { skin: '#f6d2ae', hair: '#1c1410', hat: 'topknot', ribbon: '#e9b949', shirt: '#b3261e', trim: '#e9b949', pants: '#2a2630', belt: '#e9b949', tattoo: 1 },
+  master:   { skin: '#f0c9a3', hair: '#1c1410', hat: 'khan', khan: '#2e3142', shirt: '#2f4a6b', trim: '#e9b949', pants: '#22242e', belt: '#e9b949' },
+  ttt:      { skin: '#f3d0ac', hair: '#1c1410', hat: 'mu', mu: '#8a6a1e', shirt: '#c9952a', trim: '#a3261d', pants: '#5a3a14', belt: '#a3261d' },
+  ttd:      { skin: '#e3b892', hair: '#d8d2c6', hat: 'mu', mu: '#1a1616', shirt: '#3a2a4a', trim: '#e9b949', pants: '#231a2e', belt: '#e9b949', beard: 2, old: 1 },
+  letan:    { skin: '#e2b48a', hair: '#1c1410', hat: 'khan', khan: '#7a2a22', shirt: '#4a5a44', trim: '#c9a449', pants: '#2b3328', belt: '#3b2a1a', weapon: 'spear' },
+  bossAju:  { skin: '#dcae84', hair: '#1c1410', hat: 'mongol', cap: '#2a3a5a', fur: '#e6dcc4', shirt: '#44506b', trim: '#e6dcc4', pants: '#262c3a', belt: '#c9a449', weapon: 'saber', angry: 1, beard: 1, scale: 1.4 },
   villager: { skin: '#e7bd96', hair: '#cfc9bf', hat: 'nonla', shirt: '#7d6048', trim: '#5b4533', pants: '#3b3129', belt: '#5b4533', old: 1 },
   pnl:      { skin: '#d9a57c', hair: '#1c1410', hat: 'khan', khan: '#6d4c2f', shirt: '#8a6a3e', trim: '#5b4533', pants: '#3b3129', belt: '#3b2a1a', tattoo: 1, weapon: 'spear' },
   hdv:      { skin: '#f0c9a3', hair: '#1c1410', hat: 'mu', mu: '#1a1616', shirt: '#6f1d1b', trim: '#e9b949', pants: '#2a1a1a', belt: '#e9b949', beard: 1 },

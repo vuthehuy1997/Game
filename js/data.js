@@ -3,7 +3,12 @@
 
 const SPK = {
   narr: { name: 'Sử quan' },
-  hero: { name: 'Tiểu Hổ', look: 'hero' },
+  hero: { name: 'Tiểu Hổ', short: 'Tiểu Hổ', look: 'hero' },
+  master: { name: 'Đại Sơn (sư phụ thời trẻ)', short: 'Đại Sơn', look: 'master' },
+  ttt: { name: 'Vua Trần Thái Tông', look: 'ttt' },
+  ttd: { name: 'Thái sư Trần Thủ Độ', look: 'ttd' },
+  letan: { name: 'Lê Tần', look: 'letan' },
+  aju: { name: 'A Truật', look: 'bossAju' },
   villager: { name: 'Bà cụ làng Phù Ủng', look: 'villager' },
   pnl: { name: 'Phạm Ngũ Lão', look: 'pnl' },
   hdv: { name: 'Hưng Đạo Vương Trần Quốc Tuấn', look: 'hdv' },
@@ -25,6 +30,7 @@ const ALLY_LINES = {
   pnl: ['Trai Phù Ủng đây!', 'Giáo đâm vào đùi còn chẳng sợ!', 'Sát Thát!', 'Tiểu Hổ, đỡ lưng cho ta!'],
   tqt: ['Phá cường địch, báo hoàng ân!', 'Anh em, theo cờ ta!', 'Ta tuy nhỏ nhưng chí không nhỏ!'],
   tkd: ['Lấy công chuộc tội!', 'Đánh chìm thuyền lương!', 'Một hạt gạo cũng không cho qua!'],
+  letan: ['Đánh úp bến thuyền!', 'Giặc quen ngựa, không quen sông!', 'Đại Sơn, giữ sườn cho ta!'],
 };
 
 /*
@@ -33,6 +39,8 @@ const ALLY_LINES = {
   - boss: đợt cuối có boss:true; bossTalk là hội thoại ngay trước khi boss xuất hiện.
   - ally: đồng đội đánh cùng. hazard: bẫy môi trường khi đang giao chiến.
   - par: mốc giây cho ấn Thần tốc. combo: chuỗi đòn cho ấn Liên hoàn.
+  - side: ải ngoại truyện, nằm ngoài tiến trình chính, mở bằng mốc sao 'side'. tier: bậc sức mạnh của giặc (mặc định = thứ tự ải).
+    hero: người chơi điều khiển ai (mặc định Tiểu Hổ).
 */
 const STAGES = [
   {
@@ -201,6 +209,36 @@ const STAGES = [
     ],
     card: { eyebrow: 'Sử ký · 9 tháng 4 năm 1288', title: 'Trận Bạch Đằng', text: 'Ngày 8 tháng 3 năm Mậu Tý (9/4/1288), Hưng Đạo Vương dùng trận địa cọc trên sông Bạch Đằng, lặp lại cách Ngô Quyền phá quân Nam Hán năm 938. Hạm đội Nguyên bị tiêu diệt, Ô Mã Nhi bị bắt. Ba lần kháng chiến chống Nguyên Mông (1258, 1285, 1288) của nhà Trần được gọi là <b>Hào khí Đông A</b>, vì chữ Trần (陳) ghép từ chữ Đông (東) và bộ A (阝).' },
   },
+  {
+    name: 'Đông Bộ Đầu', year: 'Tháng Giêng 1258', bg: 'dongbodau', len: 3800, par: 240, combo: 30, side: true, tier: 1, hero: 'master', ally: 'letan', props: ['crate', 'jar'],
+    waves: [
+      { at: 420, list: ['soldier', 'archer', 'sword'] },
+      { at: 1100, list: ['archer', 'archer', 'sword:cap', 'soldier'] },
+      { at: 1850, survive: 30, pool: ['archer', 'sword', 'soldier', 'lancer'], max: 4, label: 'Đánh úp bến thuyền', sub: 'Giữ chân giặc 30 giây cho thuyền quân ta cập bến' },
+      { at: 2600, list: ['lancer', 'archer', 'drummer', 'sword:cap', 'soldier'] },
+      { at: 3250, list: ['bossAju', 'archer', 'lancer'], boss: true },
+    ],
+    intro: [
+      ['narr', 'Sư phụ kể: “Hồi ta bằng tuổi con, giặc Mông Cổ đã sang một lần rồi.” Tháng Giêng năm 1258, tướng Ngột Lương Hợp Thai từ Vân Nam đánh xuống Đại Việt.'],
+      ['narr', 'Vua Trần Thái Tông đích thân cầm quân ở Bình Lệ Nguyên, nhưng thế giặc mạnh, phải lui. Lê Tần lấy ván thuyền che tên cho vua. Triều đình rời Thăng Long.'],
+      ['ttt', 'Thế giặc như vậy, nên đánh hay nên hàng?'],
+      ['ttd', 'Đầu thần chưa rơi xuống đất, xin bệ hạ đừng lo!'],
+      ['narr', 'Giặc vào Thăng Long chỉ thấy thành trống, thiếu lương. Đêm 24 tháng Chạp, quân Trần ngược sông Hồng đánh úp bến Đông Bộ Đầu.'],
+      ['letan', 'Đại Sơn, theo ta! Giặc quen đánh trên lưng ngựa, đêm nay ta đánh chúng trên bến sông.'],
+      ['master', 'Xin theo tướng quân. Cung thủ chúng bắn xa lắm, phải đổi làn mà áp sát!'],
+    ],
+    bossTalk: [
+      ['aju', 'Vó ngựa Mông Cổ đã đạp khắp thiên hạ. Một bến sông nhỏ mà đòi cản ta?'],
+      ['letan', 'Ngựa các ngươi không quen sông nước phương Nam đâu. Đánh!'],
+    ],
+    outro: [
+      ['aju', 'Rút! Rút về Vân Nam!'],
+      ['narr', 'Thua ở Đông Bộ Đầu, quân Mông Cổ bỏ Thăng Long chạy về Vân Nam. Chạy vội đến nỗi không kịp cướp phá, dân gọi mỉa là “giặc Phật”. Qua trại Quy Hóa, chúng còn bị chủ trại Hà Bổng tập kích.'],
+      ['master', 'Gần ba mươi năm sau, chúng lại sang. Vì thế ta mới dạy con: võ công là để giữ nước.'],
+      ['hero', 'Đệ tử hiểu rồi, thưa sư phụ.'],
+    ],
+    card: { eyebrow: 'Sử ký · Năm 1258', title: 'Đông Bộ Đầu và “giặc Phật”', text: 'Kháng chiến lần thứ nhất (1258): quân Mông Cổ do Ngột Lương Hợp Thai chỉ huy từ Vân Nam tiến xuống. Sau trận Bình Lệ Nguyên, triều Trần rút khỏi Thăng Long. Khi vua Trần Thái Tông hỏi kế, Thái sư Trần Thủ Độ đáp: <b>“Đầu thần chưa rơi xuống đất, xin bệ hạ đừng lo”</b>. Ngày 29 tháng 1 năm 1258 (24 tháng Chạp năm Đinh Tỵ), quân Trần phản công ở Đông Bộ Đầu, giặc phải rút về nước. Lê Tần sau được ban tên Lê Phụ Trần. A Truật là con trai Ngột Lương Hợp Thai, có theo cha trong chiến dịch này; nhân vật Đại Sơn và cuộc đối đầu ở bến sông là phần hư cấu của game.' },
+  },
 ];
 
 /*
@@ -220,6 +258,7 @@ const EDEF = {
   potter:  { name: 'Hỏa pháo thủ', hp: 36, spd: 100, ranged: true, pot: true, dmg: 9, wind: .65, coins: [4, 7], xp: 10 },
   heavy:   { name: 'Lính đao lớn', hp: 115, spd: 70, reach: 108, dmg: 17, wind: .8, armor: true, coins: [6, 10], xp: 16 },
   drummer: { name: 'Lính trống trận', hp: 42, spd: 100, support: true, coins: [5, 8], xp: 12 },
+  bossAju:     { boss: true, rank: 'Tướng', name: 'A Truật', hp: 520, spd: 170, reach: 100, dmg: 14, moves: ['charge', 'volley', 'slam'], moves2: ['summon', 'volley'], summon: ['archer:cap', 'sword'], coins: [60, 60], xp: 130 },
   bossBandit:  { boss: true, rank: 'Đầu lĩnh', name: 'Hắc Hổ', hp: 330, spd: 150, reach: 92, dmg: 12, moves: ['charge', 'slam'], moves2: ['summon'], summon: ['bandit', 'bandit:cap'], coins: [40, 40], xp: 80 },
   bossCaptain: { boss: true, rank: 'Tướng', name: 'Vạn hộ quân Nguyên', hp: 440, spd: 150, reach: 100, dmg: 13, moves: ['charge', 'slam'], moves2: ['volley', 'summon'], summon: ['soldier:cap', 'archer'], coins: [55, 55], xp: 110 },
   bossToaDo:   { boss: true, rank: 'Đại tướng', grand: true, name: 'Toa Đô, Nguyên soái', hp: 600, spd: 160, reach: 118, dmg: 15, moves: ['charge', 'slam', 'volley'], moves2: ['summon', 'fury'], summon: ['shield', 'archer:cap', 'lancer'], coins: [70, 70], xp: 150 },
@@ -256,6 +295,7 @@ const MAP_POINTS = [
   { place: 'Vạn Kiếp', lat: 21.12, lon: 106.38 },
   { place: 'Vân Đồn', lat: 21.07, lon: 107.42 },
   { place: 'Bạch Đằng', lat: 20.92, lon: 106.78 },
+  { place: 'Đông Bộ Đầu', lat: 21.12, lon: 105.78 },
 ];
 
 /* ---------------- Kỹ năng & cây kỹ năng ----------------

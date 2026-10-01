@@ -75,7 +75,7 @@ def test_loads_with_new_name(pg):
     assert pg.title() == 'Hào Khí Việt Nam', pg.title()
     assert pg.inner_text('#menu h1') == 'Hào Khí Việt Nam'
     assert pg.evaluate("G.mode") == 'title'
-    assert pg.evaluate("STAGES.length") == 6
+    assert pg.evaluate("STAGES.length") == 7 and pg.evaluate("MAIN") == 6
     assert 'Đông A' not in pg.inner_text('#menu')
 
 @test
@@ -487,6 +487,32 @@ def _stage(i):
     t.__name__ = f'test_stage_{i + 1}_completable'
     return t
 for _i in range(6): test(_stage(_i))
+
+@test
+def test_side_stage(pg):
+    """Ngoại truyện 1258: mở bằng 6★, chơi hết được, không đụng tới tiến trình chính."""
+    new_game(pg, 0)
+    pg.evaluate("S.stars = [3, 2]; S.maxStage = 2; S.stage = 2; showMap(6, 'continue')")
+    assert pg.is_disabled('#card [data-st="6"]') and 'cần 6★' in pg.inner_text('#card [data-st="6"]')
+    assert pg.get_attribute('#card [data-st="2"]', 'aria-pressed') == 'true', 'ải bị khoá mà vẫn được chọn sẵn'
+    pg.evaluate("S.stars = [3, 3]; showMap(6, 'continue')")
+    assert pg.is_enabled('#card [data-st="6"]') and 'Ngoại truyện' in pg.inner_text('#mDest')
+    pg.click('#mGo'); pg.click('#sGo'); pg.wait_for_timeout(100)
+    assert pg.evaluate("G.stage") == 6 and pg.evaluate("G.mode") == 'dialog' and pg.evaluate("[S.stage, S.maxStage]") == [2, 2]
+    pg.evaluate("endDialog()")
+    assert pg.evaluate("G.tier") == 1 and pg.evaluate("heroLook() === LOOKS.master")
+    r = pg.evaluate(BOT, [60 * 900, True])
+    assert not r['log'], r['log']
+    assert r['wave'] == r['waves'] and r['result'] and 'bossAju' in r['seen'], r
+    for _ in range(60):
+        if pg.evaluate("G.mode") != 'dialog': break
+        pg.evaluate("endDialog()")
+    assert 'giặc Phật' in card_text(pg)
+    pg.click('#cOk'); pg.wait_for_timeout(100)
+    txt = card_text(pg)
+    assert 'BẢN ĐỒ HÀNH QUÂN' in txt.upper() and 'Non sông' not in txt, txt[:80]
+    assert pg.evaluate("[S.stage, S.maxStage]") == [2, 2] and pg.evaluate("S.stars[6]") == r['result']['stars']
+    return f"{r['steps'] / 60:.0f}s mô phỏng, {r['result']['stars']}★"
 
 @test
 def test_stage1_fair_play(pg):
