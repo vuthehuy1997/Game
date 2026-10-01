@@ -277,7 +277,7 @@ const RANKS = {
 const ATK = [null,
   { dur: .25, a0: .06, a1: .15, w: 60, dmg: 8, kb: 150, lunge: 140 },
   { dur: .29, a0: .08, a1: .18, w: 70, dmg: 9, kb: 170, lunge: 150 },
-  { dur: .44, a0: .13, a1: .26, w: 84, dmg: 16, kb: 380, lunge: 280, heavy: true },
+  { dur: .44, a0: .13, a1: .26, w: 84, dmg: 16, kb: 60, lunge: 280, heavy: true },   // hất thẳng lên để đánh tiếp (tung hứng)
 ];
 
 const UPS = [
@@ -357,3 +357,20 @@ function makeArena(kind) {
     : { arena: kind, label: 'Đấu tướng', name: 'Đấu tướng', sub: `Hạ lần lượt ${BOSS_ORDER.length} tướng giặc`, bg: 'citadel', len: W, tier: 0,
         waves: BOSS_ORDER.map((b, k) => ({ at: 0, tier: Math.max(0, k - 1), boss: true, list: [b] })) };
 }
+
+/* ---------------- Tuyệt học: chọn một trong ba ----------------
+   Mở ở cấp PATH_LV. Chọn lần đầu miễn phí, đổi sang đường khác tốn PATH_COST văn. Lưu ở S.path. */
+const PATH_LV = 6, PATH_COST = 30;
+const PATHS = [
+  { id: 'manh', name: 'Mãnh Hổ', branch: 'Ngoại công', desc: 'Chuỗi đòn càng dài đánh càng đau: mỗi đòn trong chuỗi +2% sát thương, tối đa +40%.' },
+  { id: 'tam', name: 'Tĩnh Tâm', branch: 'Nội công', desc: 'Kỹ năng tốn ít hơn 30% nội lực. Mỗi tên giặc bị hạ hồi 6 nội lực.' },
+  { id: 'yen', name: 'Phi Yến', branch: 'Thân pháp', desc: 'Lướt xuyên qua một đòn đánh thì thời gian chậm lại, lướt hồi ngay và được 15 hào khí.' },
+];
+const skillCost = id => Math.round(SKILLS[id].mp * (S.path === 'tam' ? .7 : 1));
+
+/* ---------------- Hành trang: mua ở võ đường, dùng trong trận ----------------
+   S.bag[id] = số đang có. Đã dùng là mất, kể cả khi thua trận. */
+const ITEMS = [
+  { id: 'banh', key: 'Q', slot: 'i1', name: 'Bánh chưng', desc: 'Hồi 40% sinh lực và giải độc.', cost: 25, max: 3 },
+  { id: 'ruou', key: 'E', slot: 'i2', name: 'Rượu nếp', desc: 'Thêm 50 hào khí và hồi đầy nội lực.', cost: 30, max: 2 },
+];

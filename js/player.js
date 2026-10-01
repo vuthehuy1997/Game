@@ -30,12 +30,25 @@ function gainXp(n) {
 
 /* ---------------- Damage ---------------- */
 // Chuỗi đòn: mỗi đòn của Tiểu Hổ trúng địch +1; bị đánh trúng hoặc ngừng tay 2,5 giây thì về 0
+const JUGGLE_MAX = 4;
 function comboHit() { G.combo++; G.comboT = 2.5; G.maxCombo = Math.max(G.maxCombo, G.combo); }
 // raw = đòn của đồng đội (không nhân sức mạnh của Tiểu Hổ)
 function damageEnemy(e, dmg, dir, kb, heavy, raw) {
-  if (!alive(e) || (e.state === 'down' && !heavy)) return false;
+  if (!alive(e)) return false;
   const d = e.d, s = e.sc || 1;
-  dmg = Math.round(dmg * (raw ? 1 : P.dmg));
+  // Mãnh Hổ: chuỗi đòn càng dài đánh càng đau
+  dmg = Math.round(dmg * (raw ? 1 : P.dmg * (S.path === 'manh' ? 1 + Math.min(.4, G.combo * .02) : 1)));
+  if (e.state === 'down' && !heavy) {
+    // tung hứng: đòn nhẹ trúng giặc đang bị hất trên không thì nẩy nó lên lại, tối đa JUGGLE_MAX lần
+    if (!e.air || (e.jug || 0) >= JUGGLE_MAX) return false;
+    e.jug = (e.jug || 0) + 1; dmg = Math.max(1, Math.round(dmg * .8)); e.hp -= dmg; e.flash = .1;
+    e.vy = -360; e.vx = dir * 50; e.st = .8;
+    if (!raw) { P.rage = Math.min(100, P.rage + 2 * (1 + .25 * sk('haokhi'))); comboHit(); }
+    if (CFG.dmgNum) floatText(e.x + rand(-10, 10), e.y - 105 * s, String(dmg), '#bff0ff', 20);
+    spark(e.x, e.y - 50, 6, '#bff0ff'); G.hitstop = Math.max(G.hitstop, .04); SFX.hit();
+    if (e.hp <= 0) killEnemy(e, dir);
+    return true;
+  }
   const rageMul = 1 + .25 * sk('haokhi');
   const front = e.face === -dir;
   if (d.block && !heavy && front && e.state !== 'strike' && e.state !== 'windup') {
@@ -62,7 +75,7 @@ function damageEnemy(e, dmg, dir, kb, heavy, raw) {
   const armored = d.armor || e.rank === 'cmd' || (e.rank === 'cap' && e.state === 'windup');
   if (armored && !heavy) { e.vx = dir * 40; return true; }
   if (heavy && (d.armor || e.rank === 'cmd')) { e.state = 'hurt'; e.st = .35; e.vx = dir * kb * .4; return true; }
-  if (heavy) { e.state = 'down'; e.st = .8; e.air = true; e.vy = -430; e.vx = dir * kb; }
+  if (heavy) { e.state = 'down'; e.st = .8; e.air = true; e.vy = -540; e.vx = dir * kb; }
   else { e.state = 'hurt'; e.st = .26; e.vx = dir * kb; }
   return true;
 }
@@ -73,9 +86,15 @@ function killEnemy(e, dir) {
   for (let i = 0; i < coins; i++) dropItem('coin', e.x, e.gy, Math.max(1, Math.round(n / coins)));
   if (Math.random() < (e.d.boss || e.rank !== 'n' ? 1 : .12)) dropItem('banh', e.x, e.gy);
   gainXp(Math.round((e.d.xp || 8) * R.xp));
+  if (S.path === 'tam') P.mp = Math.min(P.maxMp, P.mp + 6);
   if (e.d.boss) { G.slow = 1.4; G.shake = 14; SFX.boom(); spark(e.x, e.y - 70, 30, '#ffd35a', 500); }
 }
 function hurtPlayer(dmg, dir, opts = {}) {
+  // Phi Yến: lướt xuyên qua một đòn (mỗi lần lướt tính một lần)
+  if (P.state === 'dash' && S.path === 'yen' && !P.dodged && G.mode === 'play') {
+    P.dodged = true; P.dashCd = 0; P.rage = Math.min(100, P.rage + 15); G.slow = Math.max(G.slow, .7);
+    floatText(P.x, P.y - 135, 'Né đẹp!', '#bff0ff', 22); spark(P.x, P.y - 55, 10, '#bff0ff', 260); SFX.heal();
+  }
   if (P.inv > 0 || P.state === 'dash' || P.state === 'ult' || P.state === 'rush' || P.state === 'dead' || G.mode !== 'play') return false;
   if (P.state === 'guard') { counterAttack(); return false; }
   dmg = Math.max(1, Math.round(dmg * (1 + G.tier * .1) * DIFF[CFG.diff].dmg * (ms('armor') ? .9 : 1)));
@@ -101,14 +120,30 @@ function counterAttack() {
   projs.forEach(q => { if (q.from === 'e' && (q.kind === 'arrow' || q.kind === 'pot') && Math.abs(q.x - P.x) < 120) q.dead = true; });
 }
 
+/* ---------------- Hành trang ---------------- */
+function useItem(id) {
+  const it = ITEMS.find(x => x.id === id), p = P;
+  if (!(S.bag[id] > 0)) { floatText(p.x, p.y - 120, `Hết ${it.name.toLowerCase()}`, '#cfd6e0', 15); return false; }
+  if (id === 'banh') {
+    if (p.hp >= p.maxHp && p.poison <= 0) { floatText(p.x, p.y - 120, 'Sinh lực đang đầy', '#cfd6e0', 15); return false; }
+    const h = Math.round(p.maxHp * .4); p.hp = Math.min(p.maxHp, p.hp + h); p.poison = 0; floatText(p.x, p.y - 120, '+' + h + ' Bánh chưng', '#8fe07a', 18);
+  } else {
+    if (p.rage >= 100 && p.mp >= p.maxMp) { floatText(p.x, p.y - 120, 'Hào khí và nội lực đang đầy', '#cfd6e0', 15); return false; }
+    p.rage = Math.min(100, p.rage + 50); p.mp = p.maxMp; floatText(p.x, p.y - 120, 'Rượu nếp! +50 hào khí', '#ffd35a', 18);
+  }
+  S.bag[id]--; spark(p.x, p.y - 60, 12, '#8fe07a', 220); SFX.heal();
+  return true;
+}
+
 /* ---------------- Kỹ năng ---------------- */
 const lvMul = (id, step = .3) => 1 + (sk(id) >= 2 ? step : 0);
 function tryCast(id) {
   const def = SKILLS[id], lv = sk(id), p = P;
   if (!lv) { floatText(p.x, p.y - 120, `Chưa học ${def.name}`, '#cfd6e0', 15); return; }
   if (p.cds[id] > 0) { floatText(p.x, p.y - 120, `Hồi chiêu ${p.cds[id].toFixed(1)}s`, '#cfd6e0', 15); return; }
-  if (p.mp < def.mp) { floatText(p.x, p.y - 120, 'Cạn nội lực', '#8fd6ff', 16); return; }
-  p.mp -= def.mp; p.cds[id] = def.cd[lv - 1]; p.st = 0; p.hitSet = new Set(); p.tick = 0;
+  const cost = skillCost(id);
+  if (p.mp < cost) { floatText(p.x, p.y - 120, 'Cạn nội lực', '#8fd6ff', 16); return; }
+  p.mp -= cost; p.cds[id] = def.cd[lv - 1]; p.st = 0; p.hitSet = new Set(); p.tick = 0;
   switch (id) {
     case 'chuong': p.state = 'cast'; p.shot = 0; p.vx = 0; break;
     case 'xoay': p.state = 'spin'; SFX.swing(); floatText(p.x, p.y - 140, 'Toàn Phong Cước!', '#ffe6a8', 18); break;
@@ -163,7 +198,9 @@ function updatePlayer(dt) {
       if (ACTIVE[skillKey] === 'diachan' || !p.air || ACTIVE[skillKey] === 'chuong') tryCast(ACTIVE[skillKey]);
     } else if (pressed.has('dash') && p.dashCd <= 0) {
       if (mv) p.face = mv;
-      p.state = 'dash'; p.st = 0; p.dashCd = [.55, .45, .38, .25][sk('thanphap')]; p.hitSet = new Set(); SFX.dash();
+      p.state = 'dash'; p.st = 0; p.dashCd = [.55, .45, .38, .25][sk('thanphap')]; p.hitSet = new Set(); p.dodged = false; SFX.dash();
+    } else if (pressed.has('i1') || pressed.has('i2')) {
+      useItem(pressed.has('i1') ? 'banh' : 'ruou');
     } else if (pressed.has('ult')) {
       if (p.rage >= 100) { p.state = 'ult'; p.st = 0; p.rage = 0; p.vx = 0; p.ultDone = false; G.ultT = 1.25; SFX.ult(); }
       else floatText(p.x, p.y - 120, 'Hào khí chưa đầy', '#ffd35a', 16);

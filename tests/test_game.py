@@ -212,7 +212,7 @@ def test_touch_controls(pg, browser, base):
     try:
         tp.tap('#bPlay'); tp.tap('#card [data-new="0"]'); tp.evaluate("endDialog()")
         assert tp.evaluate("$('touch').classList.contains('on')"), 'nút cảm ứng không tự hiện trên máy cảm ứng'
-        for k in ('left', 'right', 'up', 'down', 'atk', 'jump', 'dash', 's1', 'ult', 'pause'):
+        for k in ('left', 'right', 'up', 'down', 'atk', 'jump', 'dash', 's1', 'ult', 'pause', 'i1', 'i2'):
             box = tp.locator(f'#touch [data-k="{k}"]').bounding_box()
             assert box and box['width'] >= 24 and box['height'] >= 24, f'nút {k} quá nhỏ: {box}'
             assert box['x'] >= 0 and box['x'] + box['width'] <= 844 and box['y'] >= 0 and box['y'] + box['height'] <= 390, f'nút {k} tràn màn hình: {box}'
@@ -388,6 +388,77 @@ def test_bachdang_stakes(pg):
     assert r['heroHurt'] == 0, r
     assert r['minion'] == [30, 'down', False], r
     assert r['killed'] == 'dead' and r['mode'] == 'clear' and r['result'], r
+
+@test
+def test_juggle(pg):
+    """Đòn nhẹ trúng giặc đang bị hất trên không thì nẩy lên lại, tối đa 4 lần; nằm dưới đất thì không trúng."""
+    new_game(pg, 0)
+    r = pg.evaluate("""() => {
+      const e = spawnEnemy('heavy', 1, 1); e.entering = false; e.x = P.x + 40; e.hp = e.maxHp = 9999;
+      e.state = 'down'; e.air = true; e.y = e.gy - 30; e.vy = 100; e.st = .8;
+      const out = { hits: [] };
+      for (let i = 0; i < 6; i++) { const hp = e.hp; out.hits.push([damageEnemy(e, 10, 1, 100, false), hp - e.hp]); }
+      out.vy = e.vy; out.combo = G.combo;
+      e.air = false; e.y = e.gy; e.jug = 0; out.grounded = damageEnemy(e, 10, 1, 100, false);
+      e.st = 0; updateEnemy(e, 1 / 60); out.up = [e.state, e.jug];
+      return out;
+    }""")
+    assert r['hits'] == [[True, 8]] * 4 + [[False, 0]] * 2, r['hits']
+    assert r['vy'] < 0 and r['combo'] == 4 and r['grounded'] is False and r['up'] == ['approach', 0], r
+
+@test
+def test_paths(pg):
+    """Tuyệt học: mở ở cấp 6, chọn một, đổi tốn tiền; mỗi đường đổi luật chơi đúng như mô tả."""
+    new_game(pg, 0)
+    pg.evaluate("S.coins = 40; S.sp = 0; openShop(() => {}, 'tree')")
+    assert pg.locator('[data-path]').count() == 3 and pg.is_disabled('[data-path="manh"]')
+    pg.evaluate("S.lv = 6; openShop(() => {}, 'tree')")
+    pg.click('[data-path="manh"]')
+    assert pg.evaluate("[S.path, S.coins]") == ['manh', 40], 'chọn lần đầu phải miễn phí'
+    pg.click('[data-path="tam"]')
+    assert pg.evaluate("[S.path, S.coins]") == ['tam', 10]
+    assert pg.is_disabled('[data-path="yen"]'), 'không đủ tiền vẫn đổi được'
+    assert pg.evaluate("STORE.slots[0].path") == 'tam'
+    r = pg.evaluate("""() => {
+      const out = {}; resetWorld(0); G.mode = 'play';
+      const e = spawnEnemy('heavy', 1, 1); e.entering = false; e.x = P.x + 40; e.hp = e.maxHp = 9999;
+      const hit = () => { const hp = e.hp; e.state = 'approach'; damageEnemy(e, 100, 1, 0, false); return hp - e.hp; };
+      S.path = 'manh'; G.combo = 0; out.manh0 = hit(); G.combo = 10; out.manh10 = hit(); G.combo = 99; out.manhMax = hit();
+      S.path = 'tam'; out.cost = skillCost('chuong'); const mp0 = P.mp; tryCast('chuong'); out.spent = mp0 - P.mp;
+      P.mp = 10; e.hp = 1; hit(); out.mpAfterKill = P.mp;
+      S.path = 'yen'; P.state = 'dash'; P.dodged = false; P.dashCd = .5; P.rage = 0; const hp = P.hp;
+      out.hurt = [hurtPlayer(10, 1), hurtPlayer(10, 1)]; out.yen = [hp - P.hp, P.dashCd, P.rage, G.slow > 0];
+      S.path = null; P.dodged = false; P.rage = 0; hurtPlayer(10, 1); out.noPath = P.rage;
+      return out;
+    }""")
+    assert r['manh0'] == 100 and r['manh10'] == 120 and r['manhMax'] == 140, r
+    assert r['cost'] == 14 and r['spent'] == 14 and r['mpAfterKill'] == 16, r
+    assert r['hurt'] == [False, False] and r['yen'] == [0, 0, 15, True] and r['noPath'] == 0, r
+
+@test
+def test_bag_items(pg):
+    """Hành trang: mua bằng tiền, có giới hạn, bấm Q/E trong trận để dùng."""
+    new_game(pg, 0)
+    pg.evaluate("S.coins = 110; S.sp = 0; openShop(() => { window.__go = true; })")
+    pg.click('[data-tab="bag"]')
+    for _ in range(3): pg.click('[data-buy="banh"]')
+    assert pg.evaluate("[S.coins, S.bag.banh]") == [35, 3]
+    assert pg.is_disabled('[data-buy="banh"]') and 'đầy túi' in pg.inner_text('[data-buy="banh"]')
+    pg.click('[data-buy="ruou"]')
+    assert pg.evaluate("[S.coins, S.bag.ruou]") == [5, 1] and pg.is_disabled('[data-buy="ruou"]')
+    pg.click('#sGo'); assert pg.evaluate("window.__go") is True
+    pg.evaluate("resetWorld(0); resumePlay()")
+    pg.keyboard.press('KeyQ'); pg.wait_for_timeout(120)
+    assert pg.evaluate("S.bag.banh") == 3, 'máu đầy mà vẫn mất bánh'
+    pg.evaluate("P.hp = 10; P.poison = 3; P.mp = 0")
+    pg.keyboard.press('KeyQ'); pg.wait_for_timeout(120)
+    assert pg.evaluate("[S.bag.banh, P.hp >= 49, P.poison]") == [2, True, 0]
+    pg.keyboard.press('KeyE'); pg.wait_for_timeout(120)
+    assert pg.evaluate("[S.bag.ruou, P.rage, P.mp === P.maxMp]") == [0, 50, True]
+    pg.keyboard.press('KeyE'); pg.wait_for_timeout(120)
+    assert pg.evaluate("[S.bag.ruou, P.rage]") == [0, 50]
+    old = pg.evaluate("(() => { const o = newSave(); delete o.bag; delete o.path; const b = importCode(exportCode(o)); return [typeof b.bag, b.path]; })()")
+    assert old == ['object', None], old
 
 @test
 def test_skills_cost_mana_and_cooldown(pg):

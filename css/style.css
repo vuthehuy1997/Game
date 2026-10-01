@@ -157,3 +157,14 @@ canvas.map{width:min(100%,25em);margin-inline:auto;height:auto;aspect-ratio:640/
 .chal li.done b,.miles li.done b{color:var(--jade)}
 .chal em{font-style:normal;color:var(--lacquer);font-weight:600}
 .chips.modes button{border-color:var(--jade);border-radius:.5em}
+.touch .grp.r [data-k=i1]{grid-column:4}
+.touch .grp.r [data-k=i1],.touch .grp.r [data-k=i2]{width:6.4cqw;height:6.4cqw;border-color:#8fe07aaa;justify-self:center}
+/* tuyệt học */
+.paths{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.7em}
+.paths button{font:inherit;text-align:left;background:#fffaf0;color:var(--paper-ink);border:1px solid #d8c29a;border-radius:.5em;padding:.45em .6em;cursor:pointer;display:flex;flex-direction:column;gap:.15em}
+.paths button b{color:var(--lacquer-2)}
+.paths button small{font-size:.8em;color:#6b5238;line-height:1.3}
+.paths button[aria-pressed=true]{border-color:var(--lacquer);box-shadow:inset 0 0 0 2px var(--lacquer)}
+.paths button[disabled]{opacity:.5;cursor:not-allowed}
+.paths button:focus-visible{outline:3px solid var(--lacquer);outline-offset:1px}
+.card h3.sub{margin:.2em 0 0;font-family:var(--f-display);font-weight:400;color:var(--lacquer);font-size:1.15em}

@@ -142,7 +142,7 @@ function settingsCard(back, mode = 'card') {
       <span>Nút cảm ứng</span><div class="seg" role="group">${['Tự động', 'Luôn bật', 'Tắt'].map((n, i) => `<button type="button" data-touch="${TOUCH[i]}" aria-pressed="${CFG.touch === TOUCH[i]}">${n}</button>`).join('')}</div>
     </div>
     <details class="keyref"><summary>Phím điều khiển</summary>
-      <p><kbd>A</kbd> <kbd>D</kbd> đi trái, phải · <kbd>W</kbd> <kbd>S</kbd> đổi làn · <kbd>Space</kbd> nhảy · <kbd>Shift</kbd> lướt · <kbd>J</kbd> đánh · <kbd>K</kbd> <kbd>L</kbd> <kbd>I</kbd> <kbd>O</kbd> <kbd>H</kbd> (hoặc <kbd>1</kbd>–<kbd>5</kbd>) năm kỹ năng · <kbd>U</kbd> tuyệt kỹ · <kbd>P</kbd>/<kbd>Esc</kbd> tạm dừng. Phím mũi tên dùng thay WASD được.</p>
+      <p><kbd>A</kbd> <kbd>D</kbd> đi trái, phải · <kbd>W</kbd> <kbd>S</kbd> đổi làn · <kbd>Space</kbd> nhảy · <kbd>Shift</kbd> lướt · <kbd>J</kbd> đánh · <kbd>K</kbd> <kbd>L</kbd> <kbd>I</kbd> <kbd>O</kbd> <kbd>H</kbd> (hoặc <kbd>1</kbd>–<kbd>5</kbd>) năm kỹ năng · <kbd>U</kbd> tuyệt kỹ · <kbd>Q</kbd> bánh chưng · <kbd>E</kbd> rượu nếp · <kbd>P</kbd>/<kbd>Esc</kbd> tạm dừng. Phím mũi tên dùng thay WASD được.</p>
     </details>
     <p class="note">Độ khó đổi ngay cho đợt giặc tiếp theo.</p>
     <div class="actions"><button class="btn ghost" id="stReset">Mặc định</button><button class="btn" id="stDone">Xong</button></div>`, el => {
@@ -333,10 +333,18 @@ function openShop(done, tab, goLabel = 'Lên đường', mode = 'card', treeOnly
   const treeHtml = () => (spent = Object.values(S.skills).reduce((a, v) => a + v, 0) - 1, `<div class="lvline"><b>Cấp ${S.lv}</b><span>Kinh nghiệm ${S.xp}/${xpNeed(S.lv)}</span><span class="xpbar"><i style="width:${Math.round(100 * S.xp / xpNeed(S.lv))}%"></i></span><b>${S.sp} điểm kỹ năng</b></div>
     <div class="tree">${BRANCHES.map((bn, bi) => `<div class="branch"><h3>${bn}</h3>${Object.keys(SKILLS).filter(k => SKILLS[k].branch === bi).sort((x, y) => SKILLS[x].tier - SKILLS[y].tier).map(node).join('')}</div>`).join('')}</div>
     <p class="note">Lên cấp bằng cách đánh giặc; mỗi cấp được 1 điểm. ${spent > 0 ? `<button class="btn ghost" id="tReset" ${S.coins < RESET_COST ? 'disabled' : ''}>Tẩy tủy: lấy lại ${spent} điểm · ${RESET_COST} văn</button>` : ''}</p>`);
+  const pathHtml = () => `<h3 class="sub">Tuyệt học · chọn một${S.lv < PATH_LV ? ` (mở ở cấp ${PATH_LV})` : S.path ? ` · đổi đường khác tốn ${PATH_COST} văn` : ''}</h3>
+    <div class="paths" role="group" aria-label="Tuyệt học">${PATHS.map(p => `<button type="button" data-path="${p.id}" aria-pressed="${S.path === p.id}" ${S.lv < PATH_LV || (S.path && S.path !== p.id && S.coins < PATH_COST) ? 'disabled' : ''}><b>${p.name}</b><small>${p.branch}</small><small>${p.desc}</small></button>`).join('')}</div>`;
+  const bagHtml = () => `<p class="purse">Tiền đồng: <b>${S.coins}</b> văn</p>
+    <div class="shop">${ITEMS.map(it => {
+      const n = S.bag[it.id] || 0, full = n >= it.max;
+      return `<div class="item"><h3>${it.name}</h3><p>${it.desc} Bấm <kbd>${it.key}</kbd> trong trận.</p><span class="lv">Đang có ${n}/${it.max}</span><button class="btn" data-buy="${it.id}" ${S.coins < it.cost || full ? 'disabled' : ''}>${full ? 'Đã đầy túi' : `Mua · ${it.cost} văn`}</button></div>`;
+    }).join('')}</div>
+    <p class="note">Đồ đã dùng trong trận là mất, kể cả khi thua.</p>`;
   const render = () => {
-    showCard(`<p class="eyebrow">Võ đường Vạn Kiếp</p><h2>${tab === 'tree' ? 'Cây kỹ năng' : 'Rèn luyện trước trận'}</h2>
-      ${treeOnly ? '' : `<div class="tabs" role="tablist"><button role="tab" data-tab="up" aria-selected="${tab === 'up'}">Luyện công</button><button role="tab" data-tab="tree" aria-selected="${tab === 'tree'}">Cây kỹ năng${S.sp ? ` (${S.sp})` : ''}</button></div>`}
-      ${tab === 'tree' ? treeHtml() : upHtml()}
+    showCard(`<p class="eyebrow">Võ đường Vạn Kiếp</p><h2>${tab === 'tree' ? 'Cây kỹ năng' : tab === 'bag' ? 'Hành trang' : 'Rèn luyện trước trận'}</h2>
+      ${treeOnly ? '' : `<div class="tabs" role="tablist"><button role="tab" data-tab="up" aria-selected="${tab === 'up'}">Luyện công</button><button role="tab" data-tab="tree" aria-selected="${tab === 'tree'}">Cây kỹ năng${S.sp ? ` (${S.sp})` : ''}</button><button role="tab" data-tab="bag" aria-selected="${tab === 'bag'}">Hành trang</button></div>`}
+      ${tab === 'tree' ? treeHtml() + pathHtml() : tab === 'bag' ? bagHtml() : upHtml()}
       <div class="actions"><button class="btn" id="sGo">${goLabel}</button></div>`, el => {
       el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; render(); });
       el.querySelectorAll('[data-up]').forEach(b => b.onclick = () => {
@@ -346,6 +354,15 @@ function openShop(done, tab, goLabel = 'Lên đường', mode = 'card', treeOnly
       el.querySelectorAll('[data-learn]').forEach(b => b.onclick = () => {
         const id = b.dataset.learn; if (!canLearn(id)) return;
         S.skills[id] = sk(id) + 1; S.sp--; save(); SFX.heal(); render();
+      });
+      el.querySelectorAll('[data-path]').forEach(b => b.onclick = () => {
+        const id = b.dataset.path; if (S.lv < PATH_LV || S.path === id) return;
+        if (S.path) { if (S.coins < PATH_COST) return; S.coins -= PATH_COST; }
+        S.path = id; save(); SFX.gong(); render();
+      });
+      el.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => {
+        const it = ITEMS.find(x => x.id === b.dataset.buy), n = S.bag[it.id] || 0;
+        if (S.coins >= it.cost && n < it.max) { S.coins -= it.cost; S.bag[it.id] = n + 1; save(); SFX.coin(); render(); }
       });
       const rs = el.querySelector('#tReset');
       if (rs) rs.onclick = () => {

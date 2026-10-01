@@ -1,11 +1,12 @@
 'use strict';
 // Bàn phím và nút cảm ứng. held = đang giữ, pressed = vừa bấm trong khung hình này.
 
-// A/D: trái phải · W/S: đổi làn · Space: nhảy · J: đánh · K L I O H (hoặc 1–5): 5 kỹ năng · Shift: lướt · U: tuyệt kỹ
+// A/D: trái phải · W/S: đổi làn · Space: nhảy · J: đánh · K L I O H (hoặc 1–5): 5 kỹ năng · Shift: lướt · U: tuyệt kỹ · Q: bánh chưng · E: rượu nếp
 // Phím mũi tên dùng thay WASD được.
 const KEYMAP = {
   KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right',
   KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down', Space: 'jump',
+  KeyQ: 'i1', KeyE: 'i2',
   KeyJ: 'atk', ShiftLeft: 'dash', ShiftRight: 'dash', KeyU: 'ult',
   KeyK: 's1', KeyL: 's2', KeyI: 's3', KeyO: 's4', KeyH: 's5',
   Digit1: 's1', Digit2: 's2', Digit3: 's3', Digit4: 's4', Digit5: 's5',

@@ -64,7 +64,7 @@ function updateEnemy(e, dt) {
   else if (G.lock) e.x = clamp(e.x, G.camX + 20, G.camX + W - 20);
 
   if (e.state === 'dead') { e.vx *= .95; e.deadT += dt; if (e.deadT > 1.2) e.remove = true; return; }
-  if (e.state === 'down') { if (!e.air) { e.vx *= .8; e.st -= dt; if (e.st <= 0) { e.state = 'approach'; e.cd = Math.max(e.cd, .6); } } return; }
+  if (e.state === 'down') { if (!e.air) { e.vx *= .8; e.st -= dt; if (e.st <= 0) { e.state = 'approach'; e.cd = Math.max(e.cd, .6); e.jug = 0; } } return; }
   if (e.state === 'hurt') { e.vx *= .85; e.st -= dt; if (e.st <= 0) e.state = 'approach'; return; }
   if (G.ultT > 0) { e.vx = 0; return; }
   if (P.state === 'dead') { e.vx = 0; if (e.state !== 'approach') e.state = 'approach'; return; }

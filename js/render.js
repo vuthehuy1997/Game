@@ -265,9 +265,10 @@ function drawHUD() {
 // Thanh kỹ năng dưới bảng máu (góc trên trái, để không che làn ngoài cùng): 5 kỹ năng + lướt + tuyệt kỹ, có vòng hồi chiêu
 function drawSkillBar() {
   const box = 52, gap = 4, y = 132;
-  const slots = ACTIVE.map(id => ({ id, key: SKILLS[id].key, name: SKILLS[id].name, lv: sk(id), cd: P.cds[id], max: sk(id) ? SKILLS[id].cd[sk(id) - 1] : 1, mp: SKILLS[id].mp }));
+  const slots = ACTIVE.map(id => ({ id, key: SKILLS[id].key, name: SKILLS[id].name, lv: sk(id), cd: P.cds[id], max: sk(id) ? SKILLS[id].cd[sk(id) - 1] : 1, mp: skillCost(id) }));
   slots.push({ id: 'dash', key: 'Shift', name: 'Lướt', lv: 1, cd: Math.max(0, P.dashCd), max: [.55, .45, .38, .25][sk('thanphap')], mp: 0 });
   slots.push({ id: 'ult', key: 'U', name: 'Sát Thát', lv: 1, cd: 0, max: 1, mp: 0, rage: true });
+  ITEMS.forEach(it => { if (S.bag[it.id] > 0) slots.push({ id: it.id, key: it.key, name: it.name, lv: 1, cd: 0, max: 1, mp: 0, count: S.bag[it.id] }); });
   slots.forEach((sl, i) => {
     const x = 14 + i * (box + gap), ready = sl.rage ? P.rage >= 100 : sl.lv && sl.cd <= 0 && P.mp >= sl.mp;
     ctx.fillStyle = sl.rage && ready ? (Math.sin(G.t * 8) > 0 ? '#a3261d' : '#6e1812') : 'rgba(20,14,10,.78)';
@@ -278,6 +279,7 @@ function drawSkillBar() {
     ctx.font = `10px ${FB}`; ctx.fillStyle = sl.lv ? '#f4e7c9' : '#7d6a55';
     const words = sl.name.split(' '); ctx.fillText(words.length > 2 ? words.slice(0, 2).join(' ') : sl.name, x + box / 2, y + 31, box - 4);
     if (!sl.lv) { ctx.fillText('chưa học', x + box / 2, y + 43); return; }
+    if (sl.count) { ctx.font = `bold 13px ${FB}`; ctx.fillStyle = '#8fe07a'; ctx.fillText('×' + sl.count, x + box / 2, y + 46); return; }
     if (sl.rage) { ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(x + 6, y + box - 8, box - 12, 4); ctx.fillStyle = '#ffd35a'; ctx.fillRect(x + 6, y + box - 8, (box - 12) * P.rage / 100, 4); return; }
     if (sl.mp) { ctx.fillStyle = P.mp >= sl.mp ? '#8fd6ff' : '#ff8a70'; ctx.fillText(`${sl.mp} nội lực`, x + box / 2, y + 43, box - 4); }
     if (sl.cd > 0) {
