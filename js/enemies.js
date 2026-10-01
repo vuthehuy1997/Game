@@ -146,6 +146,7 @@ function bossAI(e, dt) {
   const p3 = d.grand && e.hp < e.maxHp * .25;
   if (p3 && !e.phase3) { e.phase3 = true; banner(`${d.name} liều chết!`, 'Đại tướng dốc toàn lực', 2.2); floatText(e.x, e.y - 190, 'Giết!!', '#ff5a3c', 32); SFX.gong(); }
   e.cd -= dt * (p3 ? 1.8 : 1);
+  if (e.pend > 0) { e.pend -= dt; if (e.pend <= 0) fireArrow(e, P.lane, true); }
   switch (e.state) {
     case 'approach': {
       e.face = dx > 0 ? 1 : -1;
@@ -210,7 +211,7 @@ function bossMove(e, enr) {
       // tên độc rải cả 3 làn: phải nhảy hoặc lướt để né
       e.face = P.x > e.x ? 1 : -1;
       [0, 1, 2].forEach(l => fireArrow(e, l, true));
-      if (enr) setTimeout(() => { if (alive(e) && G.mode === 'play') fireArrow(e, P.lane, true); }, 300);
+      if (enr) e.pend = .3;   // phát thứ hai nhắm thẳng làn của Tiểu Hổ
       recover(e, .6); break;
     case 'pots': {
       const n = enr ? 4 : 3;

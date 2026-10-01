@@ -7,6 +7,8 @@ function showOnly(id) { ['menu', 'dlgWrap', 'cardWrap'].forEach(k => $(k).hidden
 function resumePlay() { G.mode = 'play'; showOnly(null); }
 function banner(text, sub, dur = 2.6) { G.banner = { text, sub, t: 0, dur }; }
 const totalStars = sv => (sv.stars || []).reduce((a, b) => a + (b || 0), 0);
+// thời gian chơi của lượt này (đánh lại từ điểm lưu thì không tính lại phần trước boss)
+const playedNow = () => G.time - (G.cpUsed && G.cp ? G.cp.time : 0);
 const fmtDate = ts => ts ? new Date(ts).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
 function toTitle() {
@@ -246,7 +248,7 @@ function stageCleared() {
   G.mode = 'clear'; G.clearT = 2.6; G.slow = 1.2; banner('Chiến thắng!', `Ải ${G.stage + 1} · ${G.st.name}`, 2.4); SFX.gong();
   const stars = G.hits <= 5 ? 3 : G.hits <= 12 ? 2 : 1, bonus = stars * 15;
   G.result = { stars, bonus, time: G.time, hits: G.hits };
-  S.coins += bonus; S.play = (S.play || 0) + G.time; S.stars[G.stage] = Math.max(S.stars[G.stage] || 0, stars); save();
+  S.coins += bonus; S.play = (S.play || 0) + playedNow(); S.stars[G.stage] = Math.max(S.stars[G.stage] || 0, stars); save();
 }
 function afterClear() {
   const i = G.stage, st = STAGES[i];
@@ -327,11 +329,15 @@ function ending() {
   });
 }
 function gameOver() {
-  S.coins = G.coinsAtStart; S.play = (S.play || 0) + G.time; save();
-  showCard(`<p class="eyebrow">Ải ${G.stage + 1} · ${G.st.name}</p><h2>Tiểu Hổ ngã xuống…</h2><p>Thất bại là mẹ thành công. Lấy lại hơi thở, luyện thêm và quay lại trận này. Tiền nhặt trong trận vừa rồi không được tính.</p>
-    <div class="actions"><button class="btn ghost" id="oHome">Màn hình chính</button><button class="btn ghost" id="oMap">Bản đồ</button><button class="btn ghost" id="oShop">Luyện công</button><button class="btn" id="oRe">Tái chiến</button></div>`, el => {
-    const retry = () => { resetWorld(G.stage); resumePlay(); banner(`Ải ${G.stage + 1} · ${G.st.name}`, 'Tái chiến'); };
+  // thua sau khi đã tới boss: giữ tiền nhặt được tính đến điểm lưu và cho đánh lại từ đó
+  const cp = G.cp, coins0 = G.coinsAtStart;
+  S.coins = cp ? cp.coins : coins0; S.play = (S.play || 0) + playedNow(); save();
+  showCard(`<p class="eyebrow">Ải ${G.stage + 1} · ${G.st.name}</p><h2>Tiểu Hổ ngã xuống…</h2><p>Thất bại là mẹ thành công. Lấy lại hơi thở, luyện thêm và quay lại trận này. ${cp ? 'Bạn đã tới chỗ tướng giặc: tái chiến sẽ vào thẳng trận đó, tiền nhặt trước đó vẫn còn.' : 'Tiền nhặt trong trận vừa rồi không được tính.'}</p>
+    <div class="actions"><button class="btn ghost" id="oHome">Màn hình chính</button><button class="btn ghost" id="oMap">Bản đồ</button><button class="btn ghost" id="oShop">Luyện công</button>${cp ? '<button class="btn ghost" id="oStart">Đánh lại từ đầu ải</button>' : ''}<button class="btn" id="oRe">${cp ? 'Tái chiến trước tướng giặc' : 'Tái chiến'}</button></div>`, el => {
+    const fromStart = () => { S.coins = coins0; save(); resetWorld(G.stage); resumePlay(); banner(`Ải ${G.stage + 1} · ${G.st.name}`, 'Tái chiến'); };
+    const retry = cp ? () => { resetWorld(G.stage, cp); resumePlay(); banner('Tái chiến', 'Trước mặt là tướng giặc'); } : fromStart;
     el.querySelector('#oRe').onclick = retry;
+    if (cp) el.querySelector('#oStart').onclick = fromStart;
     el.querySelector('#oShop').onclick = () => openShop(retry);
     el.querySelector('#oMap').onclick = () => showMap(G.stage, 'continue');
     el.querySelector('#oHome').onclick = toTitle;
@@ -346,7 +352,7 @@ function showPause() {
     el.querySelector('#pGo').onclick = togglePause;
     el.querySelector('#pSkill').onclick = () => openShop(showPause, 'tree', 'Quay lại', 'paused', true);
     el.querySelector('#pSet').onclick = () => settingsCard(showPause, 'paused');
-    el.querySelector('#pHome').onclick = () => { S.coins = G.coinsAtStart; S.play = (S.play || 0) + G.time; save(); toTitle(); };
+    el.querySelector('#pHome').onclick = () => { S.coins = G.coinsAtStart; S.play = (S.play || 0) + playedNow(); save(); toTitle(); };
   }, 'paused');
 }
 function togglePause() {

@@ -273,6 +273,35 @@ def test_gameover_retry_restores_coins(pg):
     assert pg.evaluate("enemies.length") == 0 and pg.evaluate("G.wave") == 0
 
 @test
+def test_checkpoint_before_boss(pg):
+    """Chết ở boss: tái chiến vào thẳng đợt boss, giữ số lần trúng đòn, không phát lại hội thoại."""
+    new_game(pg, 0)
+    die = "P.inv = 0; P.state = 'idle'; hurtPlayer(9999, 1); for (let i = 0; i < 300 && G.mode === 'play'; i++) update(1 / 60);"
+    r = pg.evaluate("""() => {
+      G.wave = 3; G.hits = 4; G.time = 50; S.coins = 7; P.x = STAGES[0].waves[3].at + 5;
+      update(1 / 60); const talk = G.mode; endDialog();
+      for (let i = 0; i < 120; i++) update(1 / 60);
+      return { talk, cp: G.cp && G.cp.wave, boss: !!G.boss };
+    }""")
+    assert r == {'talk': 'dialog', 'cp': 3, 'boss': True}, r
+    pg.evaluate("S.coins += 5;" + die)
+    assert pg.evaluate("S.coins") == 7, 'tiền nhặt trước điểm lưu phải còn, tiền nhặt sau đó thì mất'
+    assert 'trước tướng giặc' in pg.inner_text('#oRe') and pg.locator('#oStart').count() == 1
+    pg.click('#oRe')
+    s = pg.evaluate("({ mode: G.mode, wave: G.wave, hits: G.hits, hp: P.hp === P.maxHp, foes: enemies.length, near: STAGES[0].waves[3].at - P.x })")
+    assert s['mode'] == 'play' and s['wave'] == 3 and s['hits'] == 4 and s['hp'] and s['foes'] == 0 and 0 < s['near'] < 200, s
+    r = pg.evaluate("""() => {
+      held.add('right'); let talked = false;
+      for (let i = 0; i < 240; i++) { update(1 / 60); if (G.mode === 'dialog') talked = true; }
+      held.clear();
+      return { talked, boss: !!G.boss, time: G.time > 50 };
+    }""")
+    assert r == {'talked': False, 'boss': True, 'time': True}, r
+    pg.evaluate(die); pg.click('#oStart')
+    s = pg.evaluate("({ wave: G.wave, hits: G.hits, coins: S.coins, cp: G.cp, x: P.x })")
+    assert s == {'wave': 0, 'hits': 0, 'coins': 0, 'cp': None, 'x': 140}, s
+
+@test
 def test_skills_cost_mana_and_cooldown(pg):
     new_game(pg, 0)
     r = pg.evaluate("""() => {

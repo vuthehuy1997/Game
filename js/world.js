@@ -13,17 +13,23 @@ function dropItem(kind, x, gy, val = 0) {
     : { kind, x, gy, y: gy - 40, vx: rand(-60, 60), vy: -420, t: 0 });
 }
 
-function resetWorld(i) {
+// cp: điểm lưu trước boss (xem updateWaves). Có cp thì vào thẳng đợt boss, giữ thời gian và số lần trúng đòn.
+function resetWorld(i, cp) {
   const st = STAGES[i];
   G.stage = i; G.st = st; G.camX = 0; G.lock = false; G.lockX = 0; G.wave = 0; G.queue = []; G.spawnT = 0; G.boss = null;
   G.coinsAtStart = S.coins; G.clearT = 0; G.overT = 0; G.ultT = 0; G.banner = null; G.goBlink = 0; G.result = null;
   G.surviveT = 0; G.hazT = 2; G.tideOut = false; G.time = 0; G.hits = 0; G.lightning = 0;
+  G.cp = null; G.cpUsed = false;
   P = newPlayer(); enemies = []; projs = []; parts = []; texts = []; items = [];
+  props = [];
+  if (cp) {
+    G.cp = cp; G.cpUsed = true; G.wave = cp.wave; G.time = cp.time; G.hits = cp.hits; G.coinsAtStart = cp.coins0;
+    P.x = st.waves[cp.wave].at - 120; G.camX = clamp(P.x - W * .4, 0, st.len - W);
+  }
   ally = st.ally ? makeAlly(st.ally) : null;
   // rải vò, thùng dọc đường (tránh khu boss), mỗi cái một làn ngẫu nhiên
-  props = [];
   let x = 320;
-  while (x < st.len - 800) { const lane = (Math.random() * 3) | 0; props.push({ kind: pick(st.props || ['crate']), x, lane, gy: LANES[lane], shake: 0 }); x += rand(230, 420); }
+  while (!cp && x < st.len - 800) { const lane = (Math.random() * 3) | 0; props.push({ kind: pick(st.props || ['crate']), x, lane, gy: LANES[lane], shake: 0 }); x += rand(230, 420); }
 }
 
 /* ---------------- Vò / thùng ---------------- */
@@ -48,7 +54,9 @@ function updateWaves(dt) {
     G.queue = wv.list ? wv.list.slice() : []; G.spawnT = .3; G.side = 1;
     G.surviveT = wv.survive || 0; G.hazT = 2;
     if (wv.label) banner(wv.label, wv.sub, 2.4);
-    if (wv.boss && st.bossTalk) {
+    // điểm lưu trước boss: thua ở đây thì "Tái chiến" vào thẳng đợt này
+    if (wv.boss && !G.cp) G.cp = { wave: G.wave, time: G.time, hits: G.hits, coins: S.coins, coins0: G.coinsAtStart };
+    if (wv.boss && st.bossTalk && !G.cpUsed) {
       G.camX = G.lockX; P.x = clamp(P.x, G.camX + 24, G.camX + W - 24);
       if (ally) ally.x = clamp(P.x - 70, G.camX + 20, G.camX + W - 20);
       runDialog(st.bossTalk, resumePlay);
