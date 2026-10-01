@@ -32,10 +32,11 @@ const ALLY_LINES = {
   - waves: đợt địch. {at: toạ độ kích hoạt, list: [...]} hoặc đợt giữ thành {survive: giây, pool, max, label}.
   - boss: đợt cuối có boss:true; bossTalk là hội thoại ngay trước khi boss xuất hiện.
   - ally: đồng đội đánh cùng. hazard: bẫy môi trường khi đang giao chiến.
+  - par: mốc giây cho ấn Thần tốc. combo: chuỗi đòn cho ấn Liên hoàn.
 */
 const STAGES = [
   {
-    name: 'Làng Phù Ủng', year: 'Năm 1284', bg: 'village', len: 3300, props: ['jar', 'crate'],
+    name: 'Làng Phù Ủng', year: 'Năm 1284', bg: 'village', len: 3300, par: 150, combo: 20, props: ['jar', 'crate'],
     waves: [
       { at: 420, list: ['bandit', 'bandit'] },
       { at: 1150, list: ['bandit', 'bandit', 'bandit:cap'] },
@@ -64,7 +65,7 @@ const STAGES = [
     card: { eyebrow: 'Sử ký · Năm 1284', title: 'Người đan sọt làng Phù Ủng', text: 'Phạm Ngũ Lão (1255–1320) người làng Phù Ủng, nay thuộc Hưng Yên. Tương truyền ông mải nghĩ binh thư đến nỗi bị giáo đâm vào đùi mà không biết. Hưng Đạo Vương thu nhận ông, về sau gả con gái cho. Cùng thời gian ấy, Hưng Đạo Vương soạn <b>Hịch tướng sĩ</b>, và quân sĩ thích lên cánh tay hai chữ <b>“Sát Thát”</b> (giết giặc Thát Đát) để tỏ quyết tâm.' },
   },
   {
-    name: 'Thăng Long rực lửa', year: 'Đầu năm 1285', bg: 'citadel', len: 3800, ally: 'pnl', props: ['crate', 'jar'],
+    name: 'Thăng Long rực lửa', year: 'Đầu năm 1285', bg: 'citadel', len: 3800, par: 240, combo: 30, ally: 'pnl', props: ['crate', 'jar'],
     hazard: { kind: 'debris', every: [2.4, 3.8] },
     waves: [
       { at: 420, list: ['soldier', 'sword'] },
@@ -94,7 +95,7 @@ const STAGES = [
     card: { eyebrow: 'Sử ký · Năm 1285', title: 'Diên Hồng và Thiên Mạc', text: 'Hội nghị Diên Hồng do Thượng hoàng Trần Thánh Tông triệu tập để hỏi ý các bô lão, và câu trả lời đồng lòng là “Đánh!”. Đầu năm 1285, quân Nguyên chiếm Thăng Long nhưng triều Trần đã rút đi, để lại thành trống. Trần Bình Trọng bị bắt khi chặn hậu ở bãi Thiên Mạc; ông khước từ mọi lời dụ dỗ và bị giặc giết.' },
   },
   {
-    name: 'Bến Hàm Tử, Tây Kết', year: 'Mùa hè 1285', bg: 'river', len: 3900, ally: 'tqt', props: ['crate', 'jar'],
+    name: 'Bến Hàm Tử, Tây Kết', year: 'Mùa hè 1285', bg: 'river', len: 3900, par: 230, combo: 35, ally: 'tqt', props: ['crate', 'jar'],
     waves: [
       { at: 420, list: ['soldier', 'archer', 'sword'] },
       { at: 1100, list: ['shield', 'archer', 'sword:cap'] },
@@ -120,7 +121,7 @@ const STAGES = [
     card: { eyebrow: 'Sử ký · Năm 1285', title: 'Chương Dương, Hàm Tử, Tây Kết', text: 'Mùa hè 1285, quân Trần phản công: Trần Nhật Duật cùng Trần Quốc Toản thắng ở Hàm Tử, Trần Quang Khải đánh Chương Dương rồi khôi phục Thăng Long, Toa Đô bị giết ở Tây Kết. Sau chiến thắng, Trần Quang Khải làm bài thơ <i>Tụng giá hoàn kinh sư</i>:', poem: '“Đoạt sáo Chương Dương độ,\nCầm Hồ Hàm Tử quan.\nThái bình tu trí lực,\nVạn cổ thử giang san.”' },
   },
   {
-    name: 'Rừng Vạn Kiếp', year: 'Mùa hè 1285', bg: 'forest', len: 4000, ally: 'pnl', props: ['crate', 'jar'],
+    name: 'Rừng Vạn Kiếp', year: 'Mùa hè 1285', bg: 'forest', len: 4000, par: 260, combo: 40, ally: 'pnl', props: ['crate', 'jar'],
     waves: [
       { at: 420, list: ['soldier', 'lancer', 'sword'] },
       { at: 1100, list: ['archer', 'archer', 'lancer:cap', 'sword'] },
@@ -146,7 +147,7 @@ const STAGES = [
     card: { eyebrow: 'Sử ký · Năm 1285', title: 'Vạn Kiếp và chiếc ống đồng', text: 'Mùa hè 1285, đạo quân của Thoát Hoan rút chạy qua vùng Vạn Kiếp thì bị quân Trần phục kích. Tướng Nguyên Lý Hằng trúng tên độc, về đến nơi thì chết. Theo sử cũ, Thoát Hoan phải chui vào ống đồng cho quân lính khiêng mới thoát được về nước. Cuộc xâm lược lần thứ hai thất bại.' },
   },
   {
-    name: 'Biển Vân Đồn', year: 'Cuối năm 1287', bg: 'sea', len: 3900, ally: 'tkd', props: ['crate', 'crate', 'jar'],
+    name: 'Biển Vân Đồn', year: 'Cuối năm 1287', bg: 'sea', len: 3900, par: 250, combo: 45, ally: 'tkd', props: ['crate', 'crate', 'jar'],
     hazard: { kind: 'firerain', every: [3.2, 4.6] },
     waves: [
       { at: 420, list: ['soldier', 'potter', 'sword'] },
@@ -172,7 +173,7 @@ const STAGES = [
     card: { eyebrow: 'Sử ký · Cuối năm 1287', title: 'Trận Vân Đồn', text: 'Trần Khánh Dư trấn giữ Vân Đồn nhưng không chặn nổi chiến thuyền của Ô Mã Nhi, bị Thượng hoàng triệu về hỏi tội rồi tha cho lập công. Ông phục binh đánh tan đoàn thuyền lương của Trương Văn Hổ theo sau; phần lớn lương thảo chìm xuống biển, Trương Văn Hổ trốn thoát. Mất lương, quân Nguyên buộc phải rút, mở đường cho trận Bạch Đằng.' },
   },
   {
-    name: 'Sông Bạch Đằng', year: 'Tháng 4 năm 1288', bg: 'bachdang', len: 4200, ally: 'pnl', props: ['crate'],
+    name: 'Sông Bạch Đằng', year: 'Tháng 4 năm 1288', bg: 'bachdang', len: 4200, par: 300, combo: 50, ally: 'pnl', props: ['crate'],
     hazard: { kind: 'bolt', every: [3, 4.5] },
     waves: [
       { at: 420, list: ['soldier', 'sword', 'archer', 'soldier:cap'] },
@@ -273,3 +274,22 @@ const SKILLS = {
 const BRANCHES = ['Ngoại công', 'Nội công', 'Thân pháp'];
 const ACTIVE = ['chuong', 'xoay', 'hoxung', 'thietbo', 'diachan']; // theo thứ tự phím 1..5
 const xpNeed = lv => 50 + lv * 35;
+
+/* ---------------- Thử thách & mốc sao ----------------
+   Mỗi ải có 3 ấn. r = kết quả trận (time, maxCombo, diff = độ khó thấp nhất đã dùng trong trận). Ấn mới đạt thưởng CH_COINS văn. */
+const CH_COINS = 40;
+const CHALS = [
+  { id: 'speed', name: 'Thần tốc', desc: st => `Thắng trong ${fmtTime(st.par)}`, ok: (r, st) => r.time <= st.par },
+  { id: 'combo', name: 'Liên hoàn', desc: st => `Đánh chuỗi ${st.combo} đòn không bị ngắt`, ok: (r, st) => r.maxCombo >= st.combo },
+  { id: 'hard', name: 'Hổ tướng', desc: () => 'Thắng ở độ khó Khó', ok: r => r.diff >= 2 },
+];
+// Tổng số sao mở dần phần thưởng vĩnh viễn cho ô lưu
+const MILESTONES = [
+  { need: 4, id: 'coin', name: 'Túi gấm', desc: 'Tiền nhặt được nhiều hơn 20%' },
+  { need: 6, id: 'side', name: 'Chuyện xưa', desc: 'Mở ải ngoại truyện Đông Bộ Đầu (1258)' },
+  { need: 9, id: 'rage', name: 'Khí thế', desc: 'Vào trận có sẵn 40 hào khí' },
+  { need: 13, id: 'sp', name: 'Bí kíp', desc: 'Thêm 1 điểm kỹ năng' },
+  { need: 17, id: 'armor', name: 'Giáp Sát Thát', desc: 'Giảm 10% sát thương phải chịu' },
+];
+const totalStars = sv => (sv.stars || []).reduce((a, b) => a + (b || 0), 0);
+const ms = id => totalStars(S) >= MILESTONES.find(m => m.id === id).need;

@@ -302,6 +302,64 @@ def test_checkpoint_before_boss(pg):
     assert s == {'wave': 0, 'hits': 0, 'coins': 0, 'cp': None, 'x': 140}, s
 
 @test
+def test_combo_counter(pg):
+    new_game(pg, 0)
+    r = pg.evaluate("""() => {
+      const e = spawnEnemy('heavy', 1, 1); e.x = P.x + 50; e.entering = false; e.hp = e.maxHp = 9999;
+      P.lane = 1; P.gy = P.y = LANES[1];
+      const out = {};
+      damageEnemy(e, 1, 1, 0, false); damageEnemy(e, 1, 1, 0, false); damageEnemy(e, 1, 1, 0, false, true);
+      out.afterHits = G.combo;                       // đòn của đồng đội (raw) không tính
+      enemies = []; for (let i = 0; i < 60; i++) update(1 / 60); out.held = G.combo;
+      for (let i = 0; i < 120; i++) update(1 / 60); out.expired = G.combo;
+      enemies = [e]; damageEnemy(e, 1, 1, 0, false); enemies = []; hurtPlayer(1, 1); out.afterHurt = G.combo; out.max = G.maxCombo;
+      return out;
+    }""")
+    assert r == {'afterHits': 2, 'held': 2, 'expired': 0, 'afterHurt': 0, 'max': 2}, r
+
+@test
+def test_challenges_and_milestones(pg):
+    new_game(pg, 0)
+    r = pg.evaluate("""() => {
+      const out = {};
+      const win = (time, combo, diff, hits) => { resetWorld(0); G.time = time; G.maxCombo = combo; G.minDiff = diff; G.hits = hits; const c0 = S.coins; stageCleared(); return { ...G.result, got: S.coins - c0 }; };
+      out.a = win(STAGES[0].par + 1, STAGES[0].combo, 1, 0);       // chỉ đạt Liên hoàn
+      out.ch1 = S.ch[0].slice();
+      out.b = win(10, 999, 2, 0);                                   // thêm Thần tốc + Hổ tướng, không thưởng lại Liên hoàn
+      out.ch2 = S.ch[0].slice();
+      out.c = win(10, 999, 2, 0);                                   // không còn ấn mới
+      S.stars = []; out.easy = win(10, 0, 0, 0); out.easyStars = S.stars[0];
+      S.stars = [3]; out.ms3 = [ms('coin'), ms('rage')];
+      S.stars = [3, 3, 3]; out.ms9 = [ms('coin'), ms('side'), ms('rage'), ms('sp')];
+      // mốc Bí kíp (13★): thắng ải đưa tổng sao từ 12 lên 15 thì +1 điểm, chỉ một lần
+      S.stars = [0, 3, 3, 3, 3]; S.sp = 0; S.ms = {}; const w = win(10, 0, 1, 0); out.sp1 = S.sp; out.newMs = w.newMs;
+      win(10, 0, 1, 0); out.sp2 = S.sp;
+      // túi gấm: 5 đồng 2 văn → 12 văn
+      S.coins = 0; resetWorld(0); for (let i = 0; i < 5; i++) items.push({ kind: 'coin', val: 2, x: P.x, gy: P.gy, y: P.gy - 8, vx: 0, vy: 0, t: 1 });
+      G.mode = 'play'; update(1 / 60); out.purse = S.coins;
+      // bản lưu đời trước không có ch/ms
+      const old = newSave(); delete old.ch; delete old.ms; old.stage = 2;
+      const back = importCode(exportCode(old)); out.old = [Array.isArray(back.ch), typeof back.ms];
+      return out;
+    }""")
+    assert r['a']['newCh'] == ['combo'] and r['a']['got'] == 45 + 40 and r['ch1'] == ['combo'], r['a']
+    assert r['b']['newCh'] == ['speed', 'hard'] and r['b']['got'] == 45 + 80 and r['ch2'] == ['combo', 'speed', 'hard'], r['b']
+    assert r['c']['newCh'] == [] and r['c']['got'] == 45, r['c']
+    assert r['easy']['stars'] == 2 and r['easy']['capped'] and r['easyStars'] == 2 and 'hard' not in r['easy']['newCh'], r['easy']
+    assert r['ms3'] == [False, False] and r['ms9'] == [True, True, True, False], r
+    assert r['sp1'] == 1 and r['sp2'] == 1 and 'sp' in r['newMs'], r
+    assert r['purse'] == 12, r['purse']
+    assert r['old'] == [True, 'object'], r['old']
+    # giao diện: thẻ sử ký và bản đồ hiện ấn
+    new_game(pg, 0)
+    pg.evaluate("G.time = 10; G.maxCombo = 0; stageCleared(); historyCard(STAGES[0], () => showMap(0, 'continue'))")
+    txt = card_text(pg)
+    assert 'Thần tốc' in txt and '+40 văn' in txt and 'Chuỗi dài nhất' in txt, txt
+    pg.click('#cOk')
+    assert pg.locator('#mChal li.done').count() == 1 and pg.locator('#mChal li').count() == 3
+    assert pg.locator('.miles li').count() == 5
+
+@test
 def test_skills_cost_mana_and_cooldown(pg):
     new_game(pg, 0)
     r = pg.evaluate("""() => {

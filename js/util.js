@@ -22,12 +22,13 @@ const STORE_KEY = 'haokhi-dong-a-v3';
 const newSave = () => ({
   stage: 0, maxStage: 0, coins: 0, up: { atk: 0, hp: 0, mp: 0 }, stars: [], play: 0, updated: 0,
   lv: 1, xp: 0, sp: 1, skills: { chuong: 1 },   // cấp độ, kinh nghiệm, điểm kỹ năng chưa dùng, cấp từng kỹ năng
+  ch: [], ms: {},                                // ấn thử thách đã đạt theo ải, phần thưởng mốc sao đã nhận
 });
 const DEFAULT_CFG = { music: 60, sfx: 80, diff: 1, shake: true, dmgNum: true, textSpeed: 2, touch: 'auto' };
 const DIFF = [
-  { name: 'Dễ', desc: 'Giặc yếu hơn, đánh nhẹ tay', hp: .8, dmg: .6 },
+  { name: 'Dễ', desc: 'Giặc yếu hơn, đánh nhẹ tay. Mỗi ải tối đa 2★', hp: .8, dmg: .6 },
   { name: 'Thường', desc: 'Như sử sách ghi chép', hp: 1, dmg: 1 },
-  { name: 'Khó', desc: 'Giặc đông và hung hãn', hp: 1.25, dmg: 1.4 },
+  { name: 'Khó', desc: 'Giặc lì đòn và hung hãn. Thắng thì được ấn Hổ tướng', hp: 1.25, dmg: 1.4 },
 ];
 const TEXT_SPEED = [{ name: 'Chậm', cps: 28 }, { name: 'Vừa', cps: 45 }, { name: 'Nhanh', cps: 80 }, { name: 'Tức thì', cps: 1e4 }];
 
@@ -50,6 +51,8 @@ function useSlot(i, fresh) {
   STORE.cur = i;
   S = (fresh || !STORE.slots[i]) ? newSave() : Object.assign(newSave(), STORE.slots[i]);
   if (!S.skills || !S.skills.chuong) S.skills = Object.assign({ chuong: 1 }, S.skills);
+  if (!Array.isArray(S.ch)) S.ch = [];
+  if (!S.ms) S.ms = {};
   if (fresh) save(); else persist();
 }
 // Mã lưu để chuyển sang máy khác

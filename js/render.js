@@ -225,6 +225,13 @@ function drawHUD() {
   ctx.fillStyle = '#8fe07a'; rr(ctx, 190, 111, Math.max(4, 144 * S.xp / xpNeed(S.lv)), 8, 4); ctx.fill();
   drawSkillBar();
 
+  if (G.combo >= 3) {
+    const pop = 1 + Math.max(0, G.comboT - 2.3) * 1.5;   // nảy lên khi vừa trúng thêm một đòn
+    ctx.save(); ctx.translate(W - 24, 168); ctx.scale(pop, pop); ctx.textAlign = 'right'; ctx.globalAlpha = Math.min(1, G.comboT * 2);
+    outlined(`${G.combo} đòn`, 0, 0, `38px ${FD}`, G.combo >= G.st.combo ? '#ffd35a' : '#ffe6a8', '#6e1812', 6);
+    ctx.font = `14px ${FB}`; ctx.fillStyle = '#f4e7c9'; ctx.fillText('liên hoàn', 0, 18);
+    ctx.restore();
+  }
   const b = G.boss;
   if (G.surviveT > 0) {
     ctx.textAlign = 'center';

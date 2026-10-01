@@ -149,3 +149,10 @@ canvas.map{width:min(100%,25em);margin-inline:auto;height:auto;aspect-ratio:640/
 .keys kbd{font-size:12px}
 @media (max-width:600px){.shop,.levels,.tree{grid-template-columns:1fr}.settings{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.dlg .next{animation:none}}
+
+/* thử thách từng ải và mốc sao */
+.chal,.miles{list-style:none;margin:0;padding:0;display:grid;gap:.15em;font-size:.92em}
+.chal li,.miles li{color:#6b5238}
+.chal li.done,.miles li.done{color:var(--paper-ink)}
+.chal li.done b,.miles li.done b{color:var(--jade)}
+.chal em{font-style:normal;color:var(--lacquer);font-weight:600}

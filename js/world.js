@@ -19,11 +19,12 @@ function resetWorld(i, cp) {
   G.stage = i; G.st = st; G.camX = 0; G.lock = false; G.lockX = 0; G.wave = 0; G.queue = []; G.spawnT = 0; G.boss = null;
   G.coinsAtStart = S.coins; G.clearT = 0; G.overT = 0; G.ultT = 0; G.banner = null; G.goBlink = 0; G.result = null;
   G.surviveT = 0; G.hazT = 2; G.tideOut = false; G.time = 0; G.hits = 0; G.lightning = 0;
-  G.cp = null; G.cpUsed = false;
+  G.cp = null; G.cpUsed = false; G.combo = 0; G.comboT = 0; G.maxCombo = 0; G.minDiff = CFG.diff; G.coinFrac = 0;
   P = newPlayer(); enemies = []; projs = []; parts = []; texts = []; items = [];
   props = [];
   if (cp) {
     G.cp = cp; G.cpUsed = true; G.wave = cp.wave; G.time = cp.time; G.hits = cp.hits; G.coinsAtStart = cp.coins0;
+    G.maxCombo = cp.maxCombo; G.minDiff = Math.min(cp.minDiff, CFG.diff);
     P.x = st.waves[cp.wave].at - 120; G.camX = clamp(P.x - W * .4, 0, st.len - W);
   }
   ally = st.ally ? makeAlly(st.ally) : null;
@@ -55,7 +56,7 @@ function updateWaves(dt) {
     G.surviveT = wv.survive || 0; G.hazT = 2;
     if (wv.label) banner(wv.label, wv.sub, 2.4);
     // điểm lưu trước boss: thua ở đây thì "Tái chiến" vào thẳng đợt này
-    if (wv.boss && !G.cp) G.cp = { wave: G.wave, time: G.time, hits: G.hits, coins: S.coins, coins0: G.coinsAtStart };
+    if (wv.boss && !G.cp) G.cp = { wave: G.wave, time: G.time, hits: G.hits, maxCombo: G.maxCombo, minDiff: G.minDiff, coins: S.coins, coins0: G.coinsAtStart };
     if (wv.boss && st.bossTalk && !G.cpUsed) {
       G.camX = G.lockX; P.x = clamp(P.x, G.camX + 24, G.camX + W - 24);
       if (ally) ally.x = clamp(P.x - 70, G.camX + 20, G.camX + W - 20);
@@ -166,7 +167,7 @@ function updateItems(dt) {
       if (it.kind === 'coin' && Math.abs(dx) < 130) { it.x += dx * dt * 6; const dg = (P.gy - it.gy) * dt * 6; it.gy += dg; if (!it.vy) it.y += dg; }
       if (Math.abs(dx) < 30 && Math.abs(it.gy - P.gy) < 26 && P.y > P.gy - 80) {
         it.dead = true;
-        if (it.kind === 'coin') { S.coins += it.val; SFX.coin(); }
+        if (it.kind === 'coin') { const v = it.val * (ms('coin') ? 1.2 : 1) + G.coinFrac, n = Math.floor(v + 1e-9); S.coins += n; G.coinFrac = v - n; SFX.coin(); }
         else { const h = Math.round(P.maxHp * .3); P.hp = Math.min(P.maxHp, P.hp + h); P.poison = 0; floatText(P.x, P.y - 120, '+' + h + ' Bánh chưng', '#8fe07a', 18); SFX.heal(); }
       }
     }

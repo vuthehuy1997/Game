@@ -14,7 +14,10 @@ function update(dt) {
   if (G.mode !== 'play' && G.mode !== 'clear') return;
   if (G.hitstop > 0) { G.hitstop -= dt; return; }
   if (G.slow > 0) { G.slow -= dt; dt *= .35; }
-  if (G.mode === 'play') G.time += dt;
+  if (G.mode === 'play') {
+    G.time += dt; G.minDiff = Math.min(G.minDiff, CFG.diff);
+    if (G.comboT > 0) { G.comboT -= dt; if (G.comboT <= 0) G.combo = 0; }
+  }
   G.goBlink = Math.max(0, G.goBlink - dt);
   if (G.ultT > 0) G.ultT -= dt;
   updatePlayer(dt);

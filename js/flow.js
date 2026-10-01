@@ -6,7 +6,6 @@
 function showOnly(id) { ['menu', 'dlgWrap', 'cardWrap'].forEach(k => $(k).hidden = k !== id); $('stage').classList.toggle('covered', !!id); }
 function resumePlay() { G.mode = 'play'; showOnly(null); }
 function banner(text, sub, dur = 2.6) { G.banner = { text, sub, t: 0, dur }; }
-const totalStars = sv => (sv.stars || []).reduce((a, b) => a + (b || 0), 0);
 // thời gian chơi của lượt này (đánh lại từ điểm lưu thì không tính lại phần trước boss)
 const playedNow = () => G.time - (G.cpUsed && G.cp ? G.cp.time : 0);
 const fmtDate = ts => ts ? new Date(ts).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
@@ -221,12 +220,15 @@ function showMap(sel, reason) {
     <canvas id="mapCv" class="map" width="${MAP_W}" height="${MAP_H}" aria-label="Bản đồ các ải"></canvas>
     <div class="chips" role="group" aria-label="Chọn ải">${STAGES.map((st, i) => `<button type="button" data-st="${i}" ${i > S.maxStage ? 'disabled' : ''} aria-pressed="${i === sel}">Ải ${i + 1}${S.stars[i] ? ' ' + starStr(S.stars[i]) : ''}</button>`).join('')}</div>
     <p class="dest" id="mDest"></p>
+    <div id="mChal"></div>
+    <details class="keyref"><summary>Phần thưởng theo tổng số sao (${totalStars(S)}★) · ${totalCh(S)}/${STAGES.length * CHALS.length} ấn</summary>${milesHtml()}</details>
     <p class="note">Bản đồ phỏng theo, vị trí gần đúng, không theo tỉ lệ.</p>
     <div class="actions"><button class="btn ghost" id="mHome">Màn hình chính</button><button class="btn" id="mGo">Luyện công & lên đường</button></div>`, el => {
     const cvs = el.querySelector('#mapCv');
     const setSel = i => {
       sel = i; const st = STAGES[i];
       el.querySelector('#mDest').innerHTML = `<b>Ải ${i + 1} · ${st.name}</b> · ${st.year}${S.stars[i] ? ` · thành tích ${starStr(S.stars[i])}` : ''}`;
+      el.querySelector('#mChal').innerHTML = chalHtml(i);
       el.querySelectorAll('[data-st]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.st === i));
     };
     setSel(sel);
@@ -246,9 +248,19 @@ function showMap(sel, reason) {
 /* ---------------- Sau trận ---------------- */
 function stageCleared() {
   G.mode = 'clear'; G.clearT = 2.6; G.slow = 1.2; banner('Chiến thắng!', `Ải ${G.stage + 1} · ${G.st.name}`, 2.4); SFX.gong();
-  const stars = G.hits <= 5 ? 3 : G.hits <= 12 ? 2 : 1, bonus = stars * 15;
-  G.result = { stars, bonus, time: G.time, hits: G.hits };
-  S.coins += bonus; S.play = (S.play || 0) + playedNow(); S.stars[G.stage] = Math.max(S.stars[G.stage] || 0, stars); save();
+  // sao theo số lần trúng đòn; chơi Dễ (kể cả hạ xuống Dễ giữa trận) thì tối đa 2★
+  let stars = G.hits <= 5 ? 3 : G.hits <= 12 ? 2 : 1;
+  const capped = G.minDiff === 0 && stars === 3; if (capped) stars = 2;
+  const r = G.result = { stars, capped, time: G.time, hits: G.hits, maxCombo: G.maxCombo, diff: G.minDiff };
+  const had = S.ch[G.stage] || [], before = totalStars(S);
+  r.newCh = CHALS.filter(c => !had.includes(c.id) && c.ok(r, G.st)).map(c => c.id);
+  r.bonus = stars * 15 + r.newCh.length * CH_COINS;
+  S.ch[G.stage] = had.concat(r.newCh);
+  S.coins += r.bonus; S.play = (S.play || 0) + playedNow(); S.stars[G.stage] = Math.max(S.stars[G.stage] || 0, stars);
+  const after = totalStars(S);
+  r.newMs = MILESTONES.filter(m => before < m.need && after >= m.need).map(m => m.id);
+  if (ms('sp') && !S.ms.sp) { S.ms.sp = true; S.sp++; }
+  save();
 }
 function afterClear() {
   const i = G.stage, st = STAGES[i];
@@ -257,10 +269,23 @@ function afterClear() {
     else { S.stage = i + 1; S.maxStage = Math.max(S.maxStage, i + 1); save(); showMap(i + 1, 'next'); }
   }));
 }
+// Ba ấn thử thách của một ải; fresh = các ấn vừa đạt trong trận này
+function chalHtml(i, fresh = []) {
+  const st = STAGES[i], had = S.ch[i] || [];
+  return `<ul class="chal">${CHALS.map(c => `<li class="${had.includes(c.id) ? 'done' : ''}"><b>${had.includes(c.id) ? '✔' : '○'} ${c.name}</b> ${c.desc(st)}${fresh.includes(c.id) ? ` <em>mới · +${CH_COINS} văn</em>` : ''}</li>`).join('')}</ul>`;
+}
+const totalCh = sv => (sv.ch || []).reduce((a, b) => a + (b ? b.length : 0), 0);
+function milesHtml() {
+  const n = totalStars(S);
+  return `<ul class="miles">${MILESTONES.map(m => `<li class="${n >= m.need ? 'done' : ''}"><b>${m.need}★ ${m.name}</b> ${m.desc}</li>`).join('')}</ul>`;
+}
 function historyCard(st, done) {
   const c = st.card, r = G.result;
   showCard(`<p class="eyebrow">${c.eyebrow}</p><h2>${c.title}</h2>
-    ${r ? `<div class="result"><span class="stars">${starStr(r.stars)}</span><span>Thời gian ${fmtTime(r.time)}</span><span>Trúng đòn ${r.hits} lần</span><span>Thưởng ${r.bonus} văn</span><span>Cấp ${S.lv}${S.sp ? ` · ${S.sp} điểm kỹ năng chưa dùng` : ''}</span></div>` : ''}
+    ${r ? `<div class="result"><span class="stars">${starStr(r.stars)}</span><span>Thời gian ${fmtTime(r.time)}</span><span>Trúng đòn ${r.hits} lần</span><span>Chuỗi dài nhất ${r.maxCombo} đòn</span><span>Thưởng ${r.bonus} văn</span><span>Cấp ${S.lv}${S.sp ? ` · ${S.sp} điểm kỹ năng chưa dùng` : ''}</span></div>
+    ${r.capped ? '<p class="note">Độ khó Dễ chỉ cho tối đa 2★. Chơi ở Thường để lấy ★ thứ ba.</p>' : ''}
+    ${chalHtml(G.stage, r.newCh)}
+    ${r.newMs.map(id => { const m = MILESTONES.find(x => x.id === id); return `<p class="status">Đạt ${m.need}★ · mở ${m.name}: ${m.desc}.</p>`; }).join('')}` : ''}
     <p>${c.text}</p>${c.poem ? `<p class="poem">${c.poem}</p>` : ''}
     <p class="note">Đã lưu tiến độ vào ô ${STORE.cur + 1}.</p>
     <div class="actions"><button class="btn" id="cOk">Tiếp tục</button></div>`,

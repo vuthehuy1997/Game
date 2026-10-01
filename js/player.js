@@ -11,7 +11,7 @@ function newPlayer() {
   return {
     x: 140, lane: 1, gy: LANES[1], y: LANES[1], vx: 0, vy: 0, face: 1, air: false, airJumps: 0, state: 'idle', st: 0, t: 0,
     hp: st.maxHp, maxHp: st.maxHp, mp: st.maxMp, maxMp: st.maxMp, dmg: st.dmg, regen: st.regen,
-    rage: 0, inv: 0, dashCd: 0, combo: 0, comboT: 0, buffer: false, hitSet: new Set(), walk: 0, shot: 0, poison: 0, ultDone: false,
+    rage: ms('rage') ? 40 : 0, inv: 0, dashCd: 0, combo: 0, comboT: 0, buffer: false, hitSet: new Set(), walk: 0, shot: 0, poison: 0, ultDone: false,
     cds: Object.fromEntries(ACTIVE.map(id => [id, 0])), tick: 0,
   };
 }
@@ -29,6 +29,8 @@ function gainXp(n) {
 }
 
 /* ---------------- Damage ---------------- */
+// Chuỗi đòn: mỗi đòn của Tiểu Hổ trúng địch +1; bị đánh trúng hoặc ngừng tay 2,5 giây thì về 0
+function comboHit() { G.combo++; G.comboT = 2.5; G.maxCombo = Math.max(G.maxCombo, G.combo); }
 // raw = đòn của đồng đội (không nhân sức mạnh của Tiểu Hổ)
 function damageEnemy(e, dmg, dir, kb, heavy, raw) {
   if (!alive(e) || (e.state === 'down' && !heavy)) return false;
@@ -39,12 +41,12 @@ function damageEnemy(e, dmg, dir, kb, heavy, raw) {
   if (d.block && !heavy && front && e.state !== 'strike' && e.state !== 'windup') {
     const bd = Math.max(1, Math.round(dmg * .15)); e.hp -= bd; e.flash = .06; e.vx = dir * 120; e.shieldRot = -.4;
     floatText(e.x, e.y - 110, 'Đỡ!', '#cfd6e0', 18); spark(e.x + e.face * 18, e.y - 50, 5, '#fff2c0', 200); SFX.block(); G.hitstop = .03;
-    if (!raw) P.rage = Math.min(100, P.rage + rageMul);
+    if (!raw) { P.rage = Math.min(100, P.rage + rageMul); comboHit(); }
     if (e.hp <= 0) killEnemy(e, dir);
     return true;
   }
   e.hp -= dmg; e.flash = .12;
-  if (!raw) P.rage = Math.min(100, P.rage + (heavy ? 5 : 3) * rageMul);
+  if (!raw) { P.rage = Math.min(100, P.rage + (heavy ? 5 : 3) * rageMul); comboHit(); }
   if (CFG.dmgNum) floatText(e.x + rand(-10, 10), e.y - 105 * s, String(dmg), heavy ? '#ffd35a' : raw ? '#bfe3ff' : '#fff', heavy ? 26 : 20);
   spark(e.x - dir * 6, e.y - 55, heavy ? 12 : 7, heavy ? '#ffd35a' : '#fff4d6');
   G.hitstop = Math.max(G.hitstop, heavy ? .08 : raw ? .02 : .045); G.shake = Math.max(G.shake, heavy ? 8 : 3);
@@ -76,8 +78,8 @@ function killEnemy(e, dir) {
 function hurtPlayer(dmg, dir, opts = {}) {
   if (P.inv > 0 || P.state === 'dash' || P.state === 'ult' || P.state === 'rush' || P.state === 'dead' || G.mode !== 'play') return false;
   if (P.state === 'guard') { counterAttack(); return false; }
-  dmg = Math.max(1, Math.round(dmg * (1 + G.stage * .1) * DIFF[CFG.diff].dmg));
-  P.hp -= dmg; P.inv = .9; P.rage = Math.min(100, P.rage + 8 * (1 + .25 * sk('haokhi'))); G.hits++;
+  dmg = Math.max(1, Math.round(dmg * (1 + G.stage * .1) * DIFF[CFG.diff].dmg * (ms('armor') ? .9 : 1)));
+  P.hp -= dmg; P.inv = .9; G.combo = 0; P.rage = Math.min(100, P.rage + 8 * (1 + .25 * sk('haokhi'))); G.hits++;
   if (opts.poison) { P.poison = 3.5; floatText(P.x, P.y - 132, 'Trúng độc!', '#8fe07a', 18); }
   if (CFG.dmgNum) floatText(P.x, P.y - 110, '-' + dmg, '#ff6a5a', 22);
   spark(P.x, P.y - 55, 8, '#ff8a70'); G.shake = Math.max(G.shake, 7); G.hitstop = .06; SFX.hurt();
