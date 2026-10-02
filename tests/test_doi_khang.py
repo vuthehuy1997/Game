@@ -15,5 +15,12 @@ def test_game_loads_with_home_link(pg, browser, base):
     assert pg.locator('a.hub-home').count() == 1
 
 
+@test
+def test_two_fighters_spawn_with_correct_hp(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    hp = pg.evaluate("[G.f1.hp, G.f2.hp, G.f1.fid, G.f2.fid]")
+    assert hp == [100, 105, 'tieuho', 'hungdao'], hp
+
+
 if __name__ == '__main__':
     run(TESTS)

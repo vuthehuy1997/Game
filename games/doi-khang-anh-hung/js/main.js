@@ -2,15 +2,31 @@ import { startLoop } from '../../../platform/core/loop.js';
 import { $ } from '../../../platform/core/util.js';
 import { debugOn, exposeGlobals } from '../../../platform/core/debug.js';
 import { mountHomeLink } from '../../../platform/ui/bar.js';
+import { drawChibi } from '../../../platform/art/chibi.js';
+import { POSES } from '../../../platform/art/poses.js';
+import { groundShadow } from '../../../platform/art/draw.js';
+import { FIGHTERS, STAGES } from './data.js';
+import { W, H, GROUND, newMatch } from './state.js';
 
 const cv = $('cv'), ctx = cv.getContext('2d');
-const W = 960, H = 540;
+let G = newMatch('tieuho', 'hungdao', 'thanglong', true, 'normal');
 
-function update(dt) {}
+function update(dt) {
+  G.t += dt;
+  for (const f of [G.f1, G.f2]) { f.t += dt; }
+}
 function render() {
-  ctx.fillStyle = '#1b1d24'; ctx.fillRect(0, 0, W, H);
+  const st = STAGES[G.stageId];
+  const sky = ctx.createLinearGradient(0, 0, 0, GROUND);
+  sky.addColorStop(0, st.sky[0]); sky.addColorStop(1, st.sky[1]);
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, GROUND);
+  ctx.fillStyle = st.ground; ctx.fillRect(0, GROUND, W, H - GROUND);
+  for (const f of [G.f1, G.f2]) {
+    groundShadow(ctx, f.x, GROUND);
+    drawChibi(ctx, f.x, f.y, FIGHTERS[f.fid].look, { face: f.face, t: f.t, ...POSES.idle(f) });
+  }
 }
 
 mountHomeLink($('stage'));
-if (debugOn()) exposeGlobals([{ update, render }]);
+if (debugOn()) exposeGlobals([{ G, FIGHTERS, STAGES, update, render }], { G: v => { G = v; } });
 startLoop(update, render);
