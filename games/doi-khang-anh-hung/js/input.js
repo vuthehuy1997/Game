@@ -13,4 +13,7 @@ export const KEYMAP = {
 export function initInput() {
   bindKeys(KEYMAP, { onPress: () => ac() });
   bindTouch($('touch'));
+  // Firefox mở Quick Find khi bấm "/" (và đôi khi "'"), cướp focus khỏi trang — chặn riêng ở đây vì
+  // platform/core/input.js (dùng chung, không được sửa) chỉ preventDefault cho phím mũi tên/Space.
+  addEventListener('keydown', e => { if (e.code === 'Slash' || e.code === 'Quote') e.preventDefault(); });
 }
