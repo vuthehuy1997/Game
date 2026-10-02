@@ -20,7 +20,8 @@ def test_start_era_sets_up_match(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     pg.evaluate("startEra(0)")
     st = pg.evaluate("[G.phase, G.era.id, G.gold, G.hq.hp, G.hq.maxHp, B.length]")
-    assert st[:3] == ['prep', 'hai-ba-trung', 40], st
+    # gold bắt đầu ở 40 nhưng tăng dần ngay khi vào 'prep' (thu nhập Nhà chính chạy nền), nên chỉ chặn dưới chứ không so bằng tuyệt đối
+    assert st[0] == 'prep' and st[1] == 'hai-ba-trung' and 40 <= st[2] < 41, st
     assert st[3] == st[4] and st[5] == 0, st
 
 
@@ -35,18 +36,16 @@ def test_era_select_locks_future_eras(pg, browser, base):
 def test_build_blocks_on_occupied_plot_and_when_poor(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     pg.evaluate("startEra(0)")
-    gold0 = pg.evaluate("G.gold")
-    assert pg.evaluate("build(0, 'camp')") == True
-    assert pg.evaluate("G.gold") == gold0 - 30
-    assert pg.evaluate("B.length") == 1
+    # Vàng tăng liên tục khi ở 'prep' (thu nhập Nhà chính chạy nền) nên đo trước/sau trong CÙNG một evaluate
+    # để tránh sai lệch do thời gian trôi giữa hai lượt gọi riêng.
+    ok1, spent1, blen1 = pg.evaluate("() => { const g0 = G.gold; const ok = build(0, 'camp'); return [ok, g0 - G.gold, B.length]; }")
+    assert ok1 == True and abs(spent1 - 30) < 0.5 and blen1 == 1, (ok1, spent1, blen1)
     # lô đã có công trình: không xây đè được, không trừ thêm vàng
-    gold1 = pg.evaluate("G.gold")
-    assert pg.evaluate("build(0, 'tower')") == False
-    assert pg.evaluate("B.length") == 1 and pg.evaluate("G.gold") == gold1
+    ok2, delta2, blen2 = pg.evaluate("() => { const g0 = G.gold; const ok = build(0, 'tower'); return [ok, G.gold - g0, B.length]; }")
+    assert ok2 == False and delta2 == 0 and blen2 == 1, (ok2, delta2, blen2)
     # hết vàng: không xây lô khác được nữa
-    pg.evaluate("G.gold = 0")
-    assert pg.evaluate("build(1, 'camp')") == False
-    assert pg.evaluate("B.length") == 1 and pg.evaluate("G.gold") == 0
+    ok3, gold3, blen3 = pg.evaluate("() => { G.gold = 0; const ok = build(1, 'camp'); return [ok, G.gold, B.length]; }")
+    assert ok3 == False and gold3 < 0.5 and blen3 == 1, (ok3, gold3, blen3)
 
 
 @test
