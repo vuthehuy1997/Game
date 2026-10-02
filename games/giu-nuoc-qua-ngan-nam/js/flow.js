@@ -66,3 +66,16 @@ export function updateHud() {
   });
   $('btnHqUp').disabled = !canUpgradeHQ();
 }
+
+export function showResult() {
+  const win = G.phase === 'win';
+  showCard(`<p class="eyebrow">${G.era.name} · ${G.era.year}</p><h2>${win ? 'Giữ vững giang sơn!' : 'Thành đã mất…'}</h2>
+    <p>${win ? `Đã đánh bại ${G.era.foe}, mở thời kỳ kế tiếp.` : `${G.era.foe} đã hạ được Nhà chính. Luyện thêm và thử lại.`}</p>
+    <div class="actions">
+      <button type="button" class="btn ghost" id="rMap">Về bản đồ</button>
+      <button type="button" class="btn" id="rGo">${win && unlocked(G.eraIdx + 1) ? 'Thời kỳ kế' : win ? 'Về bản đồ' : 'Đánh lại'}</button>
+    </div>`, el => {
+    $('rMap').onclick = showEraSelect;
+    $('rGo').onclick = win ? (unlocked(G.eraIdx + 1) ? () => beginEra(G.eraIdx + 1) : showEraSelect) : () => beginEra(G.eraIdx);
+  });
+}

@@ -23,6 +23,7 @@ function makeEra(i, flavor) {
     towerDef: { cost: 35, dmg: Math.round(10 * k), range: 170, rate: 1 },
     stakeDef: { cost: 25, dmg: Math.round(50 * k) },
     enemy: { hp: Math.round(30 * k), dmg: Math.round(6 * k), reach: 22, spd: 40 },
+    troopTypes,
     waves,
   };
 }

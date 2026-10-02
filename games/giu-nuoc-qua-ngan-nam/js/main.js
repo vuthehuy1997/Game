@@ -7,13 +7,14 @@ import { ERAS } from './data.js';
 import { S, unlocked } from './save.js';
 import { startEra } from './waves.js';
 import { build, upgrade, upgradeHQ, updateIncome } from './buildings.js';
+import { updateCamps, updateTroops } from './troops.js';
 import { G, B, troops, projs, PLOTS, buildingOn } from './state.js';
 import { toTitle, showEraSelect, initHud, updateHud } from './flow.js';
 import { render } from './render.js';
 
 function update(dt) {
   G.t += dt; G.shake = Math.max(0, G.shake - dt * 30);
-  if (G.phase === 'prep' || G.phase === 'battle') { updateIncome(dt); updateHud(); }
+  if (G.phase === 'prep' || G.phase === 'battle') { updateIncome(dt); updateCamps(dt); updateTroops(dt); updateHud(); }
   updateParticles(dt, G.t);
 }
 

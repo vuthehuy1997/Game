@@ -59,4 +59,25 @@ def test_hq_upgrade_increases_max_hp_and_costs_gold(pg, browser, base):
     assert pg.evaluate("G.hq.hp") == pg.evaluate("G.hq.maxHp")
 
 
+@test
+def test_camp_spawns_troop_up_to_lane_limit(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startEra(0)")
+    pg.evaluate("build(0, 'camp'); G.gold = 1000")
+    pg.evaluate("for (let i = 0; i < 300; i++) update(1/60)")  # 5 giây mô phỏng
+    n = pg.evaluate("troops.filter(u => u.side === 'ally' && u.lane === 0).length")
+    assert 1 <= n <= 3, n
+
+
+@test
+def test_hq_loses_when_health_reaches_zero(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startEra(0)")
+    pg.evaluate("G.phase = 'battle'; G.hq.hp = 1")
+    pg.evaluate("troops.push({side:'enemy', lane:0, x:100, hp:40, maxHp:40, dmg:50, reach:0, spd:40, name:'t', walk:0})")
+    pg.evaluate("for (let i = 0; i < 10; i++) update(1/60)")
+    assert pg.evaluate("G.phase") == 'lose'
+    assert pg.locator('#card h2').count() == 1
+
+
 run(TESTS)

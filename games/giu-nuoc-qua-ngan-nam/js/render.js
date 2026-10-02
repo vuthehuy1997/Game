@@ -1,11 +1,15 @@
 // Vẽ chiến trường. Task 3 vẽ công trình đã xây, Task 4 thêm lính, Task 5 thêm đạn.
 import { $, clamp } from '../../../platform/core/util.js';
+import { drawChibi } from '../../../platform/art/chibi.js';
+import { POSES } from '../../../platform/art/poses.js';
 import { rr, outlinedText } from '../../../platform/art/draw.js';
 import { drawParticles, drawTexts } from '../../../platform/core/fx.js';
 import { FD, FB } from '../../../platform/ui/theme.js';
-import { G, B, LANES, PLOTS, HQ_X } from './state.js';
+import { G, B, troops, LANES, PLOTS, HQ_X } from './state.js';
 
 const cv = $('cv'), ctx = cv.getContext('2d');
+const ALLY_LOOK = { skin: '#f6d2ae', hair: '#1c1410', shirt: '#2f6b57', trim: '#e9b949', pants: '#2a2630', belt: '#e9b949', hat: 'khan', weapon: 'spear', scale: .5 };
+const ENEMY_LOOK = { skin: '#e3b98f', hair: '#201810', shirt: '#7a2d2d', trim: '#c99a4a', pants: '#2a2020', belt: '#c99a4a', hat: 'mongol', weapon: 'glaive', scale: .5 };
 
 export function render() {
   if (!G.era) { ctx.fillStyle = '#12141a'; ctx.fillRect(0, 0, 960, 540); return; }
@@ -18,6 +22,7 @@ export function render() {
 
   drawHQ();
   PLOTS.forEach(drawPlot);
+  troops.forEach(drawTroop);
   drawParticles(ctx, G.t); drawTexts(ctx, FB);
   ctx.restore();
   drawHud();
@@ -39,6 +44,11 @@ function drawPlot(p) {
     ctx.textAlign = 'center';
     outlinedText(ctx, b.kind === 'camp' ? `C${b.lvl}` : b.kind === 'tower' ? 'T' : 'X', p.x, LANES[p.lane] - 18, `15px ${FD}`, '#fff');
   }
+}
+function drawTroop(u) {
+  const look = u.side === 'ally' ? ALLY_LOOK : ENEMY_LOOK, face = u.side === 'ally' ? 1 : -1;
+  drawChibi(ctx, u.x, LANES[u.lane], look, { face, t: G.t, ...POSES.run({ walk: u.walk }) });
+  drawBar(u.x - 16, LANES[u.lane] - 76, 32, 5, u.hp / u.maxHp, u.side === 'ally' ? '#8fd6ff' : '#ff8f6b');
 }
 function drawBar(x, y, w, h, frac, col) {
   ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(x, y, w, h);
