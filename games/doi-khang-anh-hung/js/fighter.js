@@ -8,6 +8,7 @@ import { W, GROUND } from './state.js';
 const GRAV = 2600, JUMP_VY = -760;
 
 export function updateFighter(f, opp, dt) {
+  f.t += dt;
   const d = FIGHTERS[f.fid], act = a => f.side + '_' + a;
   if (f.hitstun > 0) { f.hitstun -= dt; }
   const locked = f.atk || f.hitstun > 0 || f.dashT > 0;
