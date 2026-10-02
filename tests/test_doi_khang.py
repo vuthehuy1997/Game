@@ -43,5 +43,21 @@ def test_light_attack_hits_in_active_window(pg, browser, base):
     assert pg.evaluate("G.f2.hp") < hp0, 'không mất máu sau khi đòn vào khung active'
 
 
+@test
+def test_guard_reduces_damage_and_dash_is_invulnerable(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.f1.x = 500; G.f2.x = 540; G.f1.face = 1; G.f2.hp = 100")
+    full = pg.evaluate("""() => { const h0 = G.f2.hp; startAttack(G.f1, 'heavy');
+      for (let i = 0; i < 40; i++) update(1/60); return h0 - G.f2.hp; }""")
+    pg.evaluate("G.f1.atk = null; G.f1.x = 500; G.f2.x = 540; G.f2.hp = 100")
+    guarded = pg.evaluate("""() => { const h0 = G.f2.hp; G.f2.guard = true; startAttack(G.f1, 'heavy');
+      for (let i = 0; i < 40; i++) { held.add('p2_guard'); update(1/60); } held.delete('p2_guard'); return h0 - G.f2.hp; }""")
+    assert guarded < full * .4, (full, guarded)
+    pg.evaluate("G.f1.atk = null; G.f1.x = 500; G.f2.x = 540; G.f2.hp = 100")
+    dashed = pg.evaluate("""() => { const h0 = G.f2.hp; startDash(G.f2); startAttack(G.f1, 'heavy');
+      for (let i = 0; i < 20; i++) update(1/60); return h0 - G.f2.hp; }""")
+    assert dashed == 0, dashed
+
+
 if __name__ == '__main__':
     run(TESTS)

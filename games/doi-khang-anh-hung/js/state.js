@@ -6,9 +6,9 @@ export const W = 960, H = 540, GROUND = 440;
 export function newFighter(fid, side, x) {
   const d = FIGHTERS[fid];
   return {
-    fid, side, x, y: GROUND, vx: 0, vy: 0, face: side === 'p1' ? 1 : -1,
+    fid, side, x, y: GROUND, vx: 0, vy: 0, face: side === 'p1' ? 1 : -1, air: false,
     hp: d.hp, maxHp: d.hp, meter: 0, t: 0, walk: 0, st: 0,
-    state: 'idle', atk: null, guard: false, dashT: 0, dashCd: 0, counterT: 0, hitstun: 0,
+    state: 'idle', atk: null, guard: false, dashT: 0, dashDir: 1, dashCd: 0, counterT: 0, hitstun: 0,
   };
 }
 

@@ -21,6 +21,7 @@ function hitbox(f, reach) {
 }
 
 export function applyDamage(attacker, defender, dmg, knock) {
+  if (defender.dashT > 0) return; // bất tử trong lúc lướt né
   if (defender.counterT > 0) { // Task 5/6: thế phản đòn đang chủ động -> phản sát thương, kẻ tấn công nhận dmg thay
     const back = FIGHTERS[defender.fid].special.counterDmg;
     attacker.hp = clamp(attacker.hp - back, 0, FIGHTERS[attacker.fid].hp);

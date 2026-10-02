@@ -1,5 +1,6 @@
 import { startLoop } from '../../../platform/core/loop.js';
 import { $ } from '../../../platform/core/util.js';
+import { held } from '../../../platform/core/input.js';
 import { debugOn, exposeGlobals } from '../../../platform/core/debug.js';
 import { mountHomeLink } from '../../../platform/ui/bar.js';
 import { drawChibi } from '../../../platform/art/chibi.js';
@@ -8,8 +9,8 @@ import { groundShadow } from '../../../platform/art/draw.js';
 import { FIGHTERS, STAGES } from './data.js';
 import { W, H, GROUND, newMatch } from './state.js';
 import { initInput } from './input.js';
-import { updateFighter } from './fighter.js';
-import { updateCombat } from './combat.js';
+import { updateFighter, startDash } from './fighter.js';
+import { updateCombat, startAttack } from './combat.js';
 
 const cv = $('cv'), ctx = cv.getContext('2d');
 let G = newMatch('tieuho', 'hungdao', 'thanglong', true, 'normal');
@@ -34,6 +35,6 @@ function render() {
 }
 
 mountHomeLink($('stage'));
-if (debugOn()) exposeGlobals([{ G, FIGHTERS, STAGES, update, render }], { G: v => { G = v; } });
+if (debugOn()) exposeGlobals([{ G, FIGHTERS, STAGES, update, render, startAttack, startDash, updateFighter, held }], { G: v => { G = v; } });
 initInput();
 startLoop(update, render);

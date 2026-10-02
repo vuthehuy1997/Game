@@ -8,6 +8,11 @@ import { startAttack } from './combat.js';
 
 const GRAV = 2600, JUMP_VY = -760;
 
+export function startDash(f) {
+  if (f.dashT > 0 || f.dashCd > 0 || f.atk) return;
+  f.dashT = .18; f.dashCd = .6; f.dashDir = f.face;
+}
+
 export function updateFighter(f, opp, dt) {
   f.t += dt;
   const d = FIGHTERS[f.fid], act = a => f.side + '_' + a;
@@ -33,6 +38,7 @@ export function updateFighter(f, opp, dt) {
     if (pressed.has(act('light'))) startAttack(f, 'light');
     else if (pressed.has(act('heavy'))) startAttack(f, 'heavy');
   }
+  if (!locked && pressed.has(act('dash'))) startDash(f);
   f.state = f.atk ? (f.atk.kind === 'heavy' ? 'heavy' : 'light')
     : f.air ? 'air' : f.guard ? 'guard' : dir ? 'run' : f.st < .12 ? 'land' : 'idle';
 }
