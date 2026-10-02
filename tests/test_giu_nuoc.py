@@ -31,4 +31,33 @@ def test_era_select_locks_future_eras(pg, browser, base):
     assert n_open == 1, n_open
 
 
+@test
+def test_build_blocks_on_occupied_plot_and_when_poor(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startEra(0)")
+    gold0 = pg.evaluate("G.gold")
+    assert pg.evaluate("build(0, 'camp')") == True
+    assert pg.evaluate("G.gold") == gold0 - 30
+    assert pg.evaluate("B.length") == 1
+    # lô đã có công trình: không xây đè được, không trừ thêm vàng
+    gold1 = pg.evaluate("G.gold")
+    assert pg.evaluate("build(0, 'tower')") == False
+    assert pg.evaluate("B.length") == 1 and pg.evaluate("G.gold") == gold1
+    # hết vàng: không xây lô khác được nữa
+    pg.evaluate("G.gold = 0")
+    assert pg.evaluate("build(1, 'camp')") == False
+    assert pg.evaluate("B.length") == 1 and pg.evaluate("G.gold") == 0
+
+
+@test
+def test_hq_upgrade_increases_max_hp_and_costs_gold(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startEra(0); G.gold = 1000")
+    maxHp0 = pg.evaluate("G.hq.maxHp")
+    ok = pg.evaluate("upgradeHQ()")
+    assert ok and pg.evaluate("G.hq.lvl") == 2
+    assert pg.evaluate("G.hq.maxHp") > maxHp0
+    assert pg.evaluate("G.hq.hp") == pg.evaluate("G.hq.maxHp")
+
+
 run(TESTS)

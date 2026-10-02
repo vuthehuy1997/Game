@@ -33,6 +33,12 @@ function drawPlot(p) {
   const b = B.find(x => x.plot === p.id);
   ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.setLineDash(b ? [] : [4, 4]);
   rr(ctx, p.x - 28, LANES[p.lane] - 48, 56, 48, 6); ctx.stroke(); ctx.setLineDash([]);
+  if (b) {
+    ctx.fillStyle = b.kind === 'camp' ? '#6b8f3a' : b.kind === 'tower' ? '#4a6f9a' : '#8a6a3a';
+    rr(ctx, p.x - 24, LANES[p.lane] - 42, 48, 36, 5); ctx.fill();
+    ctx.textAlign = 'center';
+    outlinedText(ctx, b.kind === 'camp' ? `C${b.lvl}` : b.kind === 'tower' ? 'T' : 'X', p.x, LANES[p.lane] - 18, `15px ${FD}`, '#fff');
+  }
 }
 function drawBar(x, y, w, h, frac, col) {
   ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(x, y, w, h);

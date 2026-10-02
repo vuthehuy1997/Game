@@ -3,7 +3,8 @@ import { $ } from '../../../platform/core/util.js';
 import { ERAS } from './data.js';
 import { S, unlocked } from './save.js';
 import { startEra } from './waves.js';
-import { G } from './state.js';
+import { BUILD_KINDS, buildLabel, costOf, build, campUpgradeCost, upgrade, canUpgradeHQ, upgradeHQ } from './buildings.js';
+import { G, buildingOn } from './state.js';
 
 export function showOnly(id) {
   ['menu', 'cardWrap'].forEach(k => $(k).hidden = k !== id);
@@ -31,3 +32,37 @@ export function showEraSelect() {
   });
 }
 export function beginEra(i) { startEra(i); showOnly(null); }
+
+function onPlotClick(id) {
+  if (G.phase !== 'prep') return;
+  const b = buildingOn(id);
+  if (!b) {
+    showCard(`<p class="eyebrow">Lô ${id + 1}</p><h2>Xây công trình</h2>
+      <div class="actions">${BUILD_KINDS.map(k => `<button type="button" class="btn" data-k="${k}" ${costOf(k) > G.gold ? 'disabled' : ''}>${buildLabel(k)} (${costOf(k)}v)</button>`).join('')}
+      <button type="button" class="btn ghost" id="pCancel">Huỷ</button></div>`, el => {
+      el.querySelectorAll('[data-k]').forEach(btn => btn.onclick = () => { build(id, btn.dataset.k); showOnly(null); });
+      $('pCancel').onclick = () => showOnly(null);
+    });
+  } else if (b.kind === 'camp' && b.lvl < 3) {
+    showCard(`<p class="eyebrow">Lô ${id + 1} · Trại lính cấp ${b.lvl}</p><h2>Nâng cấp trại</h2>
+      <div class="actions"><button type="button" class="btn" id="pUp" ${campUpgradeCost(b) > G.gold ? 'disabled' : ''}>Nâng lên cấp ${b.lvl + 1} (${campUpgradeCost(b)}v)</button>
+      <button type="button" class="btn ghost" id="pCancel">Đóng</button></div>`, el => {
+      $('pUp').onclick = () => { upgrade(b); showOnly(null); }; $('pCancel').onclick = () => showOnly(null);
+    });
+  } else {
+    showCard(`<p class="eyebrow">Lô ${id + 1}</p><h2>${buildLabel(b.kind)}${b.kind === 'camp' ? ' (cấp tối đa)' : ''}</h2>
+      <div class="actions"><button type="button" class="btn ghost" id="pCancel">Đóng</button></div>`, el => { $('pCancel').onclick = () => showOnly(null); });
+  }
+}
+export function initHud() {
+  $('plots').querySelectorAll('.plot').forEach(btn => btn.onclick = () => onPlotClick(+btn.dataset.plot));
+  $('btnHqUp').onclick = () => upgradeHQ();
+}
+export function updateHud() {
+  $('plots').querySelectorAll('.plot').forEach(btn => {
+    const id = +btn.dataset.plot, b = buildingOn(id);
+    btn.querySelector('small').textContent = b ? `${buildLabel(b.kind)}${b.kind === 'camp' ? ' c' + b.lvl : ''}` : 'Trống';
+    btn.classList.toggle('filled', !!b);
+  });
+  $('btnHqUp').disabled = !canUpgradeHQ();
+}
