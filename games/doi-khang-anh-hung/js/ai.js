@@ -12,9 +12,9 @@ export const DIFF = {
 export function aiTick(f, opp, dt, diffName) {
   const diff = DIFF[diffName] || DIFF.normal, act = a => f.side + '_' + a;
   f._aiT = (f._aiT || 0) + dt;
-  ['left', 'right', 'guard'].forEach(a => held.delete(act(a)));
   if (f._aiT < diff.interval) return;
   f._aiT = 0;
+  ['left', 'right', 'guard'].forEach(a => held.delete(act(a)));
   const dx = opp.x - f.x, dist = Math.abs(dx), reach = FIGHTERS[f.fid].reach;
   if (f.meter >= 100 && Math.random() < diff.specialChance) { pressed.add(act('special')); return; }
   if (dist > reach + 30) { held.add(act(dx > 0 ? 'right' : 'left')); return; }
