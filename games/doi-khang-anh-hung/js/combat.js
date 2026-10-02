@@ -26,6 +26,7 @@ export function applyDamage(attacker, defender, dmg, knock) {
     const back = FIGHTERS[defender.fid].special.counterDmg;
     attacker.hp = clamp(attacker.hp - back, 0, FIGHTERS[attacker.fid].hp);
     spark(attacker.x, attacker.y - 70, 14, '#ffd35a'); attacker.hitstun = .3;
+    defender.counterT = 0; // chỉ phản 1 lần mỗi lần kích hoạt, không phản liên tục suốt thời gian còn lại
     return;
   }
   const guarded = defender.guard && !defender.air;

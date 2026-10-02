@@ -180,5 +180,52 @@ def test_match_end_rematch_and_back_to_menu(pg, browser, base):
     assert pg.evaluate("G.mode") == 'select', 'về menu không hoạt động'
 
 
+@test
+def test_counter_reflects_only_once(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")
+    pg.evaluate("G.p2cpu = false")
+    pg.evaluate("G.f1.fid = 'binhtrong'; G.f1.hp = FIGHTERS.binhtrong.hp; G.f1.counterT = 2")
+    pg.evaluate("G.f1.x = 500; G.f2.x = 540; G.f1.face = 1; G.f2.face = -1")
+    hp0 = pg.evaluate("G.f2.hp")
+    counter_dmg = pg.evaluate("FIGHTERS.binhtrong.special.counterDmg")
+    # Đòn nhẹ thứ nhất của f2 trúng f1 đang ở thế phản đòn -> phản sát thương vào f2, và tiêu thế phản
+    pg.evaluate("startAttack(G.f2, 'light'); for (let i = 0; i < 20; i++) update(1/60)")
+    after1 = pg.evaluate("G.f2.hp")
+    assert hp0 - after1 == counter_dmg, (hp0, after1, counter_dmg)
+    assert pg.evaluate("G.f1.counterT") == 0, 'counterT chưa bị tiêu sau khi phản đòn 1 lần'
+    # Đòn nhẹ thứ hai: thế phản đã hết (counterT=0) -> không phản thêm, f2 không mất máu nữa
+    pg.evaluate("G.f1.atk = null; G.f2.atk = null; G.f1.x = 500; G.f2.x = 540")
+    pg.evaluate("startAttack(G.f2, 'light'); for (let i = 0; i < 20; i++) update(1/60)")
+    after2 = pg.evaluate("G.f2.hp")
+    assert after2 == after1, 'phản đòn lại xảy ra lần 2 dù thế phản đã hết (counterT=0)'
+
+
+@test
+def test_ranged_special_hits_multiple_times(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")
+    pg.evaluate("G.p2cpu = false")
+    pg.evaluate("G.f1.fid = 'khanhdu'; G.f1.meter = 100; G.f1.x = 500; G.f2.x = 700; G.f2.hp = 100")
+    hp0 = pg.evaluate("G.f2.hp")
+    pg.evaluate("tryUseSpecial(G.f1, G.f2)")
+    hp1 = pg.evaluate("G.f2.hp")
+    dmg, hits = pg.evaluate("[FIGHTERS.khanhdu.special.dmg, FIGHTERS.khanhdu.special.hits]")
+    assert hp0 - hp1 == dmg * hits, (hp0, hp1, dmg, hits)
+
+
+@test
+def test_dash_special_hits_only_once(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")
+    pg.evaluate("G.p2cpu = false")
+    pg.evaluate("G.f1.fid = 'quoctoan'; G.f1.meter = 100; G.f1.x = 500; G.f2.x = 520; G.f1.face = 1; G.f2.hp = 100")
+    pg.evaluate("tryUseSpecial(G.f1, G.f2)")
+    pg.evaluate("for (let i = 0; i < 20; i++) update(1/60)")  # 0.333s, dài hơn thời gian xông .22s
+    hp1 = pg.evaluate("G.f2.hp")
+    dmg = pg.evaluate("FIGHTERS.quoctoan.special.dmg")
+    assert 100 - hp1 == dmg, (100, hp1, dmg)
+
+
 if __name__ == '__main__':
     run(TESTS)
