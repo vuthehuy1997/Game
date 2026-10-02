@@ -121,4 +121,31 @@ def test_winning_all_waves_unlocks_next_era(pg, browser, base):
     assert pg.evaluate("unlocked(1)") == True
 
 
+@test
+def test_full_flow_menu_to_win_via_real_building(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    # Từ menu, bấm thật vào nút để vào bản đồ rồi chọn thời kỳ đầu
+    pg.click('#mPlay'); pg.wait_for_timeout(100)
+    pg.click('.eraBtn[data-era="0"]'); pg.wait_for_timeout(100)
+    assert pg.evaluate("G.phase") == 'prep'
+    # Xây 1 trại lính + 1 tháp canh bằng thao tác bấm thật (bơm vàng giữa 2 lần để đủ chi phí)
+    pg.click('.plot[data-plot="0"]'); pg.wait_for_timeout(50)
+    pg.click('[data-k="camp"]'); pg.wait_for_timeout(50)
+    pg.evaluate("G.gold = 1000")
+    pg.click('.plot[data-plot="2"]'); pg.wait_for_timeout(50)
+    pg.click('[data-k="tower"]'); pg.wait_for_timeout(50)
+    assert pg.evaluate("B.length") == 2
+    # Bơm vàng để không bị kẹt kinh tế, rồi đánh hết các đợt bằng cách giả lập dọn sạch giặc mỗi đợt
+    n = pg.evaluate("ERAS[0].waves.length")
+    for _ in range(n):
+        pg.evaluate("G.gold = 1000")
+        pg.click('#btnStartWave'); pg.wait_for_timeout(50)
+        pg.evaluate("G.queue = []; troops.filter(u => u.side === 'enemy').forEach(u => u.hp = 0); update(1/60)")
+    assert pg.evaluate("G.phase") == 'win'
+    assert pg.locator('#card h2').count() == 1
+    # Bấm "Thời kỳ kế" quay lại trạng thái prep của thời kỳ 2
+    pg.click('#rGo'); pg.wait_for_timeout(100)
+    assert pg.evaluate("G.eraIdx") == 1 and pg.evaluate("G.phase") == 'prep'
+
+
 run(TESTS)
