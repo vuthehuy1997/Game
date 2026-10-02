@@ -86,8 +86,15 @@ def test_ai_approaches_and_attacks(pg, browser, base):
     pg.evaluate("for (let i = 0; i < 90; i++) update(1/60)")
     assert pg.evaluate("G.f2.x") < x0 - 40, 'máy không tiến lại gần'
     pg.evaluate("G.f1.x = 500; G.f2.x = 540; G.f1.hp = 100")
-    hit = pg.evaluate("""() => { const h0 = G.f1.hp; for (let i = 0; i < 300; i++) update(1/60); return h0 - G.f1.hp; }""")
-    assert hit > 0, 'máy không ra được đòn nào trong 5 giây mô phỏng'
+    # Chỉ mô phỏng 1.5s (90 khung): đủ dư so với đòn đầu tiên (luôn ra trong ~0.3s vì ở cự ly này
+    # máy không bao giờ né/giữ chiêu — opp.atk luôn false nên không vào nhánh guard, dist nằm trong
+    # reach nên không vào nhánh di chuyển) nhưng NGẮN HƠN NHIỀU so với thời gian máy có thể hạ hết
+    # 100 máu của f1 (~5s ở độ khó hard). Trước đây dùng 300 khung (5s) thì đôi khi máy đánh hạ hẳn
+    # f1 ngay trong khung đo, round kết thúc -> resetRound() tạo lại f1 mới đầy máu NGAY TRONG vòng
+    # lặp, nên hp đo được ở cuối lại trùng hp0 (đều là 100) dù máy đã ra rất nhiều đòn -> test bị FAIL
+    # giả dù máy hoàn toàn hoạt động đúng. Rút ngắn khung đo để không bao giờ chạm mốc KO/resetRound.
+    hit = pg.evaluate("""() => { const h0 = G.f1.hp; for (let i = 0; i < 90; i++) update(1/60); return h0 - G.f1.hp; }""")
+    assert hit > 0, 'máy không ra được đòn nào trong 1.5 giây mô phỏng'
 
 
 @test
