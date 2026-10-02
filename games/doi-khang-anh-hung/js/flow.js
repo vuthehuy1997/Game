@@ -16,9 +16,9 @@ export function updateFlow(G, dt) {
   else if (G.timer <= 0) winner = G.f1.hp === G.f2.hp ? 'draw' : (G.f1.hp > G.f2.hp ? 'p1' : 'p2');
   if (!winner) return;
 
-  if (winner === 'draw') { banner(G, 'Hoà! Đấu lại round'); resetRound(G); return; }
+  if (winner === 'draw') { banner(G, 'Hoà! Đấu lại hiệp'); resetRound(G); return; }
   const idx = winner === 'p1' ? 0 : 1;
   G.wins[idx]++;
   if (G.wins[idx] >= 2) { G.mode = 'matchEnd'; banner(G, (winner === 'p1' ? 'P1' : 'P2') + ' thắng trận!', 4); return; }
-  G.round++; banner(G, 'Round ' + G.round); resetRound(G);
+  G.round++; banner(G, 'Hiệp ' + G.round); resetRound(G);
 }
