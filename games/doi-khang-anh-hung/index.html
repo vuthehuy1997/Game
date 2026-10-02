@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Đối Kháng Anh Hùng · Game Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Itim&family=Pattaya&display=swap">
+<link rel="stylesheet" href="../../platform/css/kit.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="stage" id="stage">
+  <canvas id="cv" width="960" height="540" aria-label="Sàn đấu"></canvas>
+  <div class="touch" id="touch">
+    <button data-k="p1_left" aria-label="Sang trái">◀</button>
+    <button data-k="p1_right" aria-label="Sang phải">▶</button>
+    <button data-k="p1_jump">Nhảy</button>
+    <button data-k="p1_guard">Đỡ</button>
+    <button data-k="p1_dash">Né</button>
+    <button data-k="p1_light" class="big">Đánh</button>
+    <button data-k="p1_heavy">Mạnh</button>
+    <button data-k="p1_special">Chiêu</button>
+  </div>
+</div>
+<p class="keys">P1: <kbd>A</kbd><kbd>D</kbd> di chuyển · <kbd>W</kbd> nhảy · <kbd>S</kbd> đỡ · <kbd>Q</kbd> né · <kbd>F</kbd> đánh · <kbd>G</kbd> mạnh · <kbd>H</kbd> chiêu —
+P2: <kbd>←</kbd><kbd>→</kbd> · <kbd>↑</kbd> nhảy · <kbd>↓</kbd> đỡ · <kbd>Shift phải</kbd> né · <kbd>/</kbd> đánh · <kbd>.</kbd> mạnh · <kbd>,</kbd> chiêu</p>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
