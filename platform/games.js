@@ -7,5 +7,6 @@
 //     cover(canvas)                                          (không bắt buộc: tự vẽ ảnh bìa 16:9) }
 import haoKhi from '../games/hao-khi/meta.js';
 import doiKhangAnhHung from '../games/doi-khang-anh-hung/meta.js';
+import giuNuoc from '../games/giu-nuoc-qua-ngan-nam/meta.js';
 
-export const GAMES = [haoKhi, doiKhangAnhHung];
+export const GAMES = [haoKhi, doiKhangAnhHung, giuNuoc];
