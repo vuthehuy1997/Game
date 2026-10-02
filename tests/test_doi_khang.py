@@ -39,6 +39,7 @@ def test_movement_and_jump(pg, browser, base):
 def test_light_attack_hits_in_active_window(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     pg.evaluate("startMatch(G, G)")
+    pg.evaluate("G.p2cpu = false")  # test chạy theo thời gian thực; tắt máy để không lẫn hành vi của AI
     pg.evaluate("G.f1.x = 500; G.f2.x = 540; G.f1.face = 1")
     hp0 = pg.evaluate("G.f2.hp")
     pg.keyboard.press('KeyF'); pg.wait_for_timeout(50)
