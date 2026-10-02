@@ -17,6 +17,8 @@ function fighterPose(f) {
   return (POSES[f.state] || POSES.idle)(f);
 }
 
+const DIFF_VI = { easy: 'Dễ', normal: 'Thường', hard: 'Khó' };
+
 function healthBar(ctx, x, align, f) {
   const w = 300, pct = Math.max(0, f.hp / FIGHTERS[f.fid].hp);
   ctx.save(); if (align === 'r') { ctx.translate(x, 0); ctx.scale(-1, 1); x = 0; } else ctx.translate(x, 0);
@@ -51,7 +53,7 @@ export function renderSelect(ctx, sel) {
   ctx.textAlign = 'center';
   outlinedText(ctx, 'Đối Kháng Anh Hùng', W / 2, 70, `40px ${FD}`, '#ffe6a8');
   outlinedText(ctx, `P1: ${FIGHTERS[FIGHTER_IDS[sel.cursor1]].name}  ◀ A/D ▶`, W / 2, 160, `22px ${FB}`, '#fff');
-  outlinedText(ctx, sel.p2cpu ? `Máy (${sel.diff}) — đổi: H` : `P2: ${FIGHTERS[FIGHTER_IDS[sel.cursor2]].name}  ◀ ←/→ ▶`, W / 2, 200, `22px ${FB}`, '#fff');
+  outlinedText(ctx, sel.p2cpu ? `Máy (${DIFF_VI[sel.diff]}) — đổi: H` : `P2: ${FIGHTERS[FIGHTER_IDS[sel.cursor2]].name}  ◀ ←/→ ▶`, W / 2, 200, `22px ${FB}`, '#fff');
   outlinedText(ctx, `Sân: ${STAGES[STAGE_IDS[sel.stageCursor]].name} — đổi: W`, W / 2, 240, `20px ${FB}`, '#ffe6a8');
   outlinedText(ctx, 'F hoặc / để bắt đầu', W / 2, 300, `18px ${FB}`, '#a3a8b8');
 }
