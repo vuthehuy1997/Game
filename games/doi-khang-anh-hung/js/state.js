@@ -19,3 +19,10 @@ export function newMatch(f1id, f2id, stageId, p2cpu, diff) {
     round: 1, wins: [0, 0], timer: 60, t: 0, shake: 0, banner: null,
   };
 }
+
+// Đặt lại HP/meter/vị trí 2 fighter và giờ cho round mới; giữ G.wins (điểm trận).
+export function resetRound(G) {
+  G.f1 = newFighter(G.p1id, 'p1', 260);
+  G.f2 = newFighter(G.p2id, 'p2', 700);
+  G.timer = 60;
+}

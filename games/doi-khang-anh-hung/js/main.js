@@ -13,19 +13,23 @@ import { updateFighter, startDash } from './fighter.js';
 import { updateCombat, startAttack, tryUseSpecial } from './combat.js';
 import { aiTick } from './ai.js';
 import { updateHazard } from './hazards.js';
+import { updateFlow } from './flow.js';
 
 const cv = $('cv'), ctx = cv.getContext('2d');
 let G = newMatch('tieuho', 'hungdao', 'thanglong', true, 'normal');
 
 function update(dt) {
   G.t += dt;
-  if (G.p2cpu) aiTick(G.f2, G.f1, dt, G.diff);
-  updateFighter(G.f1, G.f2, dt);
-  updateFighter(G.f2, G.f1, dt);
-  updateCombat(G.f1, G.f2, dt);
-  updateCombat(G.f2, G.f1, dt);
-  updateHazard(G.f1, G.stageId, dt);
-  updateHazard(G.f2, G.stageId, dt);
+  if (G.mode === 'fight') {
+    if (G.p2cpu) aiTick(G.f2, G.f1, dt, G.diff);
+    updateFighter(G.f1, G.f2, dt);
+    updateFighter(G.f2, G.f1, dt);
+    updateCombat(G.f1, G.f2, dt);
+    updateCombat(G.f2, G.f1, dt);
+    updateHazard(G.f1, G.stageId, dt);
+    updateHazard(G.f2, G.stageId, dt);
+  }
+  updateFlow(G, dt);
 }
 function render() {
   const st = STAGES[G.stageId];

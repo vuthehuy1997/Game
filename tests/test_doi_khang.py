@@ -95,5 +95,19 @@ def test_edge_hazard_on_bachdang(pg, browser, base):
     assert pg.evaluate("G.f1.hp") == 90
 
 
+@test
+def test_round_and_match_flow(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.p2cpu = false; G.f2.hp = 0; for (let i = 0; i < 5; i++) update(1/60)")
+    assert pg.evaluate("[G.wins, G.mode, G.round]") == [[1, 0], 'fight', 2], pg.evaluate("[G.wins, G.mode, G.round]")
+    pg.evaluate("G.f2.hp = 0; for (let i = 0; i < 5; i++) update(1/60)")
+    assert pg.evaluate("[G.wins, G.mode]") == [[2, 0], 'matchEnd']
+
+    pg.evaluate("""() => { G.mode = 'fight'; G.wins = [0, 0]; G.round = 1;
+      G.timer = 0.001; G.f1.hp = 50; G.f2.hp = 50; }""")
+    pg.evaluate("for (let i = 0; i < 5; i++) update(1/60)")
+    assert pg.evaluate("[G.wins, G.round, G.mode]") == [[0, 0], 1, 'fight'], 'hoà giờ không được cộng điểm hay sang round mới'
+
+
 if __name__ == '__main__':
     run(TESTS)
