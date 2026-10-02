@@ -27,6 +27,7 @@ def test_two_fighters_spawn_with_correct_hp(pg, browser, base):
 def test_movement_and_jump(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     pg.evaluate("startMatch(G, G)")
+    pg.evaluate("G.p2cpu = false")  # test điều khiển P2 bằng phím thật; máy có kênh phím riêng (Fix 3) nên phải tắt máy ở đây
     x0 = pg.evaluate('G.f1.x')
     pg.keyboard.down('KeyD'); pg.wait_for_timeout(250); pg.keyboard.up('KeyD')
     assert pg.evaluate('G.f1.x') > x0 + 20, 'P1 không đi sang phải'
@@ -225,6 +226,24 @@ def test_dash_special_hits_only_once(pg, browser, base):
     hp1 = pg.evaluate("G.f2.hp")
     dmg = pg.evaluate("FIGHTERS.quoctoan.special.dmg")
     assert 100 - hp1 == dmg, (100, hp1, dmg)
+
+
+@test
+def test_ai_channel_isolated_from_shared_input(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")
+    # Máy (P2) điều khiển f2, ở xa f1 để máy luôn chọn tiến sang TRÁI (về phía f1).
+    pg.evaluate("G.p2cpu = true; G.diff = 'hard'; G.f1.x = 200; G.f2.x = 700")
+    # Giả lập người chơi thứ hai bấm giữ phím P2 (sang phải) trực tiếp vào Set dùng chung của platform —
+    # đây là đường mà 1 người chơi thật ở cùng bàn phím sẽ tác động, KHÔNG phải đường của máy (aiHeld).
+    pg.evaluate("held.add('p2_right')")
+    x0 = pg.evaluate("G.f2.x")
+    pg.evaluate("for (let i = 0; i < 30; i++) update(1/60)")
+    x1 = pg.evaluate("G.f2.x")
+    pg.evaluate("held.delete('p2_right')")
+    # Nếu kênh phím của máy bị cô lập đúng cách, f2 di chuyển theo quyết định của máy (tiến về f1, x giảm)
+    # và hoàn toàn không bị phím giả 'p2_right' (held dùng chung) ép sang phải.
+    assert x1 < x0, ('người chơi giả lập đã can thiệp được vào P2 khi máy đang điều khiển', x0, x1)
 
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@ import { FIGHTERS, STAGES } from './data.js';
 import { initInput } from './input.js';
 import { updateFighter, startDash } from './fighter.js';
 import { updateCombat, startAttack, tryUseSpecial } from './combat.js';
-import { aiTick } from './ai.js';
+import { aiTick, aiPressed } from './ai.js';
 import { updateHazard } from './hazards.js';
 import { updateFlow } from './flow.js';
 import { renderMatch, renderSelect } from './render.js';
@@ -26,8 +26,9 @@ function update(dt) {
   }
   if (G.mode === 'fight') {
     if (G.p2cpu) aiTick(G.f2, G.f1, dt, G.diff);
-    updateFighter(G.f1, G.f2, dt);
-    updateFighter(G.f2, G.f1, dt);
+    updateFighter(G.f1, G.f2, dt, false);
+    updateFighter(G.f2, G.f1, dt, G.p2cpu);
+    aiPressed.clear(); // aiPressed là kênh riêng của máy, không được loop.js tự xoá mỗi khung như pressed dùng chung
     updateCombat(G.f1, G.f2, dt);
     updateCombat(G.f2, G.f1, dt);
     updateHazard(G.f1, G.stageId, dt);
