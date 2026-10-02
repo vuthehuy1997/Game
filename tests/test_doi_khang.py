@@ -118,5 +118,12 @@ def test_double_ko_is_a_draw(pg, browser, base):
     assert pg.evaluate("[G.wins, G.round, G.mode]") == [[0, 0], 1, 'fight'], 'hai bên cùng hết máu phải là hoà'
 
 
+@test
+def test_hud_renders(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    alpha = pg.evaluate("document.getElementById('cv').getContext('2d').getImageData(30, 26, 1, 1).data[3]")
+    assert alpha == 255
+
+
 if __name__ == '__main__':
     run(TESTS)

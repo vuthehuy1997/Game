@@ -3,17 +3,15 @@ import { $ } from '../../../platform/core/util.js';
 import { held } from '../../../platform/core/input.js';
 import { debugOn, exposeGlobals } from '../../../platform/core/debug.js';
 import { mountHomeLink } from '../../../platform/ui/bar.js';
-import { drawChibi } from '../../../platform/art/chibi.js';
-import { POSES } from '../../../platform/art/poses.js';
-import { groundShadow } from '../../../platform/art/draw.js';
 import { FIGHTERS, STAGES } from './data.js';
-import { W, H, GROUND, newMatch } from './state.js';
+import { newMatch } from './state.js';
 import { initInput } from './input.js';
 import { updateFighter, startDash } from './fighter.js';
 import { updateCombat, startAttack, tryUseSpecial } from './combat.js';
 import { aiTick } from './ai.js';
 import { updateHazard } from './hazards.js';
 import { updateFlow } from './flow.js';
+import { renderMatch } from './render.js';
 
 const cv = $('cv'), ctx = cv.getContext('2d');
 let G = newMatch('tieuho', 'hungdao', 'thanglong', true, 'normal');
@@ -31,17 +29,7 @@ function update(dt) {
   }
   updateFlow(G, dt);
 }
-function render() {
-  const st = STAGES[G.stageId];
-  const sky = ctx.createLinearGradient(0, 0, 0, GROUND);
-  sky.addColorStop(0, st.sky[0]); sky.addColorStop(1, st.sky[1]);
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, GROUND);
-  ctx.fillStyle = st.ground; ctx.fillRect(0, GROUND, W, H - GROUND);
-  for (const f of [G.f1, G.f2]) {
-    groundShadow(ctx, f.x, GROUND);
-    drawChibi(ctx, f.x, f.y, FIGHTERS[f.fid].look, { face: f.face, t: f.t, ...POSES.idle(f) });
-  }
-}
+function render() { renderMatch(ctx, G); }
 
 mountHomeLink($('stage'));
 if (debugOn()) exposeGlobals([{ G, FIGHTERS, STAGES, update, render, startAttack, tryUseSpecial, startDash, updateFighter, held }], { G: v => { G = v; } });
