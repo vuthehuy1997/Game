@@ -4,7 +4,7 @@ import { held, pressed } from '../../../platform/core/input.js';
 import { clamp } from '../../../platform/core/util.js';
 import { FIGHTERS } from './data.js';
 import { W, GROUND } from './state.js';
-import { startAttack } from './combat.js';
+import { startAttack, tryUseSpecial } from './combat.js';
 
 const GRAV = 2600, JUMP_VY = -760;
 
@@ -39,6 +39,7 @@ export function updateFighter(f, opp, dt) {
     else if (pressed.has(act('heavy'))) startAttack(f, 'heavy');
   }
   if (!locked && pressed.has(act('dash'))) startDash(f);
+  if (!locked && pressed.has(act('special'))) tryUseSpecial(f, opp);
   f.state = f.atk ? (f.atk.kind === 'heavy' ? 'heavy' : 'light')
     : f.air ? 'air' : f.guard ? 'guard' : dir ? 'run' : f.st < .12 ? 'land' : 'idle';
 }

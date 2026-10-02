@@ -39,7 +39,32 @@ export function applyDamage(attacker, defender, dmg, knock) {
   spark(defender.x, defender.y - 70, guarded ? 5 : 12, guarded ? '#9fb0c9' : '#ff6a4a');
 }
 
+export function tryUseSpecial(f, opp) {
+  if (f.meter < 100 || f.atk || f.hitstun > 0 || f.dashT > 0) return false;
+  const sp = FIGHTERS[f.fid].special;
+  f.meter = 0;
+  if (sp.kind === 'counter') { f.counterT = sp.dur; return true; }
+  if (sp.kind === 'ranged') {
+    for (let i = 0; i < sp.hits; i++) applyDamage(f, opp, sp.dmg, 80);
+    f.meter = 0; // applyDamage thưởng nội lực khi trúng đòn — chiêu đặc biệt phải tiêu hết, không được hồi lại
+    return true;
+  }
+  if (sp.kind === 'dash') {
+    f.dashT = .22; f.dashCd = .6; f.dashDir = f.face; f.specialDashDmg = sp.dmg; f.specialDashKnock = sp.knock;
+    return true;
+  }
+  // 'dmg': chỉ trúng nếu còn trong tầm rộng
+  const reach = FIGHTERS[f.fid].reach * 1.4;
+  if (Math.abs(opp.x - f.x) <= reach) { applyDamage(f, opp, sp.dmg, sp.knock); f.meter = 0; }
+  return true;
+}
+
 export function updateCombat(f, opp, dt) {
+  if (f.dashT > 0 && f.specialDashDmg && !f.specialDashHit && overlap(hurtbox(f), hurtbox(opp))) {
+    f.specialDashHit = true; applyDamage(f, opp, f.specialDashDmg, f.specialDashKnock);
+    f.meter = 0; // tương tự: chiêu xông không được hồi nội lực khi trúng đòn giữa đường
+  }
+  if (f.dashT <= 0) { f.specialDashDmg = null; f.specialDashHit = false; }
   if (!f.atk) return;
   const a = f.atk, d = FIGHTERS[f.fid];
   a.t += dt;

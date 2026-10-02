@@ -59,5 +59,17 @@ def test_guard_reduces_damage_and_dash_is_invulnerable(pg, browser, base):
     assert dashed == 0, dashed
 
 
+@test
+def test_special_requires_full_meter(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.f1.x = 500; G.f2.x = 540; G.f1.face = 1; G.f2.hp = 100; G.f1.meter = 40")
+    pg.evaluate("tryUseSpecial(G.f1, G.f2)")
+    assert pg.evaluate("[G.f1.meter, G.f2.hp]") == [40, 100], 'chiêu kích hoạt khi chưa đầy nội lực'
+    pg.evaluate("G.f1.meter = 100")
+    pg.evaluate("tryUseSpecial(G.f1, G.f2)")
+    hp, meter = pg.evaluate("[G.f2.hp, G.f1.meter]")
+    assert meter == 0 and hp < 100, (hp, meter)
+
+
 if __name__ == '__main__':
     run(TESTS)
