@@ -12,6 +12,7 @@ export function updateHazard(f, stageId, dt) {
   if (f.edgeT >= 1.5) {
     f.edgeT = 0;
     f.hp = clamp(f.hp - 10, 0, FIGHTERS[f.fid].hp);
+    f.x = clamp(f.x + (f.x < W / 2 ? 60 : -60), 36, W - 36); // đẩy vào giữa sân, không để đứng mãi trong bãi cọc
     spark(f.x, f.y - 60, 10, '#6fd06a');
   }
 }
