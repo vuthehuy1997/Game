@@ -165,5 +165,20 @@ def test_select_screen_then_start_match(pg, browser, base):
     assert pg.evaluate("G.p1id") == pg.evaluate("Object.keys({tieuho:1,hungdao:1,quoctoan:1,ngulao:1,binhtrong:1,khanhdu:1})[1]")
 
 
+@test
+def test_match_end_rematch_and_back_to_menu(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")
+    pg.evaluate("G.p2cpu = false; G.wins = [1, 0]; G.f2.hp = 0; for (let i = 0; i < 5; i++) update(1/60)")
+    assert pg.evaluate("[G.wins, G.mode]") == [[2, 0], 'matchEnd'], 'chưa vào matchEnd'
+    pg.keyboard.press('KeyF'); pg.wait_for_timeout(50)
+    assert pg.evaluate("[G.mode, G.wins]") == ['fight', [0, 0]], 'đấu lại (rematch) không hoạt động'
+
+    pg.evaluate("G.p2cpu = false; G.wins = [1, 0]; G.f2.hp = 0; for (let i = 0; i < 5; i++) update(1/60)")
+    assert pg.evaluate("G.mode") == 'matchEnd', 'chưa vào matchEnd lần 2'
+    pg.keyboard.press('KeyH'); pg.wait_for_timeout(50)
+    assert pg.evaluate("G.mode") == 'select', 'về menu không hoạt động'
+
+
 if __name__ == '__main__':
     run(TESTS)

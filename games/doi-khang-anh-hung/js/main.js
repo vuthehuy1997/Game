@@ -1,6 +1,6 @@
 import { startLoop } from '../../../platform/core/loop.js';
 import { $ } from '../../../platform/core/util.js';
-import { held } from '../../../platform/core/input.js';
+import { held, pressed } from '../../../platform/core/input.js';
 import { debugOn, exposeGlobals } from '../../../platform/core/debug.js';
 import { mountHomeLink } from '../../../platform/ui/bar.js';
 import { FIGHTERS, STAGES } from './data.js';
@@ -32,6 +32,10 @@ function update(dt) {
     updateCombat(G.f2, G.f1, dt);
     updateHazard(G.f1, G.stageId, dt);
     updateHazard(G.f2, G.stageId, dt);
+  }
+  if (G.mode === 'matchEnd') {
+    if (pressed.has('p1_light') || pressed.has('p2_light')) startMatch(G, G);
+    else if (pressed.has('p1_special')) Object.assign(G, newSelect());
   }
   updateFlow(G, dt);
 }

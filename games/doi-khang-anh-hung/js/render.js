@@ -46,6 +46,7 @@ export function renderMatch(ctx, G) {
   outlinedText(ctx, String(Math.ceil(G.timer)), W / 2, 40, `30px ${FD}`, '#fff');
   outlinedText(ctx, `Round ${G.round} · ${G.wins[0]} - ${G.wins[1]}`, W / 2, 64, `16px ${FB}`, '#ffe6a8');
   if (G.banner) { ctx.globalAlpha = Math.min(1, G.banner.dur - G.banner.t); outlinedText(ctx, G.banner.text, W / 2, H / 2, `44px ${FD}`, '#ffe6a8'); ctx.globalAlpha = 1; }
+  if (G.mode === 'matchEnd') outlinedText(ctx, 'Đánh (F//) để đấu lại · Chiêu (H) để về menu', W / 2, H - 30, `16px ${FB}`, '#a3a8b8');
 }
 
 export function renderSelect(ctx, sel) {
