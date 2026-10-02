@@ -109,5 +109,14 @@ def test_round_and_match_flow(pg, browser, base):
     assert pg.evaluate("[G.wins, G.round, G.mode]") == [[0, 0], 1, 'fight'], 'hoà giờ không được cộng điểm hay sang round mới'
 
 
+@test
+def test_double_ko_is_a_draw(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("""() => { G.mode = 'fight'; G.wins = [0, 0]; G.round = 1;
+      G.f1.hp = 0; G.f2.hp = 0; }""")
+    pg.evaluate("for (let i = 0; i < 5; i++) update(1/60)")
+    assert pg.evaluate("[G.wins, G.round, G.mode]") == [[0, 0], 1, 'fight'], 'hai bên cùng hết máu phải là hoà'
+
+
 if __name__ == '__main__':
     run(TESTS)
