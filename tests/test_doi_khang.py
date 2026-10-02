@@ -18,6 +18,7 @@ def test_game_loads_with_home_link(pg, browser, base):
 @test
 def test_two_fighters_spawn_with_correct_hp(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")  # bỏ qua màn chọn, dùng tướng/sân mặc định như Task 2-10
     hp = pg.evaluate("[G.f1.hp, G.f2.hp, G.f1.fid, G.f2.fid]")
     assert hp == [100, 105, 'tieuho', 'hungdao'], hp
 
@@ -25,6 +26,7 @@ def test_two_fighters_spawn_with_correct_hp(pg, browser, base):
 @test
 def test_movement_and_jump(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")
     x0 = pg.evaluate('G.f1.x')
     pg.keyboard.down('KeyD'); pg.wait_for_timeout(250); pg.keyboard.up('KeyD')
     assert pg.evaluate('G.f1.x') > x0 + 20, 'P1 không đi sang phải'
@@ -35,6 +37,7 @@ def test_movement_and_jump(pg, browser, base):
 @test
 def test_light_attack_hits_in_active_window(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")
     pg.evaluate("G.f1.x = 500; G.f2.x = 540; G.f1.face = 1")
     hp0 = pg.evaluate("G.f2.hp")
     pg.keyboard.press('KeyF'); pg.wait_for_timeout(50)
@@ -46,6 +49,7 @@ def test_light_attack_hits_in_active_window(pg, browser, base):
 @test
 def test_guard_reduces_damage_and_dash_is_invulnerable(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")
     pg.evaluate("G.p2cpu = false")  # kiểm thử tự điều khiển P2 trực tiếp, không để máy tranh phím
     pg.evaluate("G.f1.x = 500; G.f2.x = 540; G.f1.face = 1; G.f2.hp = 100")
     full = pg.evaluate("""() => { const h0 = G.f2.hp; startAttack(G.f1, 'heavy');
@@ -63,6 +67,7 @@ def test_guard_reduces_damage_and_dash_is_invulnerable(pg, browser, base):
 @test
 def test_special_requires_full_meter(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")
     pg.evaluate("G.f1.x = 500; G.f2.x = 540; G.f1.face = 1; G.f2.hp = 100; G.f1.meter = 40")
     pg.evaluate("tryUseSpecial(G.f1, G.f2)")
     assert pg.evaluate("[G.f1.meter, G.f2.hp]") == [40, 100], 'chiêu kích hoạt khi chưa đầy nội lực'
@@ -75,6 +80,7 @@ def test_special_requires_full_meter(pg, browser, base):
 @test
 def test_ai_approaches_and_attacks(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")
     pg.evaluate("G.f1.x = 200; G.f2.x = 900; G.diff = 'hard'")
     x0 = pg.evaluate("G.f2.x")
     pg.evaluate("for (let i = 0; i < 90; i++) update(1/60)")
@@ -87,6 +93,7 @@ def test_ai_approaches_and_attacks(pg, browser, base):
 @test
 def test_edge_hazard_on_bachdang(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")
     pg.evaluate("G.stageId = 'bachdang'; G.f1.x = 50; G.f1.hp = 100; G.f2.x = 500")
     pg.evaluate("for (let i = 0; i < 80; i++) update(1/60)")  # ~1.33s, chưa đủ 1.5s
     hp1 = pg.evaluate("G.f1.hp")
@@ -98,6 +105,7 @@ def test_edge_hazard_on_bachdang(pg, browser, base):
 @test
 def test_round_and_match_flow(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")
     pg.evaluate("G.p2cpu = false; G.f2.hp = 0; for (let i = 0; i < 5; i++) update(1/60)")
     assert pg.evaluate("[G.wins, G.mode, G.round]") == [[1, 0], 'fight', 2], pg.evaluate("[G.wins, G.mode, G.round]")
     pg.evaluate("G.f2.hp = 0; for (let i = 0; i < 5; i++) update(1/60)")
@@ -112,6 +120,7 @@ def test_round_and_match_flow(pg, browser, base):
 @test
 def test_double_ko_is_a_draw(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")
     pg.evaluate("""() => { G.mode = 'fight'; G.wins = [0, 0]; G.round = 1;
       G.f1.hp = 0; G.f2.hp = 0; }""")
     pg.evaluate("for (let i = 0; i < 5; i++) update(1/60)")
@@ -121,6 +130,7 @@ def test_double_ko_is_a_draw(pg, browser, base):
 @test
 def test_hud_renders(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startMatch(G, G)")
     # Set full health for P1 and force render
     pg.evaluate("G.f1.hp = FIGHTERS[G.f1.fid].hp; for (let i = 0; i < 5; i++) update(1/60)")
     pg.evaluate("render()")
@@ -135,6 +145,17 @@ def test_hud_renders(pg, browser, base):
     # Same pixel should no longer show the green fill color
     low = pg.evaluate("document.getElementById('cv').getContext('2d').getImageData(30, 26, 1, 1).data")
     assert list(low[:3]) != [95, 174, 74], f"At low HP, expected non-green, got RGB{tuple(low[:3])}"
+
+
+@test
+def test_select_screen_then_start_match(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.evaluate("G.mode") == 'select'
+    pg.keyboard.press('KeyD'); pg.wait_for_timeout(50)  # p1_right: di chuyển con trỏ chọn tướng P1
+    assert pg.evaluate("G.cursor1") == 1
+    pg.keyboard.press('KeyF'); pg.wait_for_timeout(100)  # p1_light: xác nhận, vào trận
+    assert pg.evaluate("G.mode") == 'fight'
+    assert pg.evaluate("G.p1id") == pg.evaluate("Object.keys({tieuho:1,hungdao:1,quoctoan:1,ngulao:1,binhtrong:1,khanhdu:1})[1]")
 
 
 if __name__ == '__main__':

@@ -6,6 +6,7 @@ import { drawParticles, drawTexts } from '../../../platform/core/fx.js';
 import { FIGHTERS, STAGES } from './data.js';
 import { W, H, GROUND } from './state.js';
 import { FB, FD } from '../../../platform/ui/theme.js';
+import { FIGHTER_IDS, STAGE_IDS } from './menu.js';
 
 const ATK_POSE = { light: () => ({ armF: -.3, armB: -1.8, legF: .3, legB: -.1, lean: .25 }),
                     heavy: () => ({ armF: -.6, armB: -2.4, legF: .4, legB: -.2, lean: .4 }) };
@@ -43,4 +44,14 @@ export function renderMatch(ctx, G) {
   outlinedText(ctx, String(Math.ceil(G.timer)), W / 2, 40, `30px ${FD}`, '#fff');
   outlinedText(ctx, `Round ${G.round} · ${G.wins[0]} - ${G.wins[1]}`, W / 2, 64, `16px ${FB}`, '#ffe6a8');
   if (G.banner) { ctx.globalAlpha = Math.min(1, G.banner.dur - G.banner.t); outlinedText(ctx, G.banner.text, W / 2, H / 2, `44px ${FD}`, '#ffe6a8'); ctx.globalAlpha = 1; }
+}
+
+export function renderSelect(ctx, sel) {
+  ctx.fillStyle = '#12141a'; ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
+  outlinedText(ctx, 'Đối Kháng Anh Hùng', W / 2, 70, `40px ${FD}`, '#ffe6a8');
+  outlinedText(ctx, `P1: ${FIGHTERS[FIGHTER_IDS[sel.cursor1]].name}  ◀ A/D ▶`, W / 2, 160, `22px ${FB}`, '#fff');
+  outlinedText(ctx, sel.p2cpu ? `Máy (${sel.diff}) — đổi: H` : `P2: ${FIGHTERS[FIGHTER_IDS[sel.cursor2]].name}  ◀ ←/→ ▶`, W / 2, 200, `22px ${FB}`, '#fff');
+  outlinedText(ctx, `Sân: ${STAGES[STAGE_IDS[sel.stageCursor]].name} — đổi: W`, W / 2, 240, `20px ${FB}`, '#ffe6a8');
+  outlinedText(ctx, 'F hoặc / để bắt đầu', W / 2, 300, `18px ${FB}`, '#a3a8b8');
 }
