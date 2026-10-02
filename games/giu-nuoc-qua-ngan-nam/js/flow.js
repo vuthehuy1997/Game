@@ -2,7 +2,7 @@
 import { $ } from '../../../platform/core/util.js';
 import { ERAS } from './data.js';
 import { S, unlocked } from './save.js';
-import { startEra } from './waves.js';
+import { startEra, startWave } from './waves.js';
 import { BUILD_KINDS, buildLabel, costOf, build, campUpgradeCost, upgrade, canUpgradeHQ, upgradeHQ } from './buildings.js';
 import { G, buildingOn } from './state.js';
 
@@ -57,6 +57,7 @@ function onPlotClick(id) {
 export function initHud() {
   $('plots').querySelectorAll('.plot').forEach(btn => btn.onclick = () => onPlotClick(+btn.dataset.plot));
   $('btnHqUp').onclick = () => upgradeHQ();
+  $('btnStartWave').onclick = () => startWave();
 }
 export function updateHud() {
   $('plots').querySelectorAll('.plot').forEach(btn => {
@@ -65,6 +66,7 @@ export function updateHud() {
     btn.classList.toggle('filled', !!b);
   });
   $('btnHqUp').disabled = !canUpgradeHQ();
+  $('btnStartWave').hidden = G.phase !== 'prep';
 }
 
 export function showResult() {

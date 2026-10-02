@@ -95,4 +95,30 @@ def test_tower_fires_only_within_range(pg, browser, base):
     assert hit, 'không bắn khi địch vào tầm'
 
 
+@test
+def test_stake_damages_once_per_wave_then_recharges(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startEra(0)")
+    pg.evaluate("build(2, 'stake')")  # lô 2 = làn 1, x 190
+    pg.evaluate("startWave(); G.queue = []")  # cô lập: không để đợt thật xen vào
+    pg.evaluate("troops.push({side:'enemy', lane:1, x:190, hp:200, maxHp:200, dmg:0, reach:0, spd:0, name:'t', walk:0})")
+    pg.evaluate("update(1/60)")
+    hp1 = pg.evaluate("troops[0].hp")
+    assert hp1 < 200, 'trụ cọc không gây sát thương'
+    pg.evaluate("update(1/60)")
+    assert pg.evaluate("troops[0].hp") == hp1, 'trụ cọc đánh quá 1 lần trong cùng đợt'
+
+
+@test
+def test_winning_all_waves_unlocks_next_era(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startEra(0)")
+    n = pg.evaluate("ERAS[0].waves.length")
+    for _ in range(n):
+        pg.evaluate("startWave(); G.queue = []; troops.length = 0; update(1/60)")
+    assert pg.evaluate("G.phase") == 'win'
+    assert pg.evaluate("S.maxEra") >= 1
+    assert pg.evaluate("unlocked(1)") == True
+
+
 run(TESTS)
