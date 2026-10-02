@@ -22,5 +22,15 @@ def test_two_fighters_spawn_with_correct_hp(pg, browser, base):
     assert hp == [100, 105, 'tieuho', 'hungdao'], hp
 
 
+@test
+def test_movement_and_jump(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    x0 = pg.evaluate('G.f1.x')
+    pg.keyboard.down('KeyD'); pg.wait_for_timeout(250); pg.keyboard.up('KeyD')
+    assert pg.evaluate('G.f1.x') > x0 + 20, 'P1 không đi sang phải'
+    pg.keyboard.down('ArrowUp'); pg.wait_for_timeout(50); pg.keyboard.up('ArrowUp'); pg.wait_for_timeout(50)
+    assert pg.evaluate('G.f2.air'), 'P2 không nhảy'
+
+
 if __name__ == '__main__':
     run(TESTS)

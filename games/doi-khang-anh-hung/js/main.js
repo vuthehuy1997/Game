@@ -7,13 +7,16 @@ import { POSES } from '../../../platform/art/poses.js';
 import { groundShadow } from '../../../platform/art/draw.js';
 import { FIGHTERS, STAGES } from './data.js';
 import { W, H, GROUND, newMatch } from './state.js';
+import { initInput } from './input.js';
+import { updateFighter } from './fighter.js';
 
 const cv = $('cv'), ctx = cv.getContext('2d');
 let G = newMatch('tieuho', 'hungdao', 'thanglong', true, 'normal');
 
 function update(dt) {
   G.t += dt;
-  for (const f of [G.f1, G.f2]) { f.t += dt; }
+  updateFighter(G.f1, G.f2, dt);
+  updateFighter(G.f2, G.f1, dt);
 }
 function render() {
   const st = STAGES[G.stageId];
@@ -29,4 +32,5 @@ function render() {
 
 mountHomeLink($('stage'));
 if (debugOn()) exposeGlobals([{ G, FIGHTERS, STAGES, update, render }], { G: v => { G = v; } });
+initInput();
 startLoop(update, render);
