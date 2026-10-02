@@ -20,7 +20,7 @@ function hitbox(f, reach) {
   return { x, y: f.y - 95, w, h: 70 };
 }
 
-export function applyDamage(attacker, defender, dmg, knock) {
+export function applyDamage(attacker, defender, dmg, knock, kind) {
   if (defender.dashT > 0) return; // bất tử trong lúc lướt né
   if (defender.counterT > 0) { // Task 5/6: thế phản đòn đang chủ động -> phản sát thương, kẻ tấn công nhận dmg thay
     const back = FIGHTERS[defender.fid].special.counterDmg;
@@ -35,7 +35,7 @@ export function applyDamage(attacker, defender, dmg, knock) {
   defender.vx = attacker.face * (guarded ? knock * .3 : knock);
   defender.x = clamp(defender.x + defender.vx * .03, 36, W - 36);
   defender.hitstun = guarded ? .12 : .25;
-  attacker.meter = Math.min(100, attacker.meter + (dmg >= 12 ? 14 : 8));
+  attacker.meter = Math.min(100, attacker.meter + (kind === 'heavy' ? 14 : 8));
   defender.meter = Math.min(100, defender.meter + 5);
   spark(defender.x, defender.y - 70, guarded ? 5 : 12, guarded ? '#9fb0c9' : '#ff6a4a');
 }
@@ -46,7 +46,7 @@ export function tryUseSpecial(f, opp) {
   f.meter = 0;
   if (sp.kind === 'counter') { f.counterT = sp.dur; return true; }
   if (sp.kind === 'ranged') {
-    for (let i = 0; i < sp.hits; i++) applyDamage(f, opp, sp.dmg, 80);
+    for (let i = 0; i < sp.hits; i++) applyDamage(f, opp, sp.dmg, 80, 'heavy');
     f.meter = 0; // applyDamage thưởng nội lực khi trúng đòn — chiêu đặc biệt phải tiêu hết, không được hồi lại
     return true;
   }
@@ -56,13 +56,13 @@ export function tryUseSpecial(f, opp) {
   }
   // 'dmg': chỉ trúng nếu còn trong tầm rộng
   const reach = FIGHTERS[f.fid].reach * 1.4;
-  if (Math.abs(opp.x - f.x) <= reach) { applyDamage(f, opp, sp.dmg, sp.knock); f.meter = 0; }
+  if (Math.abs(opp.x - f.x) <= reach) { applyDamage(f, opp, sp.dmg, sp.knock, 'heavy'); f.meter = 0; }
   return true;
 }
 
 export function updateCombat(f, opp, dt) {
   if (f.dashT > 0 && f.specialDashDmg && !f.specialDashHit && overlap(hurtbox(f), hurtbox(opp))) {
-    f.specialDashHit = true; applyDamage(f, opp, f.specialDashDmg, f.specialDashKnock);
+    f.specialDashHit = true; applyDamage(f, opp, f.specialDashDmg, f.specialDashKnock, 'heavy');
     f.meter = 0; // tương tự: chiêu xông không được hồi nội lực khi trúng đòn giữa đường
   }
   if (f.dashT <= 0) { f.specialDashDmg = null; f.specialDashHit = false; }
@@ -74,7 +74,7 @@ export function updateCombat(f, opp, dt) {
     const reach = a.kind === 'heavy' ? d.reach : d.reach * .8;
     if (overlap(hitbox(f, reach), hurtbox(opp))) {
       a.hit = true;
-      applyDamage(f, opp, a.kind === 'heavy' ? d.dmgHeavy : d.dmgLight, a.kind === 'heavy' ? 220 : 120);
+      applyDamage(f, opp, a.kind === 'heavy' ? d.dmgHeavy : d.dmgLight, a.kind === 'heavy' ? 220 : 120, a.kind);
     }
   }
   if (a.t >= wind + active + recover) f.atk = null;
