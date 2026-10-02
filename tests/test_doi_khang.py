@@ -121,8 +121,20 @@ def test_double_ko_is_a_draw(pg, browser, base):
 @test
 def test_hud_renders(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
-    alpha = pg.evaluate("document.getElementById('cv').getContext('2d').getImageData(30, 26, 1, 1).data[3]")
-    assert alpha == 255
+    # Set full health for P1 and force render
+    pg.evaluate("G.f1.hp = FIGHTERS[G.f1.fid].hp; for (let i = 0; i < 5; i++) update(1/60)")
+    pg.evaluate("render()")
+    # Check pixel at absolute (30, 26) - inside P1's green health bar at full HP
+    # P1's bar: healthBar(ctx, 20, 'l', G.f1) with fill at local (2, 20), width 296, height 12
+    # At full HP: fill x 22-318, y 20-32; pixel (30, 26) inside, color green #5fae4a
+    full = pg.evaluate("document.getElementById('cv').getContext('2d').getImageData(30, 26, 1, 1).data")
+    assert list(full[:3]) == [95, 174, 74], f"Expected #5fae4a green at full HP, got RGB{tuple(full[:3])}"
+    # Set hp to 1 (nearly empty bar) and force render
+    pg.evaluate("G.f1.hp = 1; for (let i = 0; i < 5; i++) update(1/60)")
+    pg.evaluate("render()")
+    # Same pixel should no longer show the green fill color
+    low = pg.evaluate("document.getElementById('cv').getContext('2d').getImageData(30, 26, 1, 1).data")
+    assert list(low[:3]) != [95, 174, 74], f"At low HP, expected non-green, got RGB{tuple(low[:3])}"
 
 
 if __name__ == '__main__':
