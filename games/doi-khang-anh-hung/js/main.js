@@ -12,6 +12,7 @@ import { initInput } from './input.js';
 import { updateFighter, startDash } from './fighter.js';
 import { updateCombat, startAttack, tryUseSpecial } from './combat.js';
 import { aiTick } from './ai.js';
+import { updateHazard } from './hazards.js';
 
 const cv = $('cv'), ctx = cv.getContext('2d');
 let G = newMatch('tieuho', 'hungdao', 'thanglong', true, 'normal');
@@ -23,6 +24,8 @@ function update(dt) {
   updateFighter(G.f2, G.f1, dt);
   updateCombat(G.f1, G.f2, dt);
   updateCombat(G.f2, G.f1, dt);
+  updateHazard(G.f1, G.stageId, dt);
+  updateHazard(G.f2, G.stageId, dt);
 }
 function render() {
   const st = STAGES[G.stageId];
