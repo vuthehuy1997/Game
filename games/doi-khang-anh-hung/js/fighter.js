@@ -1,9 +1,10 @@
 // Di chuyển, nhảy, quay mặt — dùng chung cho fighter do người hoặc máy điều khiển.
 // held/pressed chứa action 'p1_*' hoặc 'p2_*' tuỳ side của fighter.
-import { held } from '../../../platform/core/input.js';
+import { held, pressed } from '../../../platform/core/input.js';
 import { clamp } from '../../../platform/core/util.js';
 import { FIGHTERS } from './data.js';
 import { W, GROUND } from './state.js';
+import { startAttack } from './combat.js';
 
 const GRAV = 2600, JUMP_VY = -760;
 
@@ -27,5 +28,11 @@ export function updateFighter(f, opp, dt) {
   f.x = clamp(f.x, 36, W - 36);
   if (!locked) f.face = opp.x >= f.x ? 1 : -1;
   if (dir && !f.air) f.walk += dt * 10;
-  f.state = f.air ? 'air' : f.guard ? 'guard' : dir ? 'run' : f.st < .12 ? 'land' : 'idle';
+
+  if (!locked) {
+    if (pressed.has(act('light'))) startAttack(f, 'light');
+    else if (pressed.has(act('heavy'))) startAttack(f, 'heavy');
+  }
+  f.state = f.atk ? (f.atk.kind === 'heavy' ? 'heavy' : 'light')
+    : f.air ? 'air' : f.guard ? 'guard' : dir ? 'run' : f.st < .12 ? 'land' : 'idle';
 }

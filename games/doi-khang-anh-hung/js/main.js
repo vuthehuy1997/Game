@@ -9,6 +9,7 @@ import { FIGHTERS, STAGES } from './data.js';
 import { W, H, GROUND, newMatch } from './state.js';
 import { initInput } from './input.js';
 import { updateFighter } from './fighter.js';
+import { updateCombat } from './combat.js';
 
 const cv = $('cv'), ctx = cv.getContext('2d');
 let G = newMatch('tieuho', 'hungdao', 'thanglong', true, 'normal');
@@ -17,6 +18,8 @@ function update(dt) {
   G.t += dt;
   updateFighter(G.f1, G.f2, dt);
   updateFighter(G.f2, G.f1, dt);
+  updateCombat(G.f1, G.f2, dt);
+  updateCombat(G.f2, G.f1, dt);
 }
 function render() {
   const st = STAGES[G.stageId];

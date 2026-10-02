@@ -32,5 +32,16 @@ def test_movement_and_jump(pg, browser, base):
     assert pg.evaluate('G.f2.air'), 'P2 không nhảy'
 
 
+@test
+def test_light_attack_hits_in_active_window(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.f1.x = 500; G.f2.x = 540; G.f1.face = 1")
+    hp0 = pg.evaluate("G.f2.hp")
+    pg.keyboard.press('KeyF'); pg.wait_for_timeout(50)
+    assert pg.evaluate("G.f2.hp") == hp0, 'ăn đòn trước khung hình active'
+    pg.wait_for_timeout(200)
+    assert pg.evaluate("G.f2.hp") < hp0, 'không mất máu sau khi đòn vào khung active'
+
+
 if __name__ == '__main__':
     run(TESTS)
