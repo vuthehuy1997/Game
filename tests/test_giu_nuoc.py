@@ -80,4 +80,19 @@ def test_hq_loses_when_health_reaches_zero(pg, browser, base):
     assert pg.locator('#card h2').count() == 1
 
 
+@test
+def test_tower_fires_only_within_range(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startEra(0)")
+    pg.evaluate("build(2, 'tower')")  # lô 2 = làn 1, x 190, tầm 170
+    pg.evaluate("G.phase = 'battle'")
+    pg.evaluate("troops.push({side:'enemy', lane:1, x:900, hp:30, maxHp:30, dmg:0, reach:0, spd:0, name:'t', walk:0})")
+    pg.evaluate("for (let i = 0; i < 30; i++) update(1/60)")
+    assert pg.evaluate("projs.length") == 0, 'bắn khi địch còn ngoài tầm'
+    pg.evaluate("troops.find(u => u.side === 'enemy').x = 260")
+    pg.evaluate("for (let i = 0; i < 30; i++) update(1/60)")
+    hit = pg.evaluate("projs.length >= 1 || troops.find(u => u.side === 'enemy').hp < 30")
+    assert hit, 'không bắn khi địch vào tầm'
+
+
 run(TESTS)
