@@ -46,6 +46,7 @@ def test_light_attack_hits_in_active_window(pg, browser, base):
 @test
 def test_guard_reduces_damage_and_dash_is_invulnerable(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.p2cpu = false")  # kiểm thử tự điều khiển P2 trực tiếp, không để máy tranh phím
     pg.evaluate("G.f1.x = 500; G.f2.x = 540; G.f1.face = 1; G.f2.hp = 100")
     full = pg.evaluate("""() => { const h0 = G.f2.hp; startAttack(G.f1, 'heavy');
       for (let i = 0; i < 40; i++) update(1/60); return h0 - G.f2.hp; }""")
@@ -69,6 +70,18 @@ def test_special_requires_full_meter(pg, browser, base):
     pg.evaluate("tryUseSpecial(G.f1, G.f2)")
     hp, meter = pg.evaluate("[G.f2.hp, G.f1.meter]")
     assert meter == 0 and hp < 100, (hp, meter)
+
+
+@test
+def test_ai_approaches_and_attacks(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.f1.x = 200; G.f2.x = 900; G.diff = 'hard'")
+    x0 = pg.evaluate("G.f2.x")
+    pg.evaluate("for (let i = 0; i < 90; i++) update(1/60)")
+    assert pg.evaluate("G.f2.x") < x0 - 40, 'máy không tiến lại gần'
+    pg.evaluate("G.f1.x = 500; G.f2.x = 540; G.f1.hp = 100")
+    hit = pg.evaluate("""() => { const h0 = G.f1.hp; for (let i = 0; i < 300; i++) update(1/60); return h0 - G.f1.hp; }""")
+    assert hit > 0, 'máy không ra được đòn nào trong 5 giây mô phỏng'
 
 
 if __name__ == '__main__':
