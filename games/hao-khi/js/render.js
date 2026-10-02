@@ -1,13 +1,24 @@
-'use strict';
 // Vẽ khung hình: tư thế nhân vật, đạn, hiệu ứng, HUD và băng rôn.
+import { drawChibi, drawPot } from '../../../platform/art/chibi.js';
+import { rr, ell, outlinedText, groundShadow } from '../../../platform/art/draw.js';
+import { POSES } from '../../../platform/art/poses.js';
+import { drawProp } from '../../../platform/art/props.js';
+import { drawParticles, drawTexts } from '../../../platform/core/fx.js';
+import { rand, clamp } from '../../../platform/core/util.js';
+import { FD, FB } from '../../../platform/ui/theme.js';
+import { stake, drawBG, drawWeather } from './background.js';
+import { SPK, MAIN, ATK, SKILLS, ACTIVE, xpNeed, skillCost, ITEMS } from './data.js';
+import { arenaProgress } from './flow.js';
+import { LOOKS } from './looks.js';
+import { CFG, S, sk } from './save.js';
+import { ctx, W, H, LANES, G, P, ally, enemies, projs, items, props, alive } from './state.js';
 
-function poseP(p) {
+export function poseP(p) {
   const P2 = { face: p.face, t: p.t, poison: p.poison > 0, alpha: p.inv > 0 && p.state !== 'dash' && p.state !== 'ult' ? (Math.sin(p.t * 40) > 0 ? 1 : .45) : 1 };
   const w = p.walk;
   switch (p.state) {
-    case 'idle': Object.assign(P2, { bob: Math.sin(p.t * 4) * 1.5, armF: .3 + Math.sin(p.t * 4) * .05, armB: -.3, blink: (p.t % 3.2) < .12 }); break;
-    case 'run': Object.assign(P2, { legF: Math.sin(w) * .8, legB: -Math.sin(w) * .8, armF: -Math.sin(w) * .8, armB: Math.sin(w) * .8, bob: Math.abs(Math.sin(w)) * 4, lean: .08 }); break;
-    case 'air': Object.assign(P2, { legF: .7, legB: -.2, armF: 2.3, armB: -2.1 }); break;
+    case 'idle': case 'run': case 'air': case 'land': case 'dash': case 'hurt': case 'guard': case 'airkick': case 'dead':
+      Object.assign(P2, POSES[p.state](p)); break;
     case 'attack': {
       const a = ATK[p.combo], act = p.st >= a.a0 * .6;
       if (p.combo === 1) Object.assign(P2, { armF: act ? Math.PI / 2 : -.4, armB: -.5, lean: act ? .12 : -.05, legF: .3, legB: -.3 });
@@ -15,29 +26,23 @@ function poseP(p) {
       else Object.assign(P2, { armF: act ? Math.PI / 2 : -1, armB: act ? Math.PI / 2 - .25 : -1.2, lean: act ? .22 : -.12, legF: .5, legB: -.5, shout: act });
       break;
     }
-    case 'airkick': Object.assign(P2, { legF: 1.4, legB: -.1, armF: -.8, armB: -1.4, lean: -.3 }); break;
-    case 'land': Object.assign(P2, { legF: .5, legB: -.5, bob: -4 }); break;
     case 'cast': Object.assign(P2, { armF: p.st > .1 ? Math.PI / 2 : .2, armB: p.st > .1 ? Math.PI / 2 - .2 : -.3, lean: p.st > .1 ? .15 : -.1, legF: .4, legB: -.4, shout: p.st > .1 }); break;
-    case 'dash': Object.assign(P2, { lean: .45, legF: .9, legB: -.9, armF: -1.2, armB: -1.5 }); break;
-    case 'hurt': Object.assign(P2, { lean: -.3, armF: 2.4, armB: -2.4, hurtFace: 1 }); break;
     case 'ult': Object.assign(P2, { armF: Math.PI - .2, armB: -Math.PI + .2, shout: true, bob: Math.min(20, p.st * 40) }); break;
-    case 'dead': Object.assign(P2, { down: Math.min(1, p.st * 3), hurtFace: 1 }); break;
     case 'spin': { const k = p.st * 26; Object.assign(P2, { face: Math.sin(k) > 0 ? 1 : -1, legF: 1.5, legB: -.3, armF: 1.9, armB: -1.9, bob: 6 }); break; }
     case 'rush': Object.assign(P2, { lean: .55, armF: Math.PI / 2, armB: Math.PI / 2 - .3, legF: .9, legB: -1, shout: true }); break;
-    case 'guard': Object.assign(P2, { armF: 2.6, armB: 2.3, legF: .45, legB: -.45, bob: -3 }); break;
     case 'counter': Object.assign(P2, { armF: Math.PI / 2, armB: -.6, lean: .25, legF: .6, legB: -.5, shout: true }); break;
     case 'quake': Object.assign(P2, P.air ? { armF: -2.8, armB: -2.6, legF: .7, legB: -.3 } : { armF: .1, armB: -.2, lean: .35, legF: .7, legB: -.7, shout: true }); break;
   }
   return P2;
 }
-function poseAlly(a) {
+export function poseAlly(a) {
   const P2 = { face: a.face, t: a.t };
   if (a.state === 'run') Object.assign(P2, { legF: Math.sin(a.walk) * .8, legB: -Math.sin(a.walk) * .8, armB: Math.sin(a.walk) * .8, armF: .4, wpn: .4, bob: Math.abs(Math.sin(a.walk)) * 4, lean: .08 });
   else if (a.state === 'attack') { const act = a.st < .2; Object.assign(P2, { armF: act ? 1.6 : -.9, wpn: act ? Math.PI / 2 : -1, lean: act ? .15 : -.08, legF: .4, legB: -.4, shout: act && a.combo === 3 }); }
   else Object.assign(P2, { bob: Math.sin(a.t * 4) * 1.5, armF: .35, wpn: .3 });
   return P2;
 }
-function poseE(e) {
+export function poseE(e) {
   const P2 = { face: e.face, t: e.t, flash: e.flash, shieldRot: e.shieldRot };
   const w = e.walk, isB = e.d.boss;
   switch (e.state) {
@@ -64,12 +69,10 @@ function poseE(e) {
   }
   return P2;
 }
-function shadow(x, gy, s = 1) { ell(ctx, x, gy + 2, 26 * s, 6 * s, 'rgba(0,0,0,.28)'); }
-function outlined(txt, x, y, font, fill, stroke = 'rgba(20,14,10,.85)', lw = 4) {
-  ctx.font = font; ctx.lineWidth = lw; ctx.strokeStyle = stroke; ctx.strokeText(txt, x, y); ctx.fillStyle = fill; ctx.fillText(txt, x, y);
-}
+export const shadow = (x, gy, s = 1) => groundShadow(ctx, x, gy, s);
+export const outlined = (...a) => outlinedText(ctx, ...a);
 
-function drawProjs() {
+export function drawProjs() {
   for (const q of projs) {
     if (q.kind === 'arrow') {
       ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(Math.atan2(q.vy, q.vx));
@@ -119,20 +122,20 @@ function drawProjs() {
 }
 
 // Bãi cọc gỗ bịt sắt: nhô dần lên khi nước ròng; gãy sau khi tướng giặc mắc vào
-function drawStakes(s) {
+export function drawStakes(s) {
   if (!s.dead) { ctx.globalAlpha = .22 + Math.sin(G.t * 5) * .08; ell(ctx, s.x, s.gy + 3, 46, 9, '#e9b949'); ctx.globalAlpha = 1; }
   for (let i = 0; i < 5; i++) {
     const h = s.dead ? 7 + (i % 2) * 4 : (26 + ((i * 7) % 3) * 8) * s.up;
     if (h > 2) stake(s.x - 30 + i * 15, s.gy + 4 - (i % 2) * 5, h);
   }
 }
-function drawItem(it) {
+export function drawItem(it) {
   if (it.t > 11 && Math.sin(it.t * 20) < 0) return;
   shadow(it.x, it.gy, .4);
   if (it.kind === 'coin') { ell(ctx, it.x, it.y, 8, 8, '#e9b949'); ctx.strokeStyle = '#a07a22'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(it.x, it.y, 8, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = '#6b4a14'; ctx.fillRect(it.x - 2.5, it.y - 2.5, 5, 5); }
   else { ctx.fillStyle = '#3f7a3a'; ctx.fillRect(it.x - 11, it.y - 11, 22, 22); ctx.strokeStyle = '#e6d9a8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(it.x - 11, it.y); ctx.lineTo(it.x + 11, it.y); ctx.moveTo(it.x, it.y - 11); ctx.lineTo(it.x, it.y + 11); ctx.stroke(); }
 }
-function drawEnemy(e) {
+export function drawEnemy(e) {
   const s = e.sc || 1; shadow(e.x, e.gy, s);
   const pz = poseE(e); pz.scale = e.R ? e.R.sc : 1; if (e.rank && e.rank !== 'n') pz.flag = e.rank;
   if (e.buff && alive(e)) { ctx.strokeStyle = `rgba(255,90,60,${.35 + Math.sin(G.t * 8) * .15})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(e.x, e.gy + 2, 28 * s, 7 * s, 0, 0, Math.PI * 2); ctx.stroke(); }
@@ -145,8 +148,8 @@ function drawEnemy(e) {
   } else if (!e.d.boss && alive(e) && e.hp < e.maxHp) { const bw = 40; ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(e.x - bw / 2, e.y - 124 * s, bw, 5); ctx.fillStyle = '#e04a3a'; ctx.fillRect(e.x - bw / 2, e.y - 124 * s, bw * Math.max(0, e.hp / e.maxHp), 5); }
   if (e.state === 'windup' && !e.d.boss) { ctx.textAlign = 'center'; outlined('!', e.x, e.y - 128 * s, `bold 24px ${FB}`, e.move === 'lunge' ? '#ff5a3c' : '#ffd35a'); }
 }
-const heroLook = () => LOOKS[G.st.hero || 'hero'];
-function drawPlayer() {
+export const heroLook = () => LOOKS[G.st.hero || 'hero'];
+export function drawPlayer() {
   shadow(P.x, P.gy);
   // vòng chỉ làn dưới chân để dễ thấy đang đứng làn nào
   if (G.mode === 'play') { ctx.strokeStyle = 'rgba(233,185,73,.55)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(P.x, P.gy + 2, 30, 8, 0, 0, Math.PI * 2); ctx.stroke(); }
@@ -156,7 +159,7 @@ function drawPlayer() {
   drawChibi(ctx, P.x, P.y, heroLook(), poseP(P));
 }
 
-function render() {
+export function render() {
   ctx.save();
   if (CFG.shake && G.shake > 0) ctx.translate(rand(-G.shake, G.shake), rand(-G.shake, G.shake) * .6);
   drawBG();
@@ -175,17 +178,8 @@ function render() {
   if (P) draws.push([P.gy, drawPlayer]);
   draws.sort((a, b) => a[0] - b[0]).forEach(d => d[1]());
   drawProjs();
-  for (const p of parts) {
-    ctx.globalAlpha = Math.max(0, Math.min(1, p.life / p.max * 1.5));
-    if (p.kind === 'spark') { ctx.strokeStyle = p.col; ctx.lineWidth = p.size * .8; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * .03, p.y - p.vy * .03); ctx.stroke(); }
-    else if (p.kind === 'leaf') ell(ctx, p.x, p.y, p.size, p.size * .55, p.col, G.t * 2 + p.size);
-    else if (p.kind === 'firefly') { ctx.globalAlpha *= .5 + Math.sin(G.t * 6 + p.x) * .5; ell(ctx, p.x, p.y, p.size * 2.5, p.size * 2.5, 'rgba(217,242,122,.25)'); ell(ctx, p.x, p.y, p.size, p.size, p.col); }
-    else ell(ctx, p.x, p.y, p.size, p.size, p.col);
-  }
-  ctx.globalAlpha = 1;
-  ctx.textAlign = 'center';
-  for (const t of texts) { ctx.globalAlpha = Math.min(1, t.life * 2); outlined(t.txt, t.x, t.y, `${t.size}px ${FB}`, t.col); }
-  ctx.globalAlpha = 1;
+  drawParticles(ctx, G.t);
+  drawTexts(ctx, FB);
   ctx.restore();
 
   drawWeather();
@@ -202,7 +196,7 @@ function render() {
   if (G.banner) drawBanner();
 }
 
-function drawHUD() {
+export function drawHUD() {
   ctx.save();
   ctx.fillStyle = 'rgba(20,14,10,.72)'; rr(ctx, 14, 12, 330, 88, 12); ctx.fill();
   ctx.strokeStyle = '#e9b949'; ctx.lineWidth = 1.5; rr(ctx, 14, 12, 330, 88, 12); ctx.stroke();
@@ -263,7 +257,7 @@ function drawHUD() {
   ctx.restore();
 }
 // Thanh kỹ năng dưới bảng máu (góc trên trái, để không che làn ngoài cùng): 5 kỹ năng + lướt + tuyệt kỹ, có vòng hồi chiêu
-function drawSkillBar() {
+export function drawSkillBar() {
   const box = 52, gap = 4, y = 132;
   const slots = ACTIVE.map(id => ({ id, key: SKILLS[id].key, name: SKILLS[id].name, lv: sk(id), cd: P.cds[id], max: sk(id) ? SKILLS[id].cd[sk(id) - 1] : 1, mp: skillCost(id) }));
   slots.push({ id: 'dash', key: 'Shift', name: 'Lướt', lv: 1, cd: Math.max(0, P.dashCd), max: [.55, .45, .38, .25][sk('thanphap')], mp: 0 });
@@ -289,7 +283,7 @@ function drawSkillBar() {
     }
   });
 }
-function drawBanner() {
+export function drawBanner() {
   const b = G.banner, k = b.t / b.dur, a = k < .15 ? k / .15 : k > .8 ? (1 - k) / .2 : 1;
   ctx.save(); ctx.globalAlpha = clamp(a, 0, 1); ctx.textAlign = 'center';
   const y = H * .38;

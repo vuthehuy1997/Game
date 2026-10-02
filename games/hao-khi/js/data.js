@@ -1,7 +1,9 @@
-'use strict';
 // Dữ liệu game: nhân vật nói, 6 ải (cốt truyện, đợt địch, bẫy), chỉ số địch và boss, đòn đánh, luyện công.
+import { pick, fmtTime } from '../../../platform/core/util.js';
+import { S } from './save.js';
+import { W } from './state.js';
 
-const SPK = {
+export const SPK = {
   narr: { name: 'Sử quan' },
   hero: { name: 'Tiểu Hổ', short: 'Tiểu Hổ', look: 'hero' },
   master: { name: 'Đại Sơn (sư phụ thời trẻ)', short: 'Đại Sơn', look: 'master' },
@@ -26,7 +28,7 @@ const SPK = {
 };
 
 // Câu đồng đội hô trong trận
-const ALLY_LINES = {
+export const ALLY_LINES = {
   pnl: ['Trai Phù Ủng đây!', 'Giáo đâm vào đùi còn chẳng sợ!', 'Sát Thát!', 'Tiểu Hổ, đỡ lưng cho ta!'],
   tqt: ['Phá cường địch, báo hoàng ân!', 'Anh em, theo cờ ta!', 'Ta tuy nhỏ nhưng chí không nhỏ!'],
   tkd: ['Lấy công chuộc tội!', 'Đánh chìm thuyền lương!', 'Một hạt gạo cũng không cho qua!'],
@@ -42,7 +44,7 @@ const ALLY_LINES = {
   - side: ải ngoại truyện, nằm ngoài tiến trình chính, mở bằng mốc sao 'side'. tier: bậc sức mạnh của giặc (mặc định = thứ tự ải).
     hero: người chơi điều khiển ai (mặc định Tiểu Hổ).
 */
-const STAGES = [
+export const STAGES = [
   {
     name: 'Làng Phù Ủng', year: 'Năm 1284', bg: 'village', len: 3300, par: 150, combo: 20, props: ['jar', 'crate'],
     waves: [
@@ -248,7 +250,9 @@ const STAGES = [
   Boss: rank (Tướng / Đại tướng), moves dùng từ đầu, moves2 mở khi dưới 50% máu,
   Đại tướng (grand) có thêm giai đoạn 3 dưới 25% máu: đánh dồn dập và dùng chiêu "fury" (chém liên hoàn).
 */
-const EDEF = {
+export const MAIN = STAGES.filter(s => !s.side).length;   // số ải chính
+
+export const EDEF = {
   bandit:  { name: 'Sơn tặc', hp: 34, spd: 125, reach: 60, dmg: 7, wind: .38, coins: [2, 4], xp: 6 },
   soldier: { name: 'Lính giáo', hp: 44, spd: 112, reach: 86, dmg: 9, wind: .42, coins: [3, 5], xp: 8 },
   sword:   { name: 'Lính kiếm', hp: 40, spd: 145, reach: 66, dmg: 7, wind: .3, combo: 2, coins: [3, 5], xp: 8 },
@@ -267,28 +271,28 @@ const EDEF = {
   bossOMN:     { boss: true, rank: 'Đại tướng', grand: true, name: 'Ô Mã Nhi', hp: 820, spd: 170, reach: 124, dmg: 16, moves: ['charge', 'slam', 'volley'], moves2: ['tide', 'summon', 'tide', 'fury'], summon: ['shield:cap', 'lancer', 'potter'], coins: [110, 110], xp: 220, phase2: { banner: 'Nước ròng!', sub: 'Cọc nhô lên: dụ Ô Mã Nhi lao vào bãi cọc cùng làn', tideOut: true } },
 };
 // Cấp bậc của lính thường: ghi trong đợt địch dạng 'soldier:cap' (đội trưởng) hoặc 'soldier:cmd' (chỉ huy)
-const RANKS = {
+export const RANKS = {
   n:   { label: '', hp: 1, dmg: 1, sc: 1, coin: 1, xp: 1 },
   cap: { label: 'Đội trưởng', hp: 2.2, dmg: 1.3, sc: 1.14, coin: 2, xp: 2.5 },
   cmd: { label: 'Chỉ huy', hp: 3.6, dmg: 1.5, sc: 1.27, coin: 3.5, xp: 5 },
 };
 
 // Liên hoàn quyền: thời lượng, khung ra đòn a0..a1, độ rộng, sát thương, đẩy lùi, lao tới
-const ATK = [null,
+export const ATK = [null,
   { dur: .25, a0: .06, a1: .15, w: 60, dmg: 8, kb: 150, lunge: 140 },
   { dur: .29, a0: .08, a1: .18, w: 70, dmg: 9, kb: 170, lunge: 150 },
   { dur: .44, a0: .13, a1: .26, w: 84, dmg: 16, kb: 60, lunge: 280, heavy: true },   // hất thẳng lên để đánh tiếp (tung hứng)
 ];
 
-const UPS = [
+export const UPS = [
   { k: 'atk', name: 'Quyền cước', desc: 'Mọi đòn mạnh hơn 20%.' },
   { k: 'hp', name: 'Khí huyết', desc: 'Thêm 25 sinh lực tối đa.' },
   { k: 'mp', name: 'Nội công', desc: 'Thêm 15 nội lực, hồi nội lực nhanh hơn.' },
 ];
-const upCost = lv => 30 + lv * 25;
+export const upCost = lv => 30 + lv * 25;
 
 // Địa danh trên bản đồ hành quân (toạ độ gần đúng, mang tính minh hoạ), theo thứ tự ải
-const MAP_POINTS = [
+export const MAP_POINTS = [
   { place: 'Phù Ủng', lat: 20.80, lon: 106.12 },
   { place: 'Thăng Long', lat: 21.03, lon: 105.85 },
   { place: 'Hàm Tử, Tây Kết', lat: 20.87, lon: 105.98 },
@@ -301,7 +305,7 @@ const MAP_POINTS = [
 /* ---------------- Kỹ năng & cây kỹ năng ----------------
    3 nhánh × 3 bậc. Học bậc sau cần bậc trước cùng nhánh ≥ 1. Mỗi cấp tốn 1 điểm kỹ năng (nhận khi lên cấp).
    slot: kỹ năng chủ động gán vào phím (1 K · 2 L · 3 I · 4 O · 5 H). Kỹ năng không có slot là nội công bị động. */
-const SKILLS = {
+export const SKILLS = {
   lienhoan: { name: 'Liên Hoàn Quyền', branch: 0, tier: 0, desc: 'Đòn đánh thường (J) mạnh hơn.', lv: ['Sát thương +15%', 'Sát thương +30%, ra đòn nhanh hơn', 'Sát thương +45%, đòn thứ ba tung sóng quyền'] },
   xoay:     { name: 'Toàn Phong Cước', branch: 0, tier: 1, slot: 2, key: 'L', mp: 18, cd: [3.2, 2.7, 2.2], desc: 'Xoay người đá liên hoàn quanh mình.', lv: ['Đá năm cú quanh người', 'Sát thương +30%', 'Cuốn giặc lại gần'] },
   diachan:  { name: 'Địa Chấn Quyền', branch: 0, tier: 2, slot: 5, key: 'H', mp: 30, cd: [7, 6, 5], desc: 'Đấm xuống đất, chấn động cả ba làn.', lv: ['Đánh ngã giặc quanh mình', 'Sát thương +30%', 'Vùng chấn động rộng hơn'] },
@@ -312,36 +316,36 @@ const SKILLS = {
   hoxung:   { name: 'Bạch Hổ Xung', branch: 2, tier: 1, slot: 3, key: 'I', mp: 22, cd: [4, 3.4, 2.8], desc: 'Lao như hổ vồ, húc văng mọi kẻ trên đường.', lv: ['Lao một quãng ngắn', 'Sát thương +30%', 'Lao xa hơn'] },
   phicuoc:  { name: 'Phi Long Cước', branch: 2, tier: 2, desc: 'Đá trên không (nhảy rồi J) mạnh hơn.', lv: ['Phi cước +40%', 'Nhảy được hai lần', 'Phi cước +80%'] },
 };
-const BRANCHES = ['Ngoại công', 'Nội công', 'Thân pháp'];
-const ACTIVE = ['chuong', 'xoay', 'hoxung', 'thietbo', 'diachan']; // theo thứ tự phím 1..5
-const xpNeed = lv => 50 + lv * 35;
+export const BRANCHES = ['Ngoại công', 'Nội công', 'Thân pháp'];
+export const ACTIVE = ['chuong', 'xoay', 'hoxung', 'thietbo', 'diachan']; // theo thứ tự phím 1..5
+export const xpNeed = lv => 50 + lv * 35;
 
 /* ---------------- Thử thách & mốc sao ----------------
    Mỗi ải có 3 ấn. r = kết quả trận (time, maxCombo, diff = độ khó thấp nhất đã dùng trong trận). Ấn mới đạt thưởng CH_COINS văn. */
-const CH_COINS = 40;
-const CHALS = [
+export const CH_COINS = 40;
+export const CHALS = [
   { id: 'speed', name: 'Thần tốc', desc: st => `Thắng trong ${fmtTime(st.par)}`, ok: (r, st) => r.time <= st.par },
   { id: 'combo', name: 'Liên hoàn', desc: st => `Đánh chuỗi ${st.combo} đòn không bị ngắt`, ok: (r, st) => r.maxCombo >= st.combo },
   { id: 'hard', name: 'Hổ tướng', desc: () => 'Thắng ở độ khó Khó', ok: r => r.diff >= 2 },
 ];
 // Tổng số sao mở dần phần thưởng vĩnh viễn cho ô lưu
-const MILESTONES = [
+export const MILESTONES = [
   { need: 4, id: 'coin', name: 'Túi gấm', desc: 'Tiền nhặt được nhiều hơn 20%' },
   { need: 6, id: 'side', name: 'Chuyện xưa', desc: 'Mở ải ngoại truyện Đông Bộ Đầu (1258)' },
   { need: 9, id: 'rage', name: 'Khí thế', desc: 'Vào trận có sẵn 40 hào khí' },
   { need: 13, id: 'sp', name: 'Bí kíp', desc: 'Thêm 1 điểm kỹ năng' },
   { need: 17, id: 'armor', name: 'Giáp Sát Thát', desc: 'Giảm 10% sát thương phải chịu' },
 ];
-const totalStars = sv => (sv.stars || []).reduce((a, b) => a + (b || 0), 0);
-const ms = id => totalStars(S) >= MILESTONES.find(m => m.id === id).need;
+export const totalStars = sv => (sv.stars || []).reduce((a, b) => a + (b || 0), 0);
+export const ms = id => totalStars(S) >= MILESTONES.find(m => m.id === id).need;
 
 /* ---------------- Võ đài (chế độ chơi lại) ----------------
    Một "ải" tạm, không nằm trong STAGES: một khung hình, các đợt nối nhau, không có sao hay ấn.
    endless: đợt sinh vô tận bằng gen(n), cứ 5 đợt một tướng, giặc mạnh dần theo tier. Kỷ lục = số đợt đã qua.
    rush: lần lượt đấu cả 7 tướng. Kỷ lục = thời gian nhanh nhất. */
-const BOSS_ORDER = ['bossBandit', 'bossAju', 'bossCaptain', 'bossToaDo', 'bossLyHang', 'bossZhang', 'bossOMN'];
-const RUSH_BONUS = 100;
-function endlessWave(n) {
+export const BOSS_ORDER = ['bossBandit', 'bossAju', 'bossCaptain', 'bossToaDo', 'bossLyHang', 'bossZhang', 'bossOMN'];
+export const RUSH_BONUS = 100;
+export function endlessWave(n) {
   const tier = Math.min(10, n * .6);
   if ((n + 1) % 5 === 0) return { at: 0, tier, boss: true, list: [BOSS_ORDER[((n + 1) / 5 - 1) % BOSS_ORDER.length], 'soldier', 'archer'] };
   const pool = ['bandit', 'soldier', 'sword', 'archer'].concat(n >= 3 ? ['shield', 'lancer'] : [], n >= 6 ? ['heavy', 'potter'] : []);
@@ -351,7 +355,7 @@ function endlessWave(n) {
   if (n >= 6 && n % 2 === 0) list.push('drummer');
   return { at: 0, tier, list };
 }
-function makeArena(kind) {
+export function makeArena(kind) {
   return kind === 'endless'
     ? { arena: kind, label: 'Thí luyện', name: 'Thí luyện Vạn Kiếp', sub: 'Trụ được bao nhiêu đợt?', bg: 'forest', len: W, tier: 0, waves: [], gen: endlessWave }
     : { arena: kind, label: 'Đấu tướng', name: 'Đấu tướng', sub: `Hạ lần lượt ${BOSS_ORDER.length} tướng giặc`, bg: 'citadel', len: W, tier: 0,
@@ -360,17 +364,17 @@ function makeArena(kind) {
 
 /* ---------------- Tuyệt học: chọn một trong ba ----------------
    Mở ở cấp PATH_LV. Chọn lần đầu miễn phí, đổi sang đường khác tốn PATH_COST văn. Lưu ở S.path. */
-const PATH_LV = 6, PATH_COST = 30;
-const PATHS = [
+export const PATH_LV = 6, PATH_COST = 30;
+export const PATHS = [
   { id: 'manh', name: 'Mãnh Hổ', branch: 'Ngoại công', desc: 'Chuỗi đòn càng dài đánh càng đau: mỗi đòn trong chuỗi +2% sát thương, tối đa +40%.' },
   { id: 'tam', name: 'Tĩnh Tâm', branch: 'Nội công', desc: 'Kỹ năng tốn ít hơn 30% nội lực. Mỗi tên giặc bị hạ hồi 6 nội lực.' },
   { id: 'yen', name: 'Phi Yến', branch: 'Thân pháp', desc: 'Lướt xuyên qua một đòn đánh thì thời gian chậm lại, lướt hồi ngay và được 15 hào khí.' },
 ];
-const skillCost = id => Math.round(SKILLS[id].mp * (S.path === 'tam' ? .7 : 1));
+export const skillCost = id => Math.round(SKILLS[id].mp * (S.path === 'tam' ? .7 : 1));
 
 /* ---------------- Hành trang: mua ở võ đường, dùng trong trận ----------------
    S.bag[id] = số đang có. Đã dùng là mất, kể cả khi thua trận. */
-const ITEMS = [
+export const ITEMS = [
   { id: 'banh', key: 'Q', slot: 'i1', name: 'Bánh chưng', desc: 'Hồi 40% sinh lực và giải độc.', cost: 25, max: 3 },
   { id: 'ruou', key: 'E', slot: 'i2', name: 'Rượu nếp', desc: 'Thêm 50 hào khí và hồi đầy nội lực.', cost: 30, max: 2 },
 ];

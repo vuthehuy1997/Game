@@ -1,14 +1,16 @@
-'use strict';
 // Cảnh nền cuộn nhiều lớp (parallax): làng, kinh thành, bến sông, rừng, biển, Bạch Đằng, bến Đông Bộ Đầu.
 // Cảnh xa vẽ trong hệ toạ độ có đường chân trời HZ rồi dịch lên cho khớp mép đất GT; mặt đất 3 làn vẽ riêng.
-const HZ = 455;
+import { ell, shade } from '../../../platform/art/draw.js';
+import { hash } from '../../../platform/core/util.js';
+import { ctx, W, H, GT, LANES, G } from './state.js';
+export const HZ = 455;
 
-function sky(stops) {
+export function sky(stops) {
   const g = ctx.createLinearGradient(0, 0, 0, HZ);
   stops.forEach((c, i) => g.addColorStop(i / (stops.length - 1), c));
   ctx.fillStyle = g; ctx.fillRect(0, -(HZ - GT) - 10, W, HZ + (HZ - GT) + 10);
 }
-function hills(off, col, base, hgt, seed, span = 150, sharp = 1) {
+export function hills(off, col, base, hgt, seed, span = 150, sharp = 1) {
   ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, HZ); ctx.lineTo(0, base);
   const k0 = Math.floor(off / span) - 1;
   for (let k = k0; k < k0 + W / span + 3; k++) {
@@ -18,8 +20,8 @@ function hills(off, col, base, hgt, seed, span = 150, sharp = 1) {
   }
   ctx.lineTo(W, base); ctx.lineTo(W, HZ); ctx.closePath(); ctx.fill();
 }
-function each(off, span, fn) { const k0 = Math.floor(off / span) - 1; for (let k = k0; k < k0 + W / span + 3; k++) fn(k, k * span - off + hash(k * 3.3) * span * .4); }
-function ripples(y0, rows, gap, col, speed, len = 30, step = 80) {
+export function each(off, span, fn) { const k0 = Math.floor(off / span) - 1; for (let k = k0; k < k0 + W / span + 3; k++) fn(k, k * span - off + hash(k * 3.3) * span * .4); }
+export function ripples(y0, rows, gap, col, speed, len = 30, step = 80) {
   ctx.strokeStyle = col; ctx.lineWidth = 2;
   for (let i = 0; i < rows; i++) {
     const y = y0 + i * gap, o = ((G.camX * (.2 + i * .06)) + G.t * speed * (i % 2 ? 1 : -1)) % step;
@@ -27,7 +29,7 @@ function ripples(y0, rows, gap, col, speed, len = 30, step = 80) {
   }
 }
 
-function bamboo(x, base, k) {
+export function bamboo(x, base, k) {
   const n = 3 + ((hash(k) * 3) | 0);
   for (let i = 0; i < n; i++) {
     const bx = x + (i - n / 2) * 11, h = 170 + hash(k * 5 + i) * 110, lean = (hash(k + i * 9) - .5) * 30 + Math.sin(G.t * 1.2 + k + i) * 3;
@@ -38,14 +40,14 @@ function bamboo(x, base, k) {
     for (let j = 0; j < 4; j++) ell(ctx, bx + lean + (j - 1.5) * 12, base - h + j * 6 - 4, 13, 4, '#6ea345', (j - 1.5) * .5);
   }
 }
-function house(x, base) {
+export function house(x, base) {
   ctx.fillStyle = '#c9a36b'; ctx.fillRect(x - 55, base - 52, 110, 52);
   ctx.fillStyle = '#6b4a2a'; ctx.fillRect(x - 14, base - 36, 28, 36);
   ctx.fillStyle = '#8a6a44'; for (let i = -1; i <= 1; i += 2) ctx.fillRect(x + i * 36 - 9, base - 38, 18, 14);
   ctx.fillStyle = '#b08a48'; ctx.beginPath(); ctx.moveTo(x - 76, base - 46); ctx.lineTo(x - 30, base - 104); ctx.lineTo(x + 30, base - 104); ctx.lineTo(x + 76, base - 46); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = '#8e6c35'; ctx.lineWidth = 2; for (let i = 0; i < 9; i++) { const xx = x - 60 + i * 15; ctx.beginPath(); ctx.moveTo(xx, base - 50); ctx.lineTo(xx + (xx < x ? 12 : -12), base - 96); ctx.stroke(); }
 }
-function palace(x, base, big) {
+export function palace(x, base, big) {
   const w = big ? 120 : 80, h = big ? 90 : 64;
   ctx.fillStyle = '#7a2a22'; ctx.fillRect(x - w, base - h, w * 2, h);
   ctx.fillStyle = '#a3261d'; for (let i = -2; i <= 2; i++) ctx.fillRect(x + i * w / 2.4 - 5, base - h, 10, h);
@@ -59,11 +61,11 @@ function palace(x, base, big) {
   // lửa cháy trên mái
   for (let i = 0; i < 3; i++) { const fx = x - w * .6 + i * w * .6, fh = 18 + Math.sin(G.t * 8 + i * 2 + x) * 6; ctx.fillStyle = i % 2 ? 'rgba(255,122,47,.85)' : 'rgba(255,196,74,.85)'; ctx.beginPath(); ctx.moveTo(fx - 9, base - h - 30); ctx.quadraticCurveTo(fx, base - h - 30 - fh * 1.4, fx + 9, base - h - 30); ctx.fill(); }
 }
-function palaceSil(x, base, h) {
+export function palaceSil(x, base, h) {
   ctx.fillRect(x - 40, base - h, 80, h);
   ctx.beginPath(); ctx.moveTo(x - 60, base - h); ctx.quadraticCurveTo(x - 50, base - h - 4, x - 44, base - h - 10); ctx.lineTo(x - 22, base - h - 32); ctx.lineTo(x + 22, base - h - 32); ctx.lineTo(x + 44, base - h - 10); ctx.quadraticCurveTo(x + 50, base - h - 4, x + 60, base - h); ctx.fill();
 }
-function boat(x, y, s, burning) {
+export function boat(x, y, s, burning) {
   ctx.save(); ctx.translate(x, y + Math.sin(G.t * 1.5 + x * .01) * 2); ctx.scale(s, s);
   ctx.fillStyle = burning ? '#3a2a22' : '#5a3b24'; ctx.beginPath(); ctx.moveTo(-60, -10); ctx.quadraticCurveTo(0, 18, 64, -14); ctx.lineTo(50, -2); ctx.quadraticCurveTo(0, 10, -48, 0); ctx.closePath(); ctx.fill();
   ctx.fillRect(-50, -12, 100, 8);
@@ -76,31 +78,31 @@ function boat(x, y, s, burning) {
   }
   ctx.restore();
 }
-function stake(x, base, h) {
+export function stake(x, base, h) {
   ctx.fillStyle = '#3a2a1c'; ctx.beginPath(); ctx.moveTo(x - 5, base); ctx.lineTo(x - 3, base - h); ctx.lineTo(x, base - h - 12); ctx.lineTo(x + 3, base - h); ctx.lineTo(x + 5, base); ctx.fill();
   ctx.fillStyle = '#8a8f96'; ctx.beginPath(); ctx.moveTo(x - 3, base - h); ctx.lineTo(x, base - h - 12); ctx.lineTo(x + 3, base - h); ctx.fill();
 }
-function reeds(x, base, k) {
+export function reeds(x, base, k) {
   ctx.strokeStyle = '#7d8f4a'; ctx.lineWidth = 2;
   for (let i = 0; i < 7; i++) { const h = 40 + hash(k * 3 + i) * 50, sw = Math.sin(G.t * 1.5 + i + k) * 4; ctx.beginPath(); ctx.moveTo(x + i * 5, base); ctx.quadraticCurveTo(x + i * 5, base - h * .6, x + i * 5 + sw + (i - 3) * 3, base - h); ctx.stroke(); }
   ell(ctx, x + 15, base - 80, 3, 10, '#c9b27a');
 }
-function pine(x, base, h, col) {
+export function pine(x, base, h, col) {
   ctx.fillStyle = shade('#3a2a1c', -10); ctx.fillRect(x - 4, base - h * .25, 8, h * .25);
   ctx.fillStyle = col;
   for (let i = 0; i < 4; i++) { const w = h * (.42 - i * .08), y = base - h * .2 - i * h * .2; ctx.beginPath(); ctx.moveTo(x - w, y); ctx.lineTo(x, y - h * .32); ctx.lineTo(x + w, y); ctx.closePath(); ctx.fill(); }
 }
-function laneLines() {
+export function laneLines() {
   ctx.strokeStyle = 'rgba(0,0,0,.13)'; ctx.lineWidth = 2; ctx.setLineDash([18, 14]);
   const o = G.camX % 32;
   for (let i = 0; i < 2; i++) { const y = (LANES[i] + LANES[i + 1]) / 2 + 2; ctx.beginPath(); ctx.moveTo(-o, y); ctx.lineTo(W, y); ctx.stroke(); }
   ctx.setLineDash([]);
 }
-function groundShade() {
+export function groundShade() {
   const g = ctx.createLinearGradient(0, GT, 0, H); g.addColorStop(0, 'rgba(0,0,0,.12)'); g.addColorStop(.25, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.3)');
   ctx.fillStyle = g; ctx.fillRect(0, GT - 14, W, H - GT + 14);
 }
-function ground(top, edge, dark, stone) {
+export function ground(top, edge, dark, stone) {
   const cx = G.camX;
   ctx.fillStyle = top; ctx.fillRect(0, GT - 14, W, H - GT + 14);
   ctx.fillStyle = edge; ctx.fillRect(0, GT - 18, W, 6);
@@ -110,7 +112,7 @@ function ground(top, edge, dark, stone) {
   } else each(cx, 45, (k, x) => ell(ctx, x, GT + 6 + hash(k) * (H - GT - 10), 6 + hash(k * 2) * 8, 3, dark));
   groundShade(); laneLines();
 }
-function deck() {
+export function deck() {
   const cx = G.camX;
   ctx.fillStyle = '#8a5a32'; ctx.fillRect(0, GT - 14, W, H - GT + 14);
   ctx.strokeStyle = '#6b4424'; ctx.lineWidth = 2;
@@ -122,7 +124,7 @@ function deck() {
   groundShade(); laneLines();
 }
 
-const GROUNDS = {
+export const GROUNDS = {
   village: () => ground('#a8794c', '#6f9a44', '#8c6340'),
   citadel: () => ground('#6e5d52', '#56473e', '#4a3c34', true),
   river: () => ground('#c9a36e', '#8a9a55', '#a9844f'),
@@ -131,11 +133,11 @@ const GROUNDS = {
   bachdang: () => ground('#3f3327', '#2d3a2c', '#33291f'),
   dongbodau: () => ground('#4a4034', '#3a4a3a', '#3a3128'),
 };
-function drawBG() {
+export function drawBG() {
   ctx.save(); ctx.translate(0, GT - HZ); drawScenery(); ctx.restore();
   GROUNDS[G.st.bg]();
 }
-function drawScenery() {
+export function drawScenery() {
   const cx = G.camX, th = G.st.bg;
   if (th === 'village') {
     sky(['#7fb8d6', '#c9e2da', '#f7deae']);
@@ -203,7 +205,7 @@ function drawScenery() {
 }
 
 // Mưa ở Bạch Đằng, vẽ đè lên mọi thứ
-function drawWeather() {
+export function drawWeather() {
   if (G.st.bg !== 'bachdang') return;
   ctx.strokeStyle = 'rgba(180,200,220,.35)'; ctx.lineWidth = 1.5; ctx.beginPath();
   for (let i = 0; i < 70; i++) { const x = (hash(i) * W * 1.2 + G.t * 300 - G.camX * .3) % (W * 1.2) - 50, y = (hash(i * 7) * H + G.t * 900) % H; ctx.moveTo(x, y); ctx.lineTo(x - 6, y + 20); }

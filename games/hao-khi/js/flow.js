@@ -1,66 +1,72 @@
-'use strict';
 // Luồng game: màn hình chính, ô lưu, cài đặt, bản đồ hành quân, hội thoại, thẻ sử ký,
 // luyện công, tạm dừng, thua, kết thúc.
+import { drawBust } from '../../../platform/art/chibi.js';
+import { ell } from '../../../platform/art/draw.js';
+import { ac } from '../../../platform/core/audio.js';
+import { pressed } from '../../../platform/core/input.js';
+import { $, clamp, fmtTime, esc } from '../../../platform/core/util.js';
+import { mountHomeLink } from '../../../platform/ui/bar.js';
+import { FD, FB } from '../../../platform/ui/theme.js';
+import { SFX, startMusic } from './audio.js';
+import { SPK, STAGES, MAIN, EDEF, UPS, upCost, MAP_POINTS, SKILLS, BRANCHES, xpNeed, CH_COINS, CHALS, MILESTONES, totalStars, ms, RUSH_BONUS, makeArena, PATH_LV, PATH_COST, PATHS, ITEMS } from './data.js';
+import { applyTouch } from './input.js';
+import { LOOKS } from './looks.js';
+import { render } from './render.js';
+import { DEFAULT_CFG, DIFF, TEXT_SPEED, STORE, CFG, S, sk, persist, save, useSlot, exportCode, importCode } from './save.js';
+import { W, H, starStr, G, P, setAlly } from './state.js';
+import { dropItem, resetWorld } from './world.js';
 
 // Khi có lớp phủ (menu, hội thoại, thẻ) thì ẩn nút cảm ứng để chúng không che và nuốt lượt bấm của các nút trên thẻ.
-function showOnly(id) { ['menu', 'dlgWrap', 'cardWrap'].forEach(k => $(k).hidden = k !== id); $('stage').classList.toggle('covered', !!id); }
-function resumePlay() { G.mode = 'play'; showOnly(null); }
-function banner(text, sub, dur = 2.6) { G.banner = { text, sub, t: 0, dur }; }
+export function showOnly(id) { ['menu', 'dlgWrap', 'cardWrap'].forEach(k => $(k).hidden = k !== id); $('stage').classList.toggle('covered', !!id); }
+export function resumePlay() { G.mode = 'play'; showOnly(null); }
+export function banner(text, sub, dur = 2.6) { G.banner = { text, sub, t: 0, dur }; }
 // thời gian chơi của lượt này (đánh lại từ điểm lưu thì không tính lại phần trước boss)
-const playedNow = () => G.time - (G.cpUsed && G.cp ? G.cp.time : 0);
-const fmtDate = ts => ts ? new Date(ts).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+export const playedNow = () => G.time - (G.cpUsed && G.cp ? G.cp.time : 0);
+export const fmtDate = ts => ts ? new Date(ts).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
-// Ải chính đi theo thứ tự; ải ngoại truyện (side) nằm ngoài tiến trình, mở bằng mốc sao
-const MAIN = STAGES.filter(s => !s.side).length;
-const unlocked = i => STAGES[i].side ? ms('side') : i <= S.maxStage;
-const stageLabel = i => i < 0 ? G.st.label : STAGES[i].side ? 'Ngoại truyện' : `Ải ${i + 1}`;
-const heroName = () => SPK[G.st.hero || 'hero'].short;
+// Ải chính đi theo thứ tự (MAIN ải); ải ngoại truyện (side) nằm ngoài tiến trình, mở bằng mốc sao
+export const unlocked = i => STAGES[i].side ? ms('side') : i <= S.maxStage;
+export const stageLabel = i => i < 0 ? G.st.label : STAGES[i].side ? 'Ngoại truyện' : `Ải ${i + 1}`;
+export const heroName = () => SPK[G.st.hero || 'hero'].short;
 
-function toTitle() {
-  G.mode = 'title'; resetWorld(0); ally = null; P.x = 300; showOnly('menu');
+export function toTitle() {
+  G.mode = 'title'; resetWorld(0); setAlly(null); P.x = 300; showOnly('menu');
 }
-function startStage(i) {
+export function startStage(i) {
   if (!STAGES[i].side) { S.stage = i; S.maxStage = Math.max(S.maxStage || 0, i); }
   save(); resetWorld(i);
   runDialog(STAGES[i].intro, () => { resumePlay(); banner(`${stageLabel(i)} · ${STAGES[i].name}`, STAGES[i].year); SFX.gong(); });
 }
 
 /* ---------------- Hội thoại ---------------- */
-function runDialog(lines, done) {
+export let DLG = null;
+export function runDialog(lines, done) {
   G.mode = 'dialog'; DLG = { lines, i: 0, done, shown: 0 }; showOnly('dlgWrap'); paintLine();
 }
-function paintLine() {
+export function paintLine() {
   const [who] = DLG.lines[DLG.i], sp = SPK[who];
   $('who').textContent = sp.name; $('txt').textContent = '';
   $('dlg').classList.toggle('narr', !sp.look);
   const pc = $('portrait'); pc.hidden = !sp.look;
   if (sp.look) drawPortrait(pc, sp.look);
 }
-function advanceDialog() {
+export function advanceDialog() {
   if (!DLG) return;
   const full = DLG.lines[DLG.i][1];
   if (DLG.shown < full.length) { DLG.shown = full.length; $('txt').textContent = full; return; }
   DLG.i++; DLG.shown = 0;
   if (DLG.i >= DLG.lines.length) endDialog(); else paintLine();
 }
-function endDialog() { if (!DLG) return; const d = DLG.done; DLG = null; d(); }
-function updateDialog(dt) {
+export function endDialog() { if (!DLG) return; const d = DLG.done; DLG = null; d(); }
+export function updateDialog(dt) {
   if (!DLG) return;
   const full = DLG.lines[DLG.i][1];
   if (DLG.shown < full.length) { DLG.shown = Math.min(full.length, DLG.shown + dt * TEXT_SPEED[CFG.textSpeed].cps); $('txt').textContent = full.slice(0, DLG.shown | 0); }
 }
-$('dlg').addEventListener('click', () => { ac(); advanceDialog(); });
-$('dlgSkip').addEventListener('click', e => { e.stopPropagation(); endDialog(); });
-function drawPortrait(canvas, look) {
-  const c = canvas.getContext('2d'); c.clearRect(0, 0, canvas.width, canvas.height);
-  const L = LOOKS[look], s = 1.7 / (L.scale || 1);
-  c.save(); c.beginPath(); c.arc(66, 66, 64, 0, Math.PI * 2); c.clip();
-  drawChibi(c, 60, 66 + 80 * 1.7 + 8, L, { scale: s, t: 0, armF: .2, noWeapon: true });
-  c.restore();
-}
+export const drawPortrait = (canvas, look) => drawBust(canvas, LOOKS[look]);
 
 /* ---------------- Thẻ ---------------- */
-function showCard(html, onRender, mode = 'card') {
+export function showCard(html, onRender, mode = 'card') {
   G.mode = mode;
   $('card').innerHTML = html; showOnly('cardWrap'); $('card').scrollTop = 0;
   onRender && onRender($('card'));
@@ -69,7 +75,7 @@ function showCard(html, onRender, mode = 'card') {
 }
 
 /* ---------------- Ô lưu ---------------- */
-function slotsCard(msg = '') {
+export function slotsCard(msg = '') {
   const rows = STORE.slots.map((sv, i) => {
     if (!sv) return `<div class="slot empty"><div class="info"><b>Ô ${i + 1} · Trống</b><small>Bắt đầu một hành trình mới</small></div>
       <div class="acts"><button class="btn" data-new="${i}">Bắt đầu</button></div></div>`;
@@ -95,7 +101,7 @@ function slotsCard(msg = '') {
     el.querySelector('#slBack').onclick = toTitle;
   });
 }
-function exportCard(i) {
+export function exportCard(i) {
   const code = exportCode(STORE.slots[i]);
   showCard(`<p class="eyebrow">Ô ${i + 1}</p><h2>Mã lưu</h2>
     <p>Sao chép đoạn mã này, mở game trên máy khác, chọn <b>Chơi → Nhập mã lưu</b> rồi dán vào.</p>
@@ -111,7 +117,7 @@ function exportCard(i) {
     el.querySelector('#exBack').onclick = () => slotsCard();
   });
 }
-function importCard() {
+export function importCard() {
   showCard(`<p class="eyebrow">Sổ hành trình</p><h2>Nhập mã lưu</h2>
     <label for="codeIn">Dán mã bắt đầu bằng <code>HKDA1:</code></label>
     <textarea id="codeIn" class="code" rows="4" placeholder="HKDA1:..."></textarea>
@@ -128,7 +134,7 @@ function importCard() {
 }
 
 /* ---------------- Cài đặt ---------------- */
-function settingsCard(back, mode = 'card') {
+export function settingsCard(back, mode = 'card') {
   const seg = (key, opts) => `<div class="seg" role="group">${opts.map((o, i) => `<button type="button" data-k="${key}" data-v="${i}" aria-pressed="${CFG[key] === i}">${o}</button>`).join('')}</div>`;
   const TOUCH = ['auto', 'on', 'off'];
   showCard(`<p class="eyebrow">Tuỳ chỉnh</p><h2>Cài đặt</h2>
@@ -170,14 +176,14 @@ function settingsCard(back, mode = 'card') {
 }
 
 /* ---------------- Bản đồ hành quân ---------------- */
-const MAP_W = 640, MAP_H = 340;
-const proj = (lon, lat) => [30 + (lon - 105.6) / 2.1 * 580, 20 + (21.5 - lat) / 1.1 * 300];
-const COAST = [[106.1, 20.2], [106.4, 20.45], [106.55, 20.6], [106.7, 20.75], [106.8, 20.9], [106.95, 21.0], [107.1, 20.98], [107.3, 21.05], [107.5, 21.2], [107.7, 21.35], [107.9, 21.5]];
-const RIVERS = [
+export const MAP_W = 640, MAP_H = 340;
+export const proj = (lon, lat) => [30 + (lon - 105.6) / 2.1 * 580, 20 + (21.5 - lat) / 1.1 * 300];
+export const COAST = [[106.1, 20.2], [106.4, 20.45], [106.55, 20.6], [106.7, 20.75], [106.8, 20.9], [106.95, 21.0], [107.1, 20.98], [107.3, 21.05], [107.5, 21.2], [107.7, 21.35], [107.9, 21.5]];
+export const RIVERS = [
   [[105.6, 21.35], [105.75, 21.15], [105.85, 21.03], [105.95, 20.9], [106.05, 20.75], [106.2, 20.55], [106.35, 20.35]],   // sông Hồng
   [[105.85, 21.03], [106.1, 21.08], [106.38, 21.12], [106.55, 21.0], [106.7, 20.95], [106.8, 20.9]],                      // sông Đuống, sông Thái Bình ra Bạch Đằng
 ];
-function drawMap(cvs, sel, t) {
+export function drawMap(cvs, sel, t) {
   const c = cvs.getContext('2d');
   c.fillStyle = '#efe1bf'; c.fillRect(0, 0, MAP_W, MAP_H);
   // biển
@@ -220,7 +226,7 @@ function drawMap(cvs, sel, t) {
     c.strokeText(MAP_POINTS[i].place, x + lx, y + ly); c.fillStyle = open ? '#3a2616' : 'rgba(58,38,22,.45)'; c.fillText(MAP_POINTS[i].place, x + lx, y + ly);
   });
 }
-function showMap(sel, reason) {
+export function showMap(sel, reason) {
   if (!STAGES[sel] || !unlocked(sel)) sel = clamp(sel, 0, S.maxStage);
   const title = reason === 'next' ? `Hành quân đến ${MAP_POINTS[sel].place}` : 'Chọn nơi xuất trận';
   showCard(`<p class="eyebrow">Bản đồ hành quân · ${S.coins} văn · ${totalStars(S)}/${STAGES.length * 3} ★</p><h2 id="mTitle">${title}</h2>
@@ -259,7 +265,7 @@ function showMap(sel, reason) {
 }
 
 /* ---------------- Sau trận ---------------- */
-function stageCleared() {
+export function stageCleared() {
   G.mode = 'clear'; G.clearT = 2.6; G.slow = 1.2; banner('Chiến thắng!', `${stageLabel(G.stage)} · ${G.st.name}`, 2.4); SFX.gong();
   // sao theo số lần trúng đòn; chơi Dễ (kể cả hạ xuống Dễ giữa trận) thì tối đa 2★
   let stars = G.hits <= 5 ? 3 : G.hits <= 12 ? 2 : 1;
@@ -275,7 +281,7 @@ function stageCleared() {
   if (ms('sp') && !S.ms.sp) { S.ms.sp = true; S.sp++; }
   save();
 }
-function afterClear() {
+export function afterClear() {
   const i = G.stage, st = STAGES[i];
   runDialog(st.outro, () => historyCard(st, () => {
     if (st.side) showMap(i, 'continue');
@@ -284,16 +290,16 @@ function afterClear() {
   }));
 }
 // Ba ấn thử thách của một ải; fresh = các ấn vừa đạt trong trận này
-function chalHtml(i, fresh = []) {
+export function chalHtml(i, fresh = []) {
   const st = STAGES[i], had = S.ch[i] || [];
   return `<ul class="chal">${CHALS.map(c => `<li class="${had.includes(c.id) ? 'done' : ''}"><b>${had.includes(c.id) ? '✔' : '○'} ${c.name}</b> ${c.desc(st)}${fresh.includes(c.id) ? ` <em>mới · +${CH_COINS} văn</em>` : ''}</li>`).join('')}</ul>`;
 }
-const totalCh = sv => (sv.ch || []).reduce((a, b) => a + (b ? b.length : 0), 0);
-function milesHtml() {
+export const totalCh = sv => (sv.ch || []).reduce((a, b) => a + (b ? b.length : 0), 0);
+export function milesHtml() {
   const n = totalStars(S);
   return `<ul class="miles">${MILESTONES.map(m => `<li class="${n >= m.need ? 'done' : ''}"><b>${m.need}★ ${m.name}</b> ${m.desc}</li>`).join('')}</ul>`;
 }
-function historyCard(st, done) {
+export function historyCard(st, done) {
   const c = st.card, r = G.result;
   showCard(`<p class="eyebrow">${c.eyebrow}</p><h2>${c.title}</h2>
     ${r ? `<div class="result"><span class="stars">${starStr(r.stars)}</span><span>Thời gian ${fmtTime(r.time)}</span><span>Trúng đòn ${r.hits} lần</span><span>Chuỗi dài nhất ${r.maxCombo} đòn</span><span>Thưởng ${r.bonus} văn</span><span>Cấp ${S.lv}${S.sp ? ` · ${S.sp} điểm kỹ năng chưa dùng` : ''}</span></div>
@@ -307,10 +313,10 @@ function historyCard(st, done) {
 }
 // Võ đường: tab Luyện công (tiền → chỉ số) và tab Cây kỹ năng (điểm kỹ năng → kỹ năng).
 // Từ menu tạm dừng chỉ mở Cây kỹ năng (chỉ số luyện công áp dụng từ ải sau).
-const prevOf = id => { const d = SKILLS[id]; return Object.keys(SKILLS).find(k => SKILLS[k].branch === d.branch && SKILLS[k].tier === d.tier - 1); };
-const canLearn = id => { const d = SKILLS[id]; if (sk(id) >= 3 || S.sp < 1) return false; return d.tier === 0 || sk(prevOf(id)) >= 1; };
-const RESET_COST = 50;
-function openShop(done, tab, goLabel = 'Lên đường', mode = 'card', treeOnly = false) {
+export const prevOf = id => { const d = SKILLS[id]; return Object.keys(SKILLS).find(k => SKILLS[k].branch === d.branch && SKILLS[k].tier === d.tier - 1); };
+export const canLearn = id => { const d = SKILLS[id]; if (sk(id) >= 3 || S.sp < 1) return false; return d.tier === 0 || sk(prevOf(id)) >= 1; };
+export const RESET_COST = 50;
+export function openShop(done, tab, goLabel = 'Lên đường', mode = 'card', treeOnly = false) {
   tab = treeOnly ? 'tree' : (tab || (S.sp > 0 ? 'tree' : 'up'));
   const upHtml = () => `<p class="purse">Tiền đồng: <b>${S.coins}</b> văn</p>
     <div class="shop">${UPS.map(u => {
@@ -374,7 +380,7 @@ function openShop(done, tab, goLabel = 'Lên đường', mode = 'card', treeOnly
   };
   render();
 }
-function ending() {
+export function ending() {
   showCard(`<p class="eyebrow">Hết truyện</p><h2>Non sông thu về một mối</h2>
     <p>Ba lần đánh thắng đế quốc Nguyên Mông hùng mạnh nhất thời bấy giờ, quân dân Đại Việt đã viết nên một bản hùng ca. Tiểu Hổ trở về võ đường Vạn Kiếp, dạy võ cho lớp trẻ, và kể cho chúng nghe về những người đã giữ nước.</p>
     <div class="result"><span class="stars">Tổng ${totalStars(S)}/${STAGES.length * 3} ★</span><span>Đã chơi ${fmtTime(S.play || 0)}</span><span>Chơi lại các ải trên bản đồ để lấy đủ sao</span></div>
@@ -384,7 +390,7 @@ function ending() {
     el.querySelector('#eMap').onclick = () => showMap(MAIN - 1, 'continue');
   });
 }
-function gameOver() {
+export function gameOver() {
   if (G.st.arena) return arenaOver(false);
   // thua sau khi đã tới boss: giữ tiền nhặt được tính đến điểm lưu và cho đánh lại từ đó
   const cp = G.cp, coins0 = G.coinsAtStart;
@@ -402,14 +408,14 @@ function gameOver() {
 }
 
 /* ---------------- Võ đài: Thí luyện vô tận và Đấu tướng ---------------- */
-const arenaOpen = kind => kind === 'endless' ? S.maxStage >= 1 : (S.stars[MAIN - 1] || 0) > 0;
-const recText = kind => kind === 'endless' ? (S.rec.endless ? `kỷ lục ${S.rec.endless} đợt` : 'chưa có kỷ lục') : (S.rec.rush ? `kỷ lục ${fmtTime(S.rec.rush)}` : 'chưa có kỷ lục');
-const arenaProgress = () => G.st.arena === 'endless' ? `Đợt ${G.wave + 1} · ${recText('endless')}` : `Tướng ${Math.min(G.wave + 1, G.st.waves.length)}/${G.st.waves.length} · ${fmtTime(G.time)}`;
-function startArena(kind) {
+export const arenaOpen = kind => kind === 'endless' ? S.maxStage >= 1 : (S.stars[MAIN - 1] || 0) > 0;
+export const recText = kind => kind === 'endless' ? (S.rec.endless ? `kỷ lục ${S.rec.endless} đợt` : 'chưa có kỷ lục') : (S.rec.rush ? `kỷ lục ${fmtTime(S.rec.rush)}` : 'chưa có kỷ lục');
+export const arenaProgress = () => G.st.arena === 'endless' ? `Đợt ${G.wave + 1} · ${recText('endless')}` : `Tướng ${Math.min(G.wave + 1, G.st.waves.length)}/${G.st.waves.length} · ${fmtTime(G.time)}`;
+export function startArena(kind) {
   resetWorld(makeArena(kind)); resumePlay(); banner(G.st.name, G.st.sub); SFX.gong();
 }
 // Xong một đợt (G.wave đã tăng): hồi nội lực, thả bánh chưng, báo đợt kế
-function arenaWaveDone() {
+export function arenaWaveDone() {
   const st = G.st;
   if (st.arena === 'rush' && G.wave >= st.waves.length) return arenaOver(true);
   P.mp = P.maxMp; SFX.coin();
@@ -418,13 +424,13 @@ function arenaWaveDone() {
   else banner(`Tướng thứ ${G.wave + 1}`, EDEF[st.waves[G.wave].list[0]].name, 1.5);
 }
 // Ghi kỷ lục; trả về true nếu vừa lập kỷ lục mới
-function arenaRecord(win) {
+export function arenaRecord(win) {
   S.play = (S.play || 0) + G.time;
   if (G.st.arena === 'endless') { if (G.wave > (S.rec.endless || 0)) { S.rec.endless = G.wave; return true; } return false; }
   if (win && (!S.rec.rush || G.time < S.rec.rush)) { S.rec.rush = Math.round(G.time * 10) / 10; return true; }
   return false;
 }
-function arenaOver(win) {
+export function arenaOver(win) {
   const kind = G.st.arena, best = arenaRecord(win), n = G.st.waves.length;
   if (win) S.coins += RUSH_BONUS;
   save();
@@ -444,7 +450,7 @@ function arenaOver(win) {
 }
 
 /* ---------------- Tạm dừng ---------------- */
-function showPause() {
+export function showPause() {
   showCard(`<p class="eyebrow">${stageLabel(G.stage)} · ${G.st.name} · ${G.st.year}</p><h2>Tạm nghỉ</h2>
     <p class="note">Ô lưu ${STORE.cur + 1} · lưu lúc ${fmtDate(S.updated)}. ${G.st.arena ? 'Rời võ đài bây giờ vẫn giữ tiền, kinh nghiệm và kỷ lục đã đạt.' : 'Game tự lưu ở đầu mỗi ải; nếu bỏ dở, lần sau sẽ đánh lại ải này từ đầu.'}</p>
     <div class="actions"><button class="btn ghost" id="pHome">Về màn hình chính</button><button class="btn ghost" id="pSet">Cài đặt</button><button class="btn ghost" id="pSkill">Kỹ năng${S.sp ? ` (${S.sp})` : ''}</button><button class="btn" id="pGo">Tiếp tục</button></div>`, el => {
@@ -454,11 +460,17 @@ function showPause() {
     el.querySelector('#pHome').onclick = () => { if (G.st.arena) { arenaRecord(false); save(); return toTitle(); } S.coins = G.coinsAtStart; S.play = (S.play || 0) + playedNow(); save(); toTitle(); };
   }, 'paused');
 }
-function togglePause() {
+export function togglePause() {
   if (G.mode === 'play') showPause();
   else if (G.mode === 'paused') resumePlay();
 }
 
-$('bPlay').onclick = () => { ac(); startMusic(); slotsCard(); };
-$('bSettings').onclick = () => { ac(); settingsCard(toTitle); };
-$('bHelp').onclick = () => { $('help').hidden = !$('help').hidden; };
+// Gắn các nút có sẵn trong index.html
+export function initFlow() {
+  $('dlg').addEventListener('click', () => { ac(); advanceDialog(); });
+  $('dlgSkip').addEventListener('click', e => { e.stopPropagation(); endDialog(); });
+  $('bPlay').onclick = () => { ac(); startMusic(); slotsCard(); };
+  $('bSettings').onclick = () => { ac(); settingsCard(toTitle); };
+  $('bHelp').onclick = () => { $('help').hidden = !$('help').hidden; };
+  mountHomeLink($('menu'));
+}

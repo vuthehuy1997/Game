@@ -1,12 +1,20 @@
-'use strict';
 // Tiểu Hổ: chỉ số, điều khiển (A/D đi, W/S đổi làn, Space nhảy, Shift lướt), đòn đánh, 5 kỹ năng, tuyệt kỹ,
 // kinh nghiệm và lên cấp. Cùng hàm gây sát thương lên địch. Mọi đòn chỉ trúng khi cùng làn (sameLane),
 // trừ Địa Chấn Quyền và tuyệt kỹ Sát Thát.
+import { parts, spark, dust, floatText } from '../../../platform/core/fx.js';
+import { held, pressed } from '../../../platform/core/input.js';
+import { rand, clamp, overlap } from '../../../platform/core/util.js';
+import { SFX } from './audio.js';
+import { RANKS, ATK, SKILLS, ACTIVE, xpNeed, ms, skillCost, ITEMS } from './data.js';
+import { hurtbox } from './enemies.js';
+import { DIFF, CFG, S, sk } from './save.js';
+import { W, GRAV, LANES, G, P, enemies, projs, props, alive, sameLane, followLane } from './state.js';
+import { dropItem, hitProps, breakProp } from './world.js';
 
-function stats() {
+export function stats() {
   return { maxHp: 100 + 25 * S.up.hp, maxMp: 60 + 15 * S.up.mp, dmg: 1 + .2 * S.up.atk, regen: 6 + 2.5 * S.up.mp };
 }
-function newPlayer() {
+export function newPlayer() {
   const st = stats();
   return {
     x: 140, lane: 1, gy: LANES[1], y: LANES[1], vx: 0, vy: 0, face: 1, air: false, airJumps: 0, state: 'idle', st: 0, t: 0,
@@ -17,7 +25,7 @@ function newPlayer() {
 }
 
 /* ---------------- Kinh nghiệm ---------------- */
-function gainXp(n) {
+export function gainXp(n) {
   if (S.lv >= 30) return;
   S.xp += n;
   while (S.xp >= xpNeed(S.lv) && S.lv < 30) {
@@ -30,10 +38,10 @@ function gainXp(n) {
 
 /* ---------------- Damage ---------------- */
 // Chuỗi đòn: mỗi đòn của Tiểu Hổ trúng địch +1; bị đánh trúng hoặc ngừng tay 2,5 giây thì về 0
-const JUGGLE_MAX = 4;
-function comboHit() { G.combo++; G.comboT = 2.5; G.maxCombo = Math.max(G.maxCombo, G.combo); }
+export const JUGGLE_MAX = 4;
+export function comboHit() { G.combo++; G.comboT = 2.5; G.maxCombo = Math.max(G.maxCombo, G.combo); }
 // raw = đòn của đồng đội (không nhân sức mạnh của Tiểu Hổ)
-function damageEnemy(e, dmg, dir, kb, heavy, raw) {
+export function damageEnemy(e, dmg, dir, kb, heavy, raw) {
   if (!alive(e)) return false;
   const d = e.d, s = e.sc || 1;
   // Mãnh Hổ: chuỗi đòn càng dài đánh càng đau
@@ -79,7 +87,7 @@ function damageEnemy(e, dmg, dir, kb, heavy, raw) {
   else { e.state = 'hurt'; e.st = .26; e.vx = dir * kb; }
   return true;
 }
-function killEnemy(e, dir) {
+export function killEnemy(e, dir) {
   e.state = 'dead'; e.deadT = 0; e.air = true; e.vy = -480; e.vx = dir * 260; e.hp = 0;
   const R = e.R || RANKS.n, [a, b] = e.d.coins, n = Math.round(rand(a, b) * R.coin);
   const coins = e.d.boss ? 10 : Math.min(8, Math.ceil(n / 2));
@@ -89,7 +97,7 @@ function killEnemy(e, dir) {
   if (S.path === 'tam') P.mp = Math.min(P.maxMp, P.mp + 6);
   if (e.d.boss) { G.slow = 1.4; G.shake = 14; SFX.boom(); spark(e.x, e.y - 70, 30, '#ffd35a', 500); }
 }
-function hurtPlayer(dmg, dir, opts = {}) {
+export function hurtPlayer(dmg, dir, opts = {}) {
   // Phi Yến: lướt xuyên qua một đòn (mỗi lần lướt tính một lần)
   if (P.state === 'dash' && S.path === 'yen' && !P.dodged && G.mode === 'play') {
     P.dodged = true; P.dashCd = 0; P.rage = Math.min(100, P.rage + 15); G.slow = Math.max(G.slow, .7);
@@ -106,11 +114,11 @@ function hurtPlayer(dmg, dir, opts = {}) {
   else { P.state = 'hurt'; P.st = .3; P.vx = dir * 240; P.buffer = false; }
   return true;
 }
-function killPlayer(dir) {
+export function killPlayer(dir) {
   P.hp = 0; P.state = 'dead'; P.st = 0; P.air = true; P.vy = -420; P.vx = (dir || -P.face) * 220; G.overT = 1.6;
 }
 // Thiết Bố Sam: đỡ trúng thì phản đòn kẻ gần nhất phía trước cùng làn
-function counterAttack() {
+export function counterAttack() {
   const lv = sk('thietbo');
   P.state = 'counter'; P.st = .28; P.inv = .5; P.rage = Math.min(100, P.rage + 12);
   floatText(P.x, P.y - 130, 'Phản đòn!', '#ffd35a', 24); SFX.block(); SFX.heavy(); G.hitstop = .1; G.flashT = .15;
@@ -121,7 +129,7 @@ function counterAttack() {
 }
 
 /* ---------------- Hành trang ---------------- */
-function useItem(id) {
+export function useItem(id) {
   const it = ITEMS.find(x => x.id === id), p = P;
   if (!(S.bag[id] > 0)) { floatText(p.x, p.y - 120, `Hết ${it.name.toLowerCase()}`, '#cfd6e0', 15); return false; }
   if (id === 'banh') {
@@ -136,8 +144,8 @@ function useItem(id) {
 }
 
 /* ---------------- Kỹ năng ---------------- */
-const lvMul = (id, step = .3) => 1 + (sk(id) >= 2 ? step : 0);
-function tryCast(id) {
+export const lvMul = (id, step = .3) => 1 + (sk(id) >= 2 ? step : 0);
+export function tryCast(id) {
   const def = SKILLS[id], lv = sk(id), p = P;
   if (!lv) { floatText(p.x, p.y - 120, `Chưa học ${def.name}`, '#cfd6e0', 15); return; }
   if (p.cds[id] > 0) { floatText(p.x, p.y - 120, `Hồi chiêu ${p.cds[id].toFixed(1)}s`, '#cfd6e0', 15); return; }
@@ -154,17 +162,17 @@ function tryCast(id) {
 }
 
 /* ---------------- Player update ---------------- */
-function startAttack() {
+export function startAttack() {
   P.combo = (P.comboT > 0 && P.combo < 3) ? P.combo + 1 : 1;
   P.state = 'attack'; P.st = 0; P.hitSet = new Set(); P.buffer = false; SFX.swing();
 }
-function hitEnemiesIn(hb, dmg, kb, heavy, onHit) {
+export function hitEnemiesIn(hb, dmg, kb, heavy, onHit) {
   enemies.forEach(e => {
     if (!P.hitSet.has(e.id) && sameLane(e, P) && overlap(hb, hurtbox(e)) && damageEnemy(e, dmg, P.face, kb, heavy)) { P.hitSet.add(e.id); onHit && onHit(e); }
   });
   hitProps(hb, P.gy);
 }
-function updatePlayer(dt) {
+export function updatePlayer(dt) {
   const p = P; p.t += dt; p.inv = Math.max(0, p.inv - dt); p.dashCd -= dt; p.comboT -= dt;
   for (const id in p.cds) p.cds[id] = Math.max(0, p.cds[id] - dt);
   p.mp = Math.min(p.maxMp, p.mp + p.regen * dt);

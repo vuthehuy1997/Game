@@ -1,20 +1,30 @@
-'use strict';
 // Quân địch, AI boss (2 giai đoạn) và đồng đội đánh cùng. Địch tự đổi làn để đuổi theo Tiểu Hổ.
+import { tone } from '../../../platform/core/audio.js';
+import { spark, dust, floatText } from '../../../platform/core/fx.js';
+import { rand, clamp, pick, overlap } from '../../../platform/core/util.js';
+import { SFX } from './audio.js';
+import { ALLY_LINES, EDEF, RANKS } from './data.js';
+import { banner } from './flow.js';
+import { LOOKS } from './looks.js';
+import { damageEnemy, hurtPlayer } from './player.js';
+import { DIFF, CFG } from './save.js';
+import { W, GRAV, LANES, G, P, enemies, projs, nextId, alive, sameLane, followLane } from './state.js';
+import { raiseStakes } from './world.js';
 
-const hurtbox = e => { const s = e.sc || 1; return { x: e.x - 17 * s, y: e.y - 100 * s, w: 34 * s, h: 100 * s }; };
-const scaleOf = e => e.sc || 1;
+export const hurtbox = e => { const s = e.sc || 1; return { x: e.x - 17 * s, y: e.y - 100 * s, w: 34 * s, h: 100 * s }; };
+export const scaleOf = e => e.sc || 1;
 // Sát thương và tốc độ thực tế: theo cấp bậc, cộng thêm 20% nếu đứng gần lính trống hoặc chỉ huy
-const edmg = e => e.dmg * (e.buff ? 1.2 : 1);
-const espd = e => e.d.spd * (e.buff ? 1.2 : 1);
+export const edmg = e => e.dmg * (e.buff ? 1.2 : 1);
+export const espd = e => e.d.spd * (e.buff ? 1.2 : 1);
 
 // spec: 'soldier' (lính thường), 'soldier:cap' (đội trưởng), 'soldier:cmd' (chỉ huy), hoặc tên boss
-function spawnEnemy(spec, side, lane) {
+export function spawnEnemy(spec, side, lane) {
   const [type, rk = 'n'] = spec.split(':'), d = EDEF[type], R = RANKS[rk] || RANKS.n;
   const mul = (d.boss ? 1 : (1 + G.tier * .16)) * DIFF[CFG.diff].hp * R.hp;
   if (lane == null) lane = d.boss ? P.lane : (Math.random() * 3) | 0;
   const x = side > 0 ? G.camX + W + 50 : G.camX - 50;
   const e = {
-    id: ++uid, type, d, rank: rk, R, sc: (LOOKS[type].scale || 1) * R.sc, dmg: d.dmg * R.dmg,
+    id: nextId(), type, d, rank: rk, R, sc: (LOOKS[type].scale || 1) * R.sc, dmg: d.dmg * R.dmg,
     x, lane, gy: LANES[lane], y: LANES[lane], vx: 0, vy: 0, face: -side, air: false, state: 'approach', st: 0, t: rand(0, 5),
     cd: rand(.6, 1.4), laneCd: rand(.4, 1.2), hp: d.hp * mul, maxHp: d.hp * mul, flash: 0, walk: 0, hitDone: false, shieldRot: 0, entering: true, summons: 0, comboLeft: 0, buff: false,
   };
@@ -22,13 +32,13 @@ function spawnEnemy(spec, side, lane) {
   else if (rk !== 'n') floatText(x + (side > 0 ? -80 : 80), e.y - 150, `${R.label} ${d.name}`, rk === 'cmd' ? '#ffd35a' : '#ffb4a6', 18);
   enemies.push(e); return e;
 }
-function enemyStrike(e, reach, dmg, h = 70) {
+export function enemyStrike(e, reach, dmg, h = 70) {
   const s = scaleOf(e);
   const hb = { x: e.face > 0 ? e.x : e.x - reach, y: e.y - 90 * s, w: reach, h: h * s };
   if (sameLane(e, P) && overlap(hb, hurtbox(P))) hurtPlayer(dmg, e.face);
 }
 // Bắn tên dọc theo một làn (mặc định làn của cung thủ)
-function fireArrow(e, lane = e.lane, poison = false) {
+export function fireArrow(e, lane = e.lane, poison = false) {
   const s = scaleOf(e), gy = LANES[lane];
   const sx = e.x + e.face * 26 * s, sy = gy - 58 * s;
   const aimY = lane === P.lane ? P.y - 55 : gy - 55;
@@ -37,19 +47,19 @@ function fireArrow(e, lane = e.lane, poison = false) {
   SFX.arrow();
 }
 // Ném hũ lửa theo đường cong rơi đúng vị trí tx, làn lane sau khoảng thời gian t
-function throwPot(e, tx, t = .9, lane = P.lane) {
+export function throwPot(e, tx, t = .9, lane = P.lane) {
   const gy = LANES[lane], sx = e.x + e.face * 20, sy = e.y - 70 * scaleOf(e);
   projs.push({ kind: 'pot', from: 'e', x: sx, y: sy, gy, vx: (tx - sx) / t, vy: ((gy - 6 - sy) - .5 * GRAV * t * t) / t, dmg: e.d.boss ? 10 : edmg(e), life: 3, t: 0 });
   SFX.swing();
 }
 // Địch đổi dần sang làn của Tiểu Hổ (mỗi lần một làn, có độ trễ để người chơi né được)
-function chaseLane(e, dt) {
+export function chaseLane(e, dt) {
   e.laneCd -= dt;
   if (e.lane !== P.lane && e.laneCd <= 0) { e.lane += Math.sign(P.lane - e.lane); e.laneCd = e.d.boss ? rand(.35, .7) : rand(.8, 1.6); }
 }
-const inLane = e => e.lane === P.lane && Math.abs(e.gy - LANES[e.lane]) < 4;
+export const inLane = e => e.lane === P.lane && Math.abs(e.gy - LANES[e.lane]) < 4;
 
-function updateEnemy(e, dt) {
+export function updateEnemy(e, dt) {
   const d = e.d; e.t += dt; e.flash -= dt; e.shieldRot *= .85;
   followLane(e, dt, 220);
   if (e.air || e.y < e.gy) {
@@ -137,7 +147,7 @@ function updateEnemy(e, dt) {
   }
 }
 
-function bossAI(e, dt) {
+export function bossAI(e, dt) {
   const d = e.d, dx = P.x - e.x, dist = Math.abs(dx), enr = e.hp < e.maxHp * .5, sp = espd(e) * (enr ? 1.25 : 1);
   if (enr && !e.enraged) {
     e.enraged = true; floatText(e.x, e.y - 170, 'Nổi giận!', '#ff5a3c', 26);
@@ -195,7 +205,7 @@ function bossAI(e, dt) {
       break;
   }
 }
-function bossMove(e, enr) {
+export function bossMove(e, enr) {
   const d = e.d; e.hitDone = false;
   switch (e.move) {
     case 'slash': e.state = 'slash'; e.st = .28; SFX.swing(); break;
@@ -229,8 +239,8 @@ function bossMove(e, enr) {
       recover(e, .6); break;
   }
 }
-function recover(e, t) { e.state = 'recover'; e.st = t; e.vx = 0; }
-function slamLand(e) {
+export function recover(e, t) { e.state = 'recover'; e.st = t; e.vx = 0; }
+export function slamLand(e) {
   G.shake = 12; SFX.boom(); dust(e.x, e.gy, 14);
   [-1, 1].forEach(dir => projs.push({ kind: 'wave', from: 'e', x: e.x + dir * 40, y: e.gy, gy: e.gy, vx: dir * 430, vy: 0, dmg: edmg(e), life: 1.4 }));
   if (sameLane(e, P) && Math.abs(P.x - e.x) < 90 && P.y > P.gy - 40) hurtPlayer(edmg(e) * 1.3, P.x > e.x ? 1 : -1);
@@ -238,11 +248,11 @@ function slamLand(e) {
 }
 
 /* ---------------- Đồng đội ---------------- */
-function makeAlly(look) {
+export function makeAlly(look) {
   const lane = P.lane === 0 ? 1 : P.lane - 1;
   return { look, x: P.x - 70, lane, gy: LANES[lane], y: LANES[lane], vx: 0, face: 1, state: 'idle', st: 0, t: 0, walk: 0, cd: 1, laneCd: 0, combo: 0, hit: false, talkT: rand(5, 9) };
 }
-function updateAlly(a, dt) {
+export function updateAlly(a, dt) {
   a.t += dt; a.cd -= dt; a.talkT -= dt; a.laneCd -= dt;
   followLane(a, dt, 260); a.y = a.gy;
   if (P.state === 'dead' || G.ultT > 0) { a.vx = 0; a.state = 'idle'; return; }

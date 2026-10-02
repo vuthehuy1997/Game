@@ -1,13 +1,16 @@
-'use strict';
 // Thế giới: khởi tạo ải, đợt địch, bẫy môi trường, đạn, vật phẩm, vò/thùng, hiệu ứng, camera.
 // Mọi thứ trên mặt đất đều có gy = mặt đất của làn nó đang đứng.
+import { parts, spark, dust, floatText, clearFx, updateParticles } from '../../../platform/core/fx.js';
+import { rand, clamp, pick, overlap, prune, refill } from '../../../platform/core/util.js';
+import { SFX } from './audio.js';
+import { STAGES, EDEF, ms } from './data.js';
+import { hurtbox, spawnEnemy, makeAlly } from './enemies.js';
+import { resumePlay, banner, runDialog, stageCleared, arenaWaveDone } from './flow.js';
+import { newPlayer, damageEnemy, killEnemy, hurtPlayer } from './player.js';
+import { CFG, S } from './save.js';
+import { W, H, GRAV, GT, LANES, G, P, ally, enemies, projs, items, props, setP, setAlly, alive, sameLane } from './state.js';
 
-function spark(x, y, n, col, spd = 300) {
-  for (let i = 0; i < n; i++) { const a = rand(0, Math.PI * 2), v = rand(.3, 1) * spd; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: rand(.2, .45), max: .45, col, size: rand(2, 4), kind: 'spark' }); }
-}
-function dust(x, y, n = 6) { for (let i = 0; i < n; i++) parts.push({ x: x + rand(-14, 14), y, vx: rand(-80, 80), vy: rand(-80, -20), life: rand(.3, .6), max: .6, col: 'rgba(210,190,160,.7)', size: rand(4, 8), kind: 'dust' }); }
-function floatText(x, y, txt, col = '#fff', size = 22) { texts.push({ x, y, txt, col, size, life: .9, vy: -70 }); }
-function dropItem(kind, x, gy, val = 0) {
+export function dropItem(kind, x, gy, val = 0) {
   items.push(kind === 'coin'
     ? { kind, val, x, gy, y: gy - 40, vx: rand(-160, 160), vy: rand(-520, -300), t: 0 }
     : { kind, x, gy, y: gy - 40, vx: rand(-60, 60), vy: -420, t: 0 });
@@ -15,31 +18,30 @@ function dropItem(kind, x, gy, val = 0) {
 
 // cp: điểm lưu trước boss (xem updateWaves). Có cp thì vào thẳng đợt boss, giữ thời gian và số lần trúng đòn.
 // i: thứ tự ải, hoặc một võ đài tạo bằng makeArena (khi đó G.stage = -1)
-function resetWorld(i, cp) {
+export function resetWorld(i, cp) {
   const st = typeof i === 'object' ? i : STAGES[i];
   if (st.arena) i = -1;
   G.stage = i; G.st = st; G.tier = st.tier ?? i; G.camX = 0; G.lock = false; G.lockX = 0; G.wave = 0; G.queue = []; G.spawnT = 0; G.boss = null;
   G.coinsAtStart = S.coins; G.clearT = 0; G.overT = 0; G.ultT = 0; G.banner = null; G.goBlink = 0; G.result = null;
   G.surviveT = 0; G.hazT = 2; G.tideOut = false; G.time = 0; G.hits = 0; G.lightning = 0;
   G.cp = null; G.cpUsed = false; G.combo = 0; G.comboT = 0; G.maxCombo = 0; G.minDiff = CFG.diff; G.coinFrac = 0; G.stakes = [];
-  P = newPlayer(); enemies = []; projs = []; parts = []; texts = []; items = [];
-  props = [];
+  setP(newPlayer()); refill(enemies); refill(projs); refill(items); refill(props); clearFx();
   if (cp) {
     G.cp = cp; G.cpUsed = true; G.wave = cp.wave; G.time = cp.time; G.hits = cp.hits; G.coinsAtStart = cp.coins0;
     G.maxCombo = cp.maxCombo; G.minDiff = Math.min(cp.minDiff, CFG.diff);
     P.x = st.waves[cp.wave].at - 120; G.camX = clamp(P.x - W * .4, 0, st.len - W);
   }
-  ally = st.ally ? makeAlly(st.ally) : null;
+  setAlly(st.ally ? makeAlly(st.ally) : null);
   // rải vò, thùng dọc đường (tránh khu boss), mỗi cái một làn ngẫu nhiên
   let x = 320;
   while (!cp && x < st.len - 800) { const lane = (Math.random() * 3) | 0; props.push({ kind: pick(st.props || ['crate']), x, lane, gy: LANES[lane], shake: 0 }); x += rand(230, 420); }
 }
 
 /* ---------------- Vò / thùng ---------------- */
-function hitProps(hb, gy) {
+export function hitProps(hb, gy) {
   props.forEach(p => { if (!p.dead && Math.abs(p.gy - gy) < 24 && overlap(hb, { x: p.x - 20, y: p.gy - 48, w: 40, h: 48 })) breakProp(p); });
 }
-function breakProp(p) {
+export function breakProp(p) {
   if (p.dead || p.x < G.camX - 40 || p.x > G.camX + W + 40) return;
   p.dead = true; SFX.crack(); G.shake = Math.max(G.shake, 3);
   for (let i = 0; i < 10; i++) parts.push({ x: p.x + rand(-16, 16), y: p.gy - rand(10, 40), vx: rand(-220, 220), vy: rand(-420, -120), life: .7, max: .7, col: p.kind === 'jar' ? '#8a5a34' : '#9a6a3a', size: rand(3, 6), kind: 'spark' });
@@ -49,7 +51,7 @@ function breakProp(p) {
 }
 
 /* ---------------- Đợt địch ---------------- */
-function updateWaves(dt) {
+export function updateWaves(dt) {
   const st = G.st;
   if (st.gen && G.wave >= st.waves.length) st.waves.push(st.gen(G.wave));
   if (!G.lock && G.wave < st.waves.length && P.x > st.waves[G.wave].at) {
@@ -89,10 +91,10 @@ function updateWaves(dt) {
 /* ---------------- Bãi cọc Bạch Đằng ----------------
    Nước ròng (Ô Mã Nhi dưới nửa máu) thì 4 bãi cọc nhô lên trong khu giao chiến. Giặc lao qua hoặc bị hất văng vào bãi
    cọc cùng làn thì mắc cọc. Cọc là của quân ta: Tiểu Hổ và đồng đội đi qua không sao. */
-function raiseStakes() {
+export function raiseStakes() {
   G.stakes = [[170, 1], [390, 0], [590, 2], [800, 1]].map(([dx, lane]) => ({ x: G.lockX + dx, lane, gy: LANES[lane], up: 0, dead: false }));
 }
-function updateStakes(dt) {
+export function updateStakes(dt) {
   for (const s of G.stakes) {
     s.up = Math.min(1, s.up + dt * 1.5);
     if (s.dead || s.up < 1) continue;
@@ -116,7 +118,7 @@ function updateStakes(dt) {
 }
 
 /* ---------------- Bẫy môi trường (rơi vào làn của Tiểu Hổ) ---------------- */
-function updateHazards(dt) {
+export function updateHazards(dt) {
   const hz = G.st.hazard;
   if (!hz || !G.lock || G.mode !== 'play' || !enemies.some(alive)) return;
   G.hazT -= dt; if (G.hazT > 0) return;
@@ -128,7 +130,7 @@ function updateHazards(dt) {
 }
 
 /* ---------------- Đạn và vùng sát thương ---------------- */
-function updateProjs(dt) {
+export function updateProjs(dt) {
   for (const q of projs) {
     q.life -= dt; if (q.life <= 0) q.dead = true;
     if (q.kind === 'rain') {
@@ -187,11 +189,11 @@ function updateProjs(dt) {
     }
     if (q.x < G.camX - 140 || q.x > G.camX + W + 140) q.dead = true;
   }
-  projs = projs.filter(q => !q.dead);
+  prune(projs, q => !q.dead);
 }
 
 /* ---------------- Vật phẩm ---------------- */
-function updateItems(dt) {
+export function updateItems(dt) {
   for (const it of items) {
     it.t += dt; it.vy += GRAV * dt; it.x += it.vx * dt; it.y += it.vy * dt;
     if (it.y >= it.gy - 8) { it.y = it.gy - 8; it.vy = -it.vy * .35; it.vx *= .7; if (Math.abs(it.vy) < 40) it.vy = 0; }
@@ -207,23 +209,14 @@ function updateItems(dt) {
     }
     if (it.t > 14) it.dead = true;
   }
-  items = items.filter(i => !i.dead);
+  prune(items, i => !i.dead);
 }
 
 /* ---------------- Hiệu ứng ---------------- */
-function updateFx(dt) {
-  for (const p of parts) {
-    p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt;
-    if (p.kind === 'spark') { p.vx *= .9; p.vy = p.vy * .9 + 400 * dt; }
-    else if (p.kind === 'leaf') p.vx += Math.sin(G.t * 2 + p.size) * 20 * dt;
-    else if (p.kind === 'firefly') { p.vx += rand(-40, 40) * dt; p.vy += rand(-40, 40) * dt; }
-    else if (p.kind === 'dust') { p.vx *= .92; p.vy *= .92; }
-  }
-  parts = parts.filter(p => p.life > 0);
-  for (const t of texts) { t.life -= dt; t.y += t.vy * dt; t.vy *= .95; }
-  texts = texts.filter(t => t.life > 0);
+export function updateFx(dt) {
+  updateParticles(dt, G.t);
   for (const p of props) p.shake = Math.max(0, p.shake - dt);
-  props = props.filter(p => !p.dead);
+  prune(props, p => !p.dead);
 
   const th = G.st.bg;
   if (th === 'village' && Math.random() < dt * 3) parts.push({ kind: 'leaf', x: G.camX + rand(0, W + 200), y: -10, vx: rand(-60, -20), vy: rand(40, 80), life: 8, max: 8, col: pick(['#e79aa8', '#f3c4cc', '#8fbf5a']), size: rand(3, 5) });
@@ -233,7 +226,7 @@ function updateFx(dt) {
   if (th === 'bachdang') { G.lightning -= dt; if (Math.random() < dt * .1) G.lightning = .22; }
 }
 
-function updateCamera(dt) {
+export function updateCamera(dt) {
   const target = clamp(G.lock ? G.lockX : P.x - W * .4, 0, G.st.len - W);
   G.camX += (target - G.camX) * Math.min(1, dt * (G.lock ? 5 : 8));
 }

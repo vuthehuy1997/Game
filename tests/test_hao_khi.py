@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """Bộ kiểm thử Hào Khí Việt Nam: mở game trong Chromium ẩn (Playwright) và chơi thật.
 
-Chạy:  python3 tests/test_game.py            (tất cả)
-       python3 tests/test_game.py stage      (chỉ các bài có chữ "stage" trong tên)
+Chạy:  python3 tests/test_hao_khi.py            (tất cả)
+       python3 tests/test_hao_khi.py stage      (chỉ các bài có chữ "stage" trong tên)
 
-Tự bật một máy chủ tĩnh tạm trên cổng trống, không cần chạy server 8003 trước.
-Mỗi bài dùng một trang mới với localStorage sạch.
+Trang game mở với ?debug để các biến và hàm của game có mặt trên window (xem games/hao-khi/js/debug.js).
 """
-import functools, http.server, json, os, sys, threading, time, traceback
-from playwright.sync_api import sync_playwright
-
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import json
+from harness import run
 
 # Bot chơi một ải bằng cách gọi thẳng update()/render() (nhanh hơn thời gian thực).
 # god = true: hồi đầy máu, nội lực mỗi khung hình và có đủ kỹ năng → kiểm tra ải có "đi hết được" không.
@@ -192,7 +189,7 @@ def test_keyboard_controls(pg):
     assert pg.evaluate("P.lane") == lane0 + 1, 'S không đổi làn xuống'
     pg.keyboard.press('KeyW'); pg.wait_for_timeout(120)
     assert pg.evaluate("P.lane") == lane0, 'W không đổi làn lên'
-    pg.evaluate("window.__st = new Set(); const u = updatePlayer; updatePlayer = dt => { u(dt); __st.add(P.state); if (P.air) __st.add('AIR'); }")
+    pg.evaluate("window.__st = new Set(); G.probe = () => { __st.add(P.state); if (P.air) __st.add('AIR'); }")
     pg.keyboard.press('Space'); pg.wait_for_timeout(700)
     pg.keyboard.press('KeyJ'); pg.wait_for_timeout(500)
     pg.keyboard.press('KeyK'); pg.wait_for_timeout(600)
@@ -216,7 +213,7 @@ def test_touch_controls(pg, browser, base):
             box = tp.locator(f'#touch [data-k="{k}"]').bounding_box()
             assert box and box['width'] >= 24 and box['height'] >= 24, f'nút {k} quá nhỏ: {box}'
             assert box['x'] >= 0 and box['x'] + box['width'] <= 844 and box['y'] >= 0 and box['y'] + box['height'] <= 390, f'nút {k} tràn màn hình: {box}'
-        tp.evaluate("window.__st = new Set(); const u = updatePlayer; updatePlayer = dt => { u(dt); __st.add(P.state); }")
+        tp.evaluate("window.__st = new Set(); G.probe = () => { __st.add(P.state); }")
         x0 = tp.evaluate("P.x")
         tp.dispatch_event('#touch [data-k="right"]', 'pointerdown', {'pointerId': 1}); tp.wait_for_timeout(400)
         assert tp.evaluate("held.has('right')")
@@ -608,8 +605,8 @@ def test_arena_endless(pg):
     txt = card_text(pg)
     assert f'{wave} đợt' in txt and 'Kỷ lục mới' in txt, txt[:200]
     assert pg.evaluate("S.rec.endless") == wave and pg.evaluate("S.coins") == coins and pg.evaluate("STORE.slots[0].rec.endless") == wave
-    pg.click('#aRe')
-    assert pg.evaluate("[G.mode, G.wave, enemies.length, G.st.waves.length]") == ['play', 0, 0, 0]
+    # bấm và đọc trạng thái trong cùng một lượt: nếu để vòng lặp chạy thêm một khung hình thì đợt 1 đã kịp sinh ra
+    assert pg.evaluate("document.querySelector('#aRe').click(); [G.mode, G.wave, enemies.length, G.st.waves.length]") == ['play', 0, 0, 0]
     return f'{wave} đợt trong 150s mô phỏng'
 
 @test
@@ -660,45 +657,5 @@ def test_no_horizontal_scroll_on_phone(pg):
         assert box['height'] <= h, f'{w}x{h}: khung cao hơn màn hình ({box})'
 
 
-# ---------------------------------------------------------------- chạy
-def main():
-    only = sys.argv[1:]
-    class Quiet(http.server.SimpleHTTPRequestHandler):
-        def log_message(self, *a): pass
-    handler = functools.partial(Quiet, directory=ROOT)
-    srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), handler)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
-    base = f'http://127.0.0.1:{srv.server_address[1]}/'
-    failed = 0
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        for fn in TESTS:
-            if only and not any(o in fn.__name__ for o in only): continue
-            ctx = browser.new_context(viewport={'width': 1100, 'height': 720})
-            pg = ctx.new_page(); errs = []
-            pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' else None)
-            pg.on('pageerror', lambda e: errs.append(str(e)))
-            pg.on('requestfailed', lambda r: errs.append('không tải được ' + r.url) if r.url.startswith(base) else None)
-            t0 = time.time(); note = None
-            try:
-                pg.goto(base, wait_until='load'); pg.wait_for_timeout(300)
-                args = (pg, browser, base) if fn.__code__.co_argcount == 3 else (pg,)
-                note = fn(*args)
-                assert not errs, 'lỗi console: ' + ' | '.join(dict.fromkeys(errs))[:600]
-                print(f'PASS  {fn.__name__:42s} {time.time() - t0:5.1f}s' + (f'  ({note})' if note else ''))
-            except Exception as e:
-                failed += 1
-                kind = 'FAIL' if isinstance(e, AssertionError) else 'ERROR'
-                tb = traceback.extract_tb(e.__traceback__)[-1]
-                msg = f'dòng {tb.lineno}: {tb.line}' + (f'\n      {e}' if str(e) else '')
-                print(f'{kind:5s} {fn.__name__:42s} {time.time() - t0:5.1f}s\n      {msg[:700]}')
-                if errs: print('      console:', ' | '.join(dict.fromkeys(errs))[:400])
-            finally:
-                ctx.close()
-        browser.close()
-    srv.shutdown()
-    print(f'\n{len(TESTS) if not only else "đã chọn"} bài, {failed} hỏng')
-    sys.exit(1 if failed else 0)
-
 if __name__ == '__main__':
-    main()
+    run(TESTS, 'games/hao-khi/?debug')

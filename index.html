@@ -3,93 +3,46 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Hào Khí Việt Nam</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Itim&family=Pattaya&display=swap">
-<link rel="stylesheet" href="css/style.css">
+<title>Game Hub</title>
+<meta name="description" content="Tuyển tập game chơi ngay trên trình duyệt.">
+<link rel="stylesheet" href="platform/css/hub.css">
 </head>
 <body>
-<div class="wrap">
-  <div class="stage" id="stage">
-    <canvas id="cv" width="960" height="540" aria-label="Màn chơi"></canvas>
+<header class="top">
+  <div class="brand"><span class="logo" aria-hidden="true">▶</span><span>Game Hub</span></div>
+  <button class="btn ghost" id="openSettings" type="button">Cài đặt</button>
+</header>
 
-    <div class="ov menu" id="menu">
-      <h1>Hào Khí Việt Nam</h1>
-      <p class="sub">Võ lâm Đại Việt · 1284 – 1288</p>
-      <div class="row">
-        <button class="btn" id="bPlay">Chơi</button>
-        <button class="btn ghost" id="bSettings">Cài đặt</button>
-        <button class="btn ghost" id="bHelp">Cách chơi</button>
-      </div>
-      <div class="help" id="help" hidden>
-        <h2>Võ công của Tiểu Hổ</h2>
-        <ul>
-          <li><kbd>A</kbd> <kbd>D</kbd>: đi trái, phải · <kbd>W</kbd> <kbd>S</kbd>: đổi làn lên, xuống (3 làn) · <kbd>Space</kbd>: nhảy · <kbd>Shift</kbd>: lướt né</li>
-          <li><kbd>J</kbd>: Liên hoàn quyền (bấm liên tục 3 đòn). Trên không: Phi cước</li>
-          <li>Kỹ năng: <kbd>K</kbd> Chưởng · <kbd>L</kbd> Toàn Phong Cước · <kbd>I</kbd> Bạch Hổ Xung · <kbd>O</kbd> Thiết Bố Sam · <kbd>H</kbd> Địa Chấn Quyền (hoặc phím <kbd>1</kbd>–<kbd>5</kbd>)</li>
-          <li><kbd>U</kbd>: Tuyệt kỹ <b>Sát Thát</b> khi thanh Hào khí (nộ) đầy · <kbd>Q</kbd> ăn bánh chưng · <kbd>E</kbd> uống rượu nếp (mua ở võ đường)</li>
-          <li>Đòn thứ ba hất giặc lên không: đánh tiếp khi nó chưa chạm đất để <b>tung hứng</b>.</li>
-          <li>Đánh giặc để lên cấp, nhận điểm học kỹ năng ở <b>Cây kỹ năng</b>. Đòn chỉ trúng khi cùng làn: đổi làn để né.</li>
-          <li>Đội trưởng, Chỉ huy mang cờ hiệu và mạnh hơn. Lính trống làm quân xung quanh hăng hơn: hạ nó trước!</li>
-        </ul>
-      </div>
+<main>
+  <section class="intro">
+    <h1>Chọn game để chơi</h1>
+    <p>Chơi ngay trên trình duyệt, không cần cài đặt. Tiến độ được lưu trên máy này. <span id="count"></span></p>
+  </section>
+  <ul class="games" id="games"></ul>
+  <noscript><p>Trang này cần bật JavaScript.</p></noscript>
+</main>
+
+<dialog id="settings" aria-labelledby="setTitle">
+  <form method="dialog">
+    <h2 id="setTitle">Cài đặt chung</h2>
+    <p class="hint">Áp dụng cho mọi game trên nền tảng.</p>
+    <div class="fields">
+      <label for="setMusic">Nhạc nền</label>
+      <div class="rng"><input type="range" id="setMusic" min="0" max="100" step="5"><output id="outMusic" for="setMusic"></output></div>
+      <label for="setSfx">Hiệu ứng âm thanh</label>
+      <div class="rng"><input type="range" id="setSfx" min="0" max="100" step="5"><output id="outSfx" for="setSfx"></output></div>
+      <label for="setShake">Rung màn hình</label>
+      <input type="checkbox" id="setShake">
+      <label for="setTouch">Nút cảm ứng</label>
+      <select id="setTouch"><option value="auto">Tự động</option><option value="on">Luôn bật</option><option value="off">Tắt</option></select>
     </div>
-
-    <div class="ov" id="dlgWrap" hidden>
-      <div class="dlg" id="dlg">
-        <canvas id="portrait" width="132" height="132"></canvas>
-        <div class="body">
-          <p class="who" id="who"></p>
-          <p class="txt" id="txt"></p>
-        </div>
-        <button class="skip" id="dlgSkip" type="button">Bỏ qua ⏭</button>
-        <span class="next">▼ bấm để tiếp</span>
-      </div>
+    <div class="actions">
+      <button class="btn ghost" id="setReset" type="button">Mặc định</button>
+      <button class="btn" id="setDone">Xong</button>
     </div>
+  </form>
+</dialog>
 
-    <div class="ov dim" id="cardWrap" hidden>
-      <div class="card" id="card"></div>
-    </div>
-
-    <div class="touch" id="touch">
-      <div class="dpad">
-        <button data-k="up" class="u" aria-label="Lên làn">▲</button>
-        <button data-k="left" class="l" aria-label="Sang trái">◀</button>
-        <button data-k="right" class="r" aria-label="Sang phải">▶</button>
-        <button data-k="down" class="d" aria-label="Xuống làn">▼</button>
-      </div>
-      <div class="grp r">
-        <button data-k="i1">Bánh</button>
-        <button data-k="i2">Rượu</button>
-        <button data-k="s1">Chưởng</button>
-        <button data-k="s2">Toàn phong</button>
-        <button data-k="s3">Hổ xung</button>
-        <button data-k="ult">Sát Thát</button>
-        <button data-k="s4">Thiết bố</button>
-        <button data-k="s5">Địa chấn</button>
-        <button data-k="dash">Lướt</button>
-        <button data-k="pause">II</button>
-        <button data-k="jump">Nhảy</button>
-        <button data-k="atk" class="big">Đánh</button>
-      </div>
-    </div>
-  </div>
-  <p class="keys"><kbd>WASD</kbd> đi, đổi làn · <kbd>Space</kbd> nhảy · <kbd>J</kbd> đánh · <kbd>K</kbd> <kbd>L</kbd> <kbd>I</kbd> <kbd>O</kbd> <kbd>H</kbd> kỹ năng · <kbd>Shift</kbd> lướt · <kbd>U</kbd> tuyệt kỹ · <kbd>Q</kbd> <kbd>E</kbd> hành trang · <kbd>P</kbd> tạm dừng</p>
-</div>
-
-<!-- Thứ tự nạp: tiện ích → dữ liệu → đồ hoạ → logic → luồng game → vòng lặp -->
-<script src="js/util.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/data.js"></script>
-<script src="js/art.js"></script>
-<script src="js/background.js"></script>
-<script src="js/player.js"></script>
-<script src="js/enemies.js"></script>
-<script src="js/world.js"></script>
-<script src="js/render.js"></script>
-<script src="js/flow.js"></script>
-<script src="js/input.js"></script>
-<script src="js/main.js"></script>
+<script type="module" src="platform/home.js"></script>
 </body>
 </html>

@@ -1,7 +1,17 @@
-'use strict';
 // Vòng lặp chính: cập nhật theo chế độ game rồi vẽ.
+import './debug.js';
+import { startLoop } from '../../../platform/core/loop.js';
+import { $, prune } from '../../../platform/core/util.js';
+import { updateEnemy, updateAlly } from './enemies.js';
+import { toTitle, updateDialog, drawPortrait, afterClear, gameOver, initFlow } from './flow.js';
+import { initInput } from './input.js';
+import { updatePlayer } from './player.js';
+import { render } from './render.js';
+import { CFG } from './save.js';
+import { W, G, P, ally, enemies } from './state.js';
+import { updateWaves, updateStakes, updateHazards, updateProjs, updateItems, updateFx, updateCamera } from './world.js';
 
-function update(dt) {
+export function update(dt) {
   G.t += dt;
   if (G.banner) { G.banner.t += dt; if (G.banner.t > G.banner.dur) G.banner = null; }
   G.flashT = Math.max(0, G.flashT - dt);
@@ -21,26 +31,20 @@ function update(dt) {
   G.goBlink = Math.max(0, G.goBlink - dt);
   if (G.ultT > 0) G.ultT -= dt;
   updatePlayer(dt);
+  if (G.probe) G.probe();   // điểm móc cho bộ kiểm thử
   if (G.mode === 'play') { updateWaves(dt); updateHazards(dt); }
   if (G.mode !== 'play' && G.mode !== 'clear') return; // hội thoại boss vừa mở
   if (ally) updateAlly(ally, dt);
   enemies.forEach(e => updateEnemy(e, dt));
   updateStakes(dt);
-  enemies = enemies.filter(e => !e.remove);
+  prune(enemies, e => !e.remove);
   if (G.boss && G.boss.remove) G.boss = null;
   updateProjs(dt); updateItems(dt); updateFx(dt); updateCamera(dt);
   if (G.overT > 0 && P.state === 'dead') { G.overT -= dt; if (G.overT <= 0) gameOver(); }
   if (G.mode === 'clear') { G.clearT -= dt; if (G.clearT <= 0) { G.mode = 'story'; afterClear(); } }
 }
 
-let last = performance.now();
-function frame(now) {
-  const dt = Math.min(.033, (now - last) / 1000); last = now;
-  try { update(dt); render(); } catch (err) { console.error(err); }
-  pressed.clear();
-  requestAnimationFrame(frame);
-}
-
+initInput(); initFlow();
 toTitle();
 (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => drawPortrait($('portrait'), 'hero'));
-requestAnimationFrame(frame);
+startLoop(update, render);
