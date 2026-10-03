@@ -6,7 +6,7 @@ import { drawParticles, drawTexts } from '../../../platform/core/fx.js';
 import { FIGHTERS, STAGES } from './data.js';
 import { W, H, GROUND } from './state.js';
 import { FB, FD } from '../../../platform/ui/theme.js';
-import { FIGHTER_IDS, STAGE_IDS } from './menu.js';
+import { FIGHTER_IDS, STAGE_IDS, PORTRAIT_R, portraitX, ROW1_Y, ROW2_Y } from './menu.js';
 
 const ATK_POSE = { light: () => ({ armF: -.3, armB: -1.8, legF: .3, legB: -.1, lean: .25 }),
                     heavy: () => ({ armF: -.6, armB: -2.4, legF: .4, legB: -.2, lean: .4 }) };
@@ -49,15 +49,42 @@ export function renderMatch(ctx, G) {
   if (G.mode === 'matchEnd') outlinedText(ctx, 'Đánh (F//) để đấu lại · Chiêu (H) để về menu', W / 2, H - 30, `16px ${FB}`, '#a3a8b8');
 }
 
+// Ảnh chân dung tròn của một tướng, phỏng theo drawBust (platform/art/chibi.js) nhưng vẽ thẳng lên ctx
+// dùng chung của màn chọn (không cần canvas riêng), để đặt được nhiều ảnh cùng lúc trên một màn hình.
+function drawHeroPortrait(ctx, cx, cy, r, look) {
+  const REF = 66, k = r / 64, s = 1.7 / (look.scale || 1);
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = '#20232c'; ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  ctx.translate(cx - REF * k, cy - REF * k); ctx.scale(k, k);
+  drawChibi(ctx, 60, 66 + 80 * 1.7 + 8, look, { scale: s, t: 0, armF: .2, noWeapon: true });
+  ctx.restore();
+}
+function drawPortraitRow(ctx, y, selIdx, ringColor, dim) {
+  ctx.globalAlpha = dim ? .55 : 1;
+  FIGHTER_IDS.forEach((id, i) => {
+    const x = portraitX(i), picked = i === selIdx;
+    drawHeroPortrait(ctx, x, y, PORTRAIT_R, FIGHTERS[id].look);
+    ctx.lineWidth = picked ? 4 : 1.5; ctx.strokeStyle = picked ? ringColor : 'rgba(255,255,255,.35)';
+    ctx.beginPath(); ctx.arc(x, y, PORTRAIT_R + (picked ? 3 : 0), 0, Math.PI * 2); ctx.stroke();
+    ctx.textAlign = 'center';
+    outlinedText(ctx, FIGHTERS[id].name, x, y + PORTRAIT_R + 18, `13px ${FB}`, picked ? ringColor : '#cfd3dc');
+  });
+  ctx.globalAlpha = 1;
+}
 export function renderSelect(ctx, sel) {
   ctx.fillStyle = '#12141a'; ctx.fillRect(0, 0, W, H);
   ctx.textAlign = 'center';
-  outlinedText(ctx, 'Đối Kháng Anh Hùng', W / 2, 70, `40px ${FD}`, '#ffe6a8');
-  outlinedText(ctx, `P1: ${FIGHTERS[FIGHTER_IDS[sel.cursor1]].name}  ◀ A/D ▶`, W / 2, 160, `22px ${FB}`, '#fff');
+  outlinedText(ctx, 'Đối Kháng Anh Hùng', W / 2, 36, `28px ${FD}`, '#ffe6a8');
+
+  outlinedText(ctx, 'Người chơi 1 — bấm chọn hoặc A/D', W / 2, ROW1_Y - PORTRAIT_R - 14, `14px ${FB}`, '#fff');
+  drawPortraitRow(ctx, ROW1_Y, sel.cursor1, '#e9b949', false);
+
   outlinedText(ctx, sel.p2cpu
-    ? `Máy: ${FIGHTERS[FIGHTER_IDS[sel.cursor2]].name} (${DIFF_VI[sel.diff]}) — đổi tướng: ←/→ · đổi khó: , · đổi Người/Máy: H`
-    : `P2: ${FIGHTERS[FIGHTER_IDS[sel.cursor2]].name}  ◀ ←/→ ▶ — đổi Người/Máy: H`,
-    W / 2, 200, `18px ${FB}`, '#fff');
-  outlinedText(ctx, `Sân: ${STAGES[STAGE_IDS[sel.stageCursor]].name} — đổi: W`, W / 2, 240, `20px ${FB}`, '#ffe6a8');
-  outlinedText(ctx, 'F hoặc / để bắt đầu', W / 2, 300, `18px ${FB}`, '#a3a8b8');
+    ? `Máy điều khiển (${DIFF_VI[sel.diff]}) — đổi khó: , · đổi Người/Máy: H`
+    : 'Người chơi 2 — bấm chọn hoặc ←/→', W / 2, ROW2_Y - PORTRAIT_R - 14, `14px ${FB}`, '#fff');
+  drawPortraitRow(ctx, ROW2_Y, sel.cursor2, sel.p2cpu ? '#ff8f6b' : '#6fd6ff', sel.p2cpu);
+
+  outlinedText(ctx, `Sân: ${STAGES[STAGE_IDS[sel.stageCursor]].name} — đổi: W`, W / 2, ROW2_Y + PORTRAIT_R + 46, `18px ${FB}`, '#ffe6a8');
+  outlinedText(ctx, 'F hoặc / để bắt đầu', W / 2, ROW2_Y + PORTRAIT_R + 72, `16px ${FB}`, '#a3a8b8');
 }

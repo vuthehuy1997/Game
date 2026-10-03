@@ -16,6 +16,28 @@ def test_game_loads_with_home_link(pg, browser, base):
 
 
 @test
+def test_click_portrait_selects_p1_fighter(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    cx, cy = pg.evaluate("[portraitX(2), ROW1_Y]")
+    box = pg.eval_on_selector('canvas', "cv => { const r = cv.getBoundingClientRect(); return {x: r.x, y: r.y, w: r.width, h: r.height}; }")
+    x = box['x'] + cx / 960 * box['w']; y = box['y'] + cy / 540 * box['h']
+    pg.mouse.click(x, y); pg.wait_for_timeout(50)
+    assert pg.evaluate("G.cursor1") == 2
+
+
+@test
+def test_click_on_p2_portrait_ignored_while_cpu_controls_p2(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.evaluate("G.p2cpu") == True
+    cursor2_before = pg.evaluate("G.cursor2")
+    cx, cy = pg.evaluate("[portraitX(3), ROW2_Y]")
+    box = pg.eval_on_selector('canvas', "cv => { const r = cv.getBoundingClientRect(); return {x: r.x, y: r.y, w: r.width, h: r.height}; }")
+    x = box['x'] + cx / 960 * box['w']; y = box['y'] + cy / 540 * box['h']
+    pg.mouse.click(x, y); pg.wait_for_timeout(50)
+    assert pg.evaluate("G.cursor2") == cursor2_before, 'bấm vào ảnh P2 khi máy đang điều khiển không được đổi tướng'
+
+
+@test
 def test_two_fighters_spawn_with_correct_hp(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     pg.evaluate("startMatch(G, G)")  # bỏ qua màn chọn, dùng tướng/sân mặc định như Task 2-10

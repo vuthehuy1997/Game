@@ -11,7 +11,8 @@ import { aiTick, aiPressed } from './ai.js';
 import { updateHazard } from './hazards.js';
 import { updateFlow } from './flow.js';
 import { renderMatch, renderSelect } from './render.js';
-import { newSelect, updateSelect, startMatch } from './menu.js';
+import { newSelect, updateSelect, startMatch, pickFromClick, portraitX, ROW1_Y, ROW2_Y } from './menu.js';
+import { W, H } from './state.js';
 
 const cv = $('cv'), ctx = cv.getContext('2d');
 let G = newSelect(); // thay cho newMatch(...) cố định của Task 2-10
@@ -42,7 +43,14 @@ function update(dt) {
 }
 function render() { G.mode === 'select' ? renderSelect(ctx, G) : renderMatch(ctx, G); }
 
+// Bấm/chạm vào ảnh chân dung trên màn chọn: đổi tướng P1/P2. Vị trí vùng bấm khớp với nơi render.js vẽ (menu.js).
+cv.addEventListener('click', e => {
+  if (G.mode !== 'select') return;
+  const r = cv.getBoundingClientRect();
+  pickFromClick(G, (e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H);
+});
+
 mountHomeLink($('stage'));
-if (debugOn()) exposeGlobals([{ G, FIGHTERS, STAGES, update, render, startAttack, tryUseSpecial, startDash, updateFighter, held, newSelect, updateSelect, startMatch }], { G: v => { G = v; } });
+if (debugOn()) exposeGlobals([{ G, FIGHTERS, STAGES, update, render, startAttack, tryUseSpecial, startDash, updateFighter, held, newSelect, updateSelect, startMatch, portraitX, ROW1_Y, ROW2_Y }], { G: v => { G = v; } });
 initInput();
 startLoop(update, render);

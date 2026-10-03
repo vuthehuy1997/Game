@@ -22,6 +22,27 @@ export function updateSelect(sel) {
   if (pressed.has('p1_light') || pressed.has('p2_light')) sel.confirm = true;
 }
 
+// Bố cục ảnh chân dung tướng trên màn chọn (dùng chung giữa render.js vẽ và việc bắt bấm chuột/chạm ở đây,
+// để vị trí vẽ và vùng bấm luôn khớp nhau). PORTRAIT_R: bán kính ảnh tròn. ROW1/ROW2_Y: tâm hàng P1/P2.
+export const PORTRAIT_R = 42;
+const PORTRAIT_STEP = 98, PORTRAIT_START_X = 235;
+export const portraitX = i => PORTRAIT_START_X + i * PORTRAIT_STEP;
+export const ROW1_Y = 150, ROW2_Y = 300;
+
+// Bấm/chạm vào một ảnh tướng: đổi cursor1 (hàng P1) hoặc cursor2 (hàng P2, chỉ khi P2 đang là Người).
+// mx, my: toạ độ theo không gian canvas 960×540 (đã quy đổi từ toạ độ màn hình thật).
+export function pickFromClick(sel, mx, my) {
+  const row = Math.abs(my - ROW1_Y) <= PORTRAIT_R ? 1 : Math.abs(my - ROW2_Y) <= PORTRAIT_R ? 2 : 0;
+  if (!row || (row === 2 && sel.p2cpu)) return false;
+  for (let i = 0; i < FIGHTER_IDS.length; i++) {
+    if (Math.abs(mx - portraitX(i)) <= PORTRAIT_R) {
+      if (row === 1) sel.cursor1 = i; else sel.cursor2 = i;
+      return true;
+    }
+  }
+  return false;
+}
+
 export function startMatch(G, sel) {
   G.p1id = FIGHTER_IDS[sel.cursor1]; G.p2id = FIGHTER_IDS[sel.cursor2];
   G.stageId = STAGE_IDS[sel.stageCursor]; G.p2cpu = sel.p2cpu; G.diff = sel.diff;
