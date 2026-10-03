@@ -100,10 +100,14 @@ def test_stake_damages_once_per_wave_then_recharges(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     pg.evaluate("startEra(0)")
     pg.evaluate("build(2, 'stake')")  # lô 2 = làn 1, x 190
-    pg.evaluate("startWave(); G.queue = []")  # cô lập: không để đợt thật xen vào
-    pg.evaluate("troops.push({side:'enemy', lane:1, x:190, hp:200, maxHp:200, dmg:0, reach:0, spd:0, name:'t', walk:0})")
-    pg.evaluate("update(1/60)")
-    hp1 = pg.evaluate("troops[0].hp")
+    # Gộp vào một evaluate: nếu tách rời, một khung hình nền có thể chạy giữa lúc dọn queue (0 địch)
+    # và lúc thêm địch thử nghiệm, khiến updateWaveSpawns tưởng đợt đã xong và tự finishWave() mất.
+    hp1 = pg.evaluate("""() => {
+      startWave(); G.queue = [];
+      troops.push({side:'enemy', lane:1, x:190, hp:200, maxHp:200, dmg:0, reach:0, spd:0, name:'t', walk:0});
+      update(1/60);
+      return troops[0].hp;
+    }""")
     assert hp1 < 200, 'trụ cọc không gây sát thương'
     pg.evaluate("update(1/60)")
     assert pg.evaluate("troops[0].hp") == hp1, 'trụ cọc đánh quá 1 lần trong cùng đợt'
