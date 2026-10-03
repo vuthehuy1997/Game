@@ -1,7 +1,7 @@
 // Trại lính xuất quân, lính/giặc hành quân và va chạm cận chiến, giặc áp sát Nhà chính gây sát thương liên tục.
 import { prune } from '../../../platform/core/util.js';
 import { spark } from '../../../platform/core/fx.js';
-import { G, B, troops, LANES, findPlot, SPAWN_X, HQ_FRONT_X, MAX_ALLIES_PER_LANE } from './state.js';
+import { G, B, troops, LANES, findPlot, SPAWN_X, HQ_FRONT_X, ALLY_HOLD_X, MAX_ALLIES_PER_LANE } from './state.js';
 import { showResult } from './flow.js';
 
 export function spawnTroop(side, lane, def) {
@@ -37,6 +37,7 @@ export function updateTroops(dt) {
     const foe = nearestFoe(u);
     if (foe && Math.abs(foe.x - u.x) <= u.reach) { foe.hp -= u.dmg * dt; u.walk += dt * 3; continue; }
     if (u.side === 'enemy' && u.x <= HQ_FRONT_X) { G.hq.hp -= u.dmg * dt; G.shake = Math.max(G.shake, 2); continue; }
+    if (u.side === 'ally' && u.x >= ALLY_HOLD_X) { u.walk += dt * 2; continue; } // giữ hàng tiền tuyến, không đi tiếp vào khoảng trống
     u.x += dir * u.spd * dt; u.walk += dt * 8;
   }
   prune(troops, u => {

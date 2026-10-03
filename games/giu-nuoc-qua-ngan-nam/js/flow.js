@@ -71,13 +71,18 @@ export function updateHud() {
 
 export function showResult() {
   const win = G.phase === 'win';
-  showCard(`<p class="eyebrow">${G.era.name} · ${G.era.year}</p><h2>${win ? 'Giữ vững giang sơn!' : 'Thành đã mất…'}</h2>
-    <p>${win ? `Đã đánh bại ${G.era.foe}, mở thời kỳ kế tiếp.` : `${G.era.foe} đã hạ được Nhà chính. Luyện thêm và thử lại.`}</p>
+  const hasNext = win && G.eraIdx + 1 < ERAS.length;
+  const title = win ? (hasNext ? 'Giữ vững giang sơn!' : 'Giữ nước trọn vẹn qua ngàn năm!') : 'Thành đã mất…';
+  const body = win
+    ? (hasNext ? `Đã đánh bại ${G.era.foe}, mở thời kỳ kế tiếp.` : `Đã đánh bại ${G.era.foe} — hoàn thành cả 6 thời kỳ!`)
+    : `${G.era.foe} đã hạ được Nhà chính. Luyện thêm và thử lại.`;
+  showCard(`<p class="eyebrow">${G.era.name} · ${G.era.year}</p><h2>${title}</h2>
+    <p>${body}</p>
     <div class="actions">
       <button type="button" class="btn ghost" id="rMap">Về bản đồ</button>
-      <button type="button" class="btn" id="rGo">${win && unlocked(G.eraIdx + 1) ? 'Thời kỳ kế' : win ? 'Về bản đồ' : 'Đánh lại'}</button>
+      <button type="button" class="btn" id="rGo">${hasNext ? 'Thời kỳ kế' : win ? 'Về bản đồ' : 'Đánh lại'}</button>
     </div>`, el => {
     $('rMap').onclick = showEraSelect;
-    $('rGo').onclick = win ? (unlocked(G.eraIdx + 1) ? () => beginEra(G.eraIdx + 1) : showEraSelect) : () => beginEra(G.eraIdx);
+    $('rGo').onclick = hasNext ? () => beginEra(G.eraIdx + 1) : win ? showEraSelect : () => beginEra(G.eraIdx);
   });
 }

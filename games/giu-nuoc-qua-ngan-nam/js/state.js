@@ -2,6 +2,7 @@
 export const W = 960, H = 540;
 export const LANES = [280, 360, 440];           // y mặt đất của 3 làn: trên, giữa, dưới
 export const HQ_X = 70, HQ_FRONT_X = 130, SPAWN_X = 900;
+export const ALLY_HOLD_X = 600;   // lính ta hành quân tới đây rồi giữ vị trí, chờ địch tới tầm thay vì đi mãi khỏi màn hình
 export const MAX_ALLIES_PER_LANE = 3;
 export const PROJ_SPEED = 420;
 // 6 lô đất cố định: 2 cột × 3 làn, cạnh Nhà chính

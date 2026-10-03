@@ -8,6 +8,7 @@ import { showResult } from './flow.js';
 import { G, B, troops, projs, LANES, findPlot } from './state.js';
 
 export function startEra(i) {
+  if (!ERAS[i]) return; // chỉ số thời kỳ không hợp lệ (ví dụ gọi vượt quá thời kỳ cuối): bỏ qua thay vì crash
   G.eraIdx = i; G.era = ERAS[i]; G.phase = 'prep'; G.wave = 0; G.gold = 40; G.t = 0; G.shake = 0;
   G.hq = { hp: G.era.hq.hp, maxHp: G.era.hq.hp, lvl: 1 }; G.queue = []; G.spawnT = 0;
   refill(B); refill(troops); refill(projs);
@@ -47,10 +48,14 @@ export function updateStakes() {
   for (const b of B) {
     if (b.kind !== 'stake' || b.used) continue;
     const plot = findPlot(b.plot);
-    const hit = troops.find(u => u.side === 'enemy' && u.lane === plot.lane && Math.abs(u.x - plot.x) < 14);
-    if (!hit) continue;
-    b.used = true; hit.hp -= G.era.stakeDef.dmg;
-    floatText(hit.x, LANES[plot.lane] - 80, 'Mắc cọc!', '#ffd35a', 18);
-    spark(hit.x, LANES[plot.lane] - 10, 10, '#d9c7a0', 320);
+    // sát thương diện: mọi địch cùng làn, trong bán kính quanh bãi cọc (không chỉ 1 mục tiêu)
+    const hits = troops.filter(u => u.side === 'enemy' && u.lane === plot.lane && Math.abs(u.x - plot.x) < 40);
+    if (!hits.length) continue;
+    b.used = true;
+    for (const hit of hits) {
+      hit.hp -= G.era.stakeDef.dmg;
+      floatText(hit.x, LANES[plot.lane] - 80, 'Mắc cọc!', '#ffd35a', 18);
+      spark(hit.x, LANES[plot.lane] - 10, 10, '#d9c7a0', 320);
+    }
   }
 }

@@ -73,11 +73,34 @@ def test_camp_spawns_troop_up_to_lane_limit(pg, browser, base):
 def test_hq_loses_when_health_reaches_zero(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     pg.evaluate("startEra(0)")
-    pg.evaluate("G.phase = 'battle'; G.hq.hp = 1")
-    pg.evaluate("troops.push({side:'enemy', lane:0, x:100, hp:40, maxHp:40, dmg:50, reach:0, spd:40, name:'t', walk:0})")
-    pg.evaluate("for (let i = 0; i < 10; i++) update(1/60)")
+    # Nhiều lính/giặc cùng hoạt động khi Nhà chính gục: đảm bảo chỉ chuyển 'lose' đúng 1 lần, không lỗi
+    # console dù vòng lặp còn chạy tiếp nhiều khung hình sau đó (không gọi lặp lại màn kết quả).
+    pg.evaluate("""() => {
+      G.phase = 'battle'; G.hq.hp = 1;
+      for (let i = 0; i < 3; i++) troops.push({side:'ally', lane:i % 3, x:300 + i * 20, hp:50, maxHp:50, dmg:5, reach:20, spd:40, name:'a', walk:0});
+      for (let i = 0; i < 3; i++) troops.push({side:'enemy', lane:i % 3, x:100 + i * 10, hp:40, maxHp:40, dmg:50, reach:0, spd:40, name:'e', walk:0});
+    }""")
+    pg.evaluate("for (let i = 0; i < 30; i++) update(1/60)")
     assert pg.evaluate("G.phase") == 'lose'
     assert pg.locator('#card h2').count() == 1
+
+
+@test
+def test_upgrade_and_camp_recruit_blocked_when_poor(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startEra(0)")
+    ok, blen = pg.evaluate("() => { G.gold = 0; const ok = build(0, 'camp'); return [ok, B.length]; }")
+    assert ok == False and blen == 0, 'không đủ vàng vẫn xây được trại'
+    pg.evaluate("G.gold = 1000; build(0, 'camp'); G.gold = 0")  # có trại cấp 1 nhưng hết vàng
+    ok2, lvl2 = pg.evaluate("() => { const ok = upgrade(B[0]); return [ok, B[0].lvl]; }")
+    assert ok2 == False and lvl2 == 1, 'không đủ vàng vẫn nâng cấp trại được'
+    recruited = pg.evaluate("""() => {
+      const n0 = troops.length;
+      // ép hết vàng mỗi khung: thu nhập Nhà chính vẫn chảy đều trong 'prep' nên chỉ đặt 1 lần không đủ mô phỏng nghèo liên tục
+      for (let i = 0; i < 300; i++) { G.gold = 0; update(1/60); }
+      return troops.length - n0;
+    }""")
+    assert recruited == 0, 'không đủ vàng trại vẫn tuyển được lính'
 
 
 @test
@@ -96,21 +119,32 @@ def test_tower_fires_only_within_range(pg, browser, base):
 
 
 @test
-def test_stake_damages_once_per_wave_then_recharges(pg, browser, base):
+def test_stake_damages_all_nearby_enemies_once_per_wave_then_recharges(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     pg.evaluate("startEra(0)")
     pg.evaluate("build(2, 'stake')")  # lô 2 = làn 1, x 190
     # Gộp vào một evaluate: nếu tách rời, một khung hình nền có thể chạy giữa lúc dọn queue (0 địch)
     # và lúc thêm địch thử nghiệm, khiến updateWaveSpawns tưởng đợt đã xong và tự finishWave() mất.
-    hp1 = pg.evaluate("""() => {
+    hps = pg.evaluate("""() => {
       startWave(); G.queue = [];
-      troops.push({side:'enemy', lane:1, x:190, hp:200, maxHp:200, dmg:0, reach:0, spd:0, name:'t', walk:0});
+      troops.push({side:'enemy', lane:1, x:190, hp:200, maxHp:200, dmg:0, reach:0, spd:0, name:'a', walk:0});
+      troops.push({side:'enemy', lane:1, x:215, hp:200, maxHp:200, dmg:0, reach:0, spd:0, name:'b', walk:0});
+      update(1/60);
+      return troops.map(u => u.hp);
+    }""")
+    assert hps[0] < 200 and hps[1] < 200, ('trụ cọc phải gây sát thương diện cho mọi địch gần đó, không chỉ 1 mục tiêu', hps)
+    pg.evaluate("update(1/60)")
+    assert pg.evaluate("troops.map(u => u.hp)") == hps, 'trụ cọc đánh quá 1 lần trong cùng đợt'
+    # sang đợt kế (giả lập dọn sạch đợt hiện tại): trụ cọc phải nạp lại, đánh được lần nữa
+    pg.evaluate("troops.length = 0; update(1/60)")  # queue rỗng + hết địch -> finishWave(), về 'prep', armStakes()
+    assert pg.evaluate("G.phase") == 'prep'
+    hp2 = pg.evaluate("""() => {
+      startWave(); G.queue = [];
+      troops.push({side:'enemy', lane:1, x:190, hp:200, maxHp:200, dmg:0, reach:0, spd:0, name:'c', walk:0});
       update(1/60);
       return troops[0].hp;
     }""")
-    assert hp1 < 200, 'trụ cọc không gây sát thương'
-    pg.evaluate("update(1/60)")
-    assert pg.evaluate("troops[0].hp") == hp1, 'trụ cọc đánh quá 1 lần trong cùng đợt'
+    assert hp2 < 200, 'trụ cọc không nạp lại ở giai đoạn chuẩn bị của đợt kế'
 
 
 @test
@@ -150,6 +184,28 @@ def test_full_flow_menu_to_win_via_real_building(pg, browser, base):
     # Bấm "Thời kỳ kế" quay lại trạng thái prep của thời kỳ 2
     pg.click('#rGo'); pg.wait_for_timeout(100)
     assert pg.evaluate("G.eraIdx") == 1 and pg.evaluate("G.phase") == 'prep'
+
+
+@test
+def test_allies_hold_a_line_and_dont_leave_the_field(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startEra(0); build(0, 'camp'); G.gold = 1000")
+    pg.evaluate("for (let i = 0; i < 1800; i++) update(1/60)")  # 30 giây mô phỏng: đủ để trại xuất đầy 3 lính
+    xs = pg.evaluate("troops.filter(u => u.side === 'ally' && u.lane === 0).map(u => u.x)")
+    assert len(xs) == 3, ('trại không xuất đủ lính vì lính cũ đi mất dạng khỏi màn hình', xs)
+    assert all(x <= 610 for x in xs), ('lính đi quá hàng giữ, không bao giờ dừng lại', xs)
+
+
+@test
+def test_winning_final_era_offers_map_not_a_crashing_next_era(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startEra(5)")  # thời kỳ cuối cùng (Quang Trung, chỉ số 5)
+    n = pg.evaluate("ERAS[5].waves.length")
+    for _ in range(n):
+        pg.evaluate("startWave(); G.queue = []; troops.length = 0; update(1/60)")
+    assert pg.evaluate("G.phase") == 'win'
+    assert pg.evaluate("document.querySelector('#rGo').textContent") != 'Thời kỳ kế'
+    pg.click('#rGo'); pg.wait_for_timeout(100)  # không được crash khi bấm nút chính
 
 
 run(TESTS)
