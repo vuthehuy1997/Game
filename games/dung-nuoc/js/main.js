@@ -20,5 +20,8 @@ recomputePop();
 initPlots(COLS * ROWS);
 collectOffline(); save();
 setInterval(save, 5000);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) save(); else collectOffline();
+});
 if (debugOn()) exposeGlobals([{ S, BUILDING_DEFS, update, render, recomputePop, unlockedKinds, canAfford, canBuild, build, incomePerSec, tick, collectOffline, save }]);
 startLoop(update, render);

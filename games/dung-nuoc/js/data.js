@@ -1,5 +1,5 @@
 export const BUILDING_DEFS = {
-  house:   { name: 'Nhà dân',    cost: { gold: 20 },            pop: 4,  unlockAt: 0 },
+  house:   { name: 'Nhà dân',    cost: { gold: 20 },            pop: 4, gold: 0.5, unlockAt: 0 },
   farm:    { name: 'Ruộng lúa',  cost: { gold: 15 },            food: 2, unlockAt: 0 },
   market:  { name: 'Chợ',        cost: { gold: 40, food: 10 },  gold: 2, unlockAt: 10 },
   well:    { name: 'Giếng nước', cost: { gold: 30 },            pop: 6,  unlockAt: 20 },

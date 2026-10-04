@@ -47,4 +47,13 @@ def test_offline_earnings_are_capped(pg, browser, base):
     assert gain == 10 * 4 * 3600, ('thu nhập khi vắng mặt phải bị chặn ở trần MAX_OFFLINE_SEC', gain)
 
 
+@test
+def test_reload_keeps_wealth_and_upgrades(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("S.wealth = 500; S.owned = { tho: 2 }; save()")
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.evaluate("S.wealth") >= 500, 'tải lại trang phải giữ nguyên của cải đã lưu'
+    assert pg.evaluate("S.owned.tho") == 2, 'tải lại trang phải giữ nguyên số nâng cấp đã mua'
+
+
 run(TESTS)

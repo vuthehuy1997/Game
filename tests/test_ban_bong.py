@@ -21,11 +21,11 @@ def test_cluster_of_three_pops(pg, browser, base):
     pg.evaluate("startLevel(0)")
     popped = pg.evaluate("""() => {
       for (const row of grid) row.fill(0);
-      grid[8][4] = 1; grid[8][5] = 1;   // 2 bóng màu 1 sẵn ở hàng đáy, cột 4-5
-      fire(480, 50);                     // G.cur có thể không phải màu 1 -> ép màu để kiểm thử xác định
-      const p = getProj(); p.color = 1; p.x = 480 + (4 - 5) * 44; p.y = 50;  // đưa đạn về đúng cột 4, gần hàng đáy
+      grid[0][4] = 1; grid[0][5] = 1;   // 2 bóng màu 1 ngay hàng trần (0), cột 4-5
+      fire(480, 50);
+      const p = getProj(); p.color = 1; p.x = 260 + 4 * 44 + 22; p.y = 480;  // bắn từ dưới lên đúng cột 4
       for (let i = 0; i < 200; i++) update(1/60);
-      return grid[8][4] === 0 && grid[8][5] === 0;
+      return grid[0][4] === 0 && grid[0][5] === 0;
     }""")
     assert popped, 'cụm ≥3 bóng cùng màu phải nổ hết'
 

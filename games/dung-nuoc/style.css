@@ -4,7 +4,7 @@ body{margin:0;min-height:100dvh;display:flex;flex-direction:column;align-items:c
 [hidden]{display:none!important}
 .stage{position:relative;width:min(100%,calc((100dvh - 80px)*16/9));aspect-ratio:16/9;border-radius:8px;overflow:hidden;
   background:#000;container-type:inline-size;font-size:clamp(10px,1.9cqw,19px);touch-action:none;user-select:none;-webkit-user-select:none}
-canvas{position:absolute;inset:0;width:100%;height:26%;display:block}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .btn{font:inherit;font-size:1em;padding:.5em 1.1em;border-radius:.6em;border:none;background:#caa65a;color:#201a10;cursor:pointer}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn.ghost{background:#0000;border:1px solid #ffffff80;color:#f3efe6}
@@ -16,7 +16,7 @@ canvas{position:absolute;inset:0;width:100%;height:26%;display:block}
 .card .actions{justify-content:flex-end}
 .card .kindBtn{flex:1 1 40%;font:inherit;padding:.5em;border-radius:.5em;border:1px solid #ffffff40;background:#ffffff14;color:#f3efe6;cursor:pointer}
 .card .kindBtn:disabled{opacity:.4;cursor:not-allowed}
-.plots{position:absolute;inset:26% 0 0 0;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(6,1fr);gap:.25cqw;padding:1cqw}
+.plots{position:absolute;inset:auto 0 0 0;max-height:62%;overflow:auto;background:#0006;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(6,1fr);gap:.25cqw;padding:1cqw}
 .plot{font:inherit;font-size:.68em;border-radius:.4em;border:1px dashed #ffffff40;background:#ffffff0f;color:#f3efe6;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;padding:.2em}
 .plot.filled{border-style:solid;background:#caa65a30;border-color:#caa65a}
 .keys{margin:0;color:#a3a8b8;font-size:14px;text-align:center}

@@ -20,5 +20,9 @@ initShop();
 const gain = collectOffline();
 if (gain > 0) showOfflineGain(gain);
 setInterval(save, 5000);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) save();
+  else { const gain = collectOffline(); if (gain > 0) showOfflineGain(gain); }
+});
 if (debugOn()) exposeGlobals([{ S, G, UPGRADES, update, render, click, tickAuto, collectOffline, buy, costOf, canBuy, autoPerSec, fmt, save }]);
 startLoop(update, render);

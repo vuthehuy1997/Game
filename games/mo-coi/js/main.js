@@ -18,5 +18,8 @@ mountHomeLink($('stage'));
 initRegions(N);
 collectOffline(); save();
 setInterval(save, 5000);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) save(); else collectOffline();
+});
 if (debugOn()) exposeGlobals([{ S, G, N, HOME, MAX_TROOPS, update, render, neighbors, tick, canAttack, attack, hasWon, collectOffline }]);
 startLoop(update, render);

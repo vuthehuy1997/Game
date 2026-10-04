@@ -71,4 +71,13 @@ def test_offline_elapsed_time_is_capped(pg, browser, base):
     assert elapsed == 4 * 3600, ('thời gian cộng dồn khi vắng mặt phải bị chặn ở trần 4 giờ', elapsed)
 
 
+@test
+def test_reload_keeps_conquered_regions(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("""() => { const to = neighbors(HOME)[0]; S.troops[HOME] = 50; S.troops[to] = 5; attack(HOME, to); }""")
+    owner_before = pg.evaluate("S.owner.slice()")
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.evaluate("S.owner") == owner_before, 'tải lại trang phải giữ nguyên các vùng đã chiếm'
+
+
 run(TESTS)

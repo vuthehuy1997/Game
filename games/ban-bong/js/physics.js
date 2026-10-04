@@ -16,6 +16,7 @@ export function startLevel(i) {
   for (const row of grid) row.fill(0);
   const def = LEVELS[i];
   for (let r = 0; r < def.fillRows; r++) for (let c = 0; c < COLS; c++) grid[r][c] = 1 + ((Math.random() * def.colors) | 0);
+  G.colors = def.colors;
   shotCount = 0; setProj(null);
   G.cur = randColorFromGrid(); G.next = randColorFromGrid();
   G.aimX = SHOOTER_X; G.aimY = TOP_Y;
@@ -58,13 +59,11 @@ function dropFloating() {
 }
 function tryAttach() {
   const col = Math.max(0, Math.min(COLS - 1, Math.round((proj.x - BOARD_X0 - CELL / 2) / CELL)));
-  let topRow = ROWS;
-  for (let r = 0; r < ROWS; r++) if (grid[r][col]) { topRow = r; break; }
-  // topRow === 0 nghĩa là cột đã đầy tới tận trần (rất hay gặp sau insertRow, vì hàng 0 luôn được lấp kín) —
-  // không còn hàng nào ở trên để gắn thêm, kẹp về 0 để tránh tính topRow-1 = -1 rồi ghi ra ngoài mảng.
-  const stopY = topRow === ROWS ? TOP_Y : TOP_Y + (Math.max(0, topRow - 1)) * CELL;
+  let lowRow = -1;
+  for (let r = ROWS - 1; r >= 0; r--) if (grid[r][col]) { lowRow = r; break; }
+  const stopY = lowRow === -1 ? TOP_Y : TOP_Y + (lowRow + 1) * CELL;
   if (proj.y > stopY) return false;
-  const row = Math.max(0, topRow === ROWS ? 0 : topRow - 1);
+  const row = lowRow === -1 ? 0 : Math.min(ROWS - 1, lowRow + 1);
   grid[row][col] = proj.color;
   const group = cluster(row, col, proj.color);
   if (group.length >= 3) for (const [r, c] of group) grid[r][c] = 0;
@@ -75,7 +74,7 @@ function isEmpty() { return grid.every(row => row.every(c => !c)); }
 function hasOverflow() { for (let r = LOSE_ROW; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (grid[r][c]) return true; return false; }
 function insertRow() {
   for (let r = ROWS - 1; r > 0; r--) grid[r] = grid[r - 1].slice();
-  grid[0] = Array.from({ length: COLS }, () => 1 + ((Math.random() * N_COLORS) | 0));
+  grid[0] = Array.from({ length: COLS }, () => 1 + ((Math.random() * G.colors) | 0));
 }
 function win() { G.mode = 'result'; G.won = true; S.maxLevel = Math.max(S.maxLevel, G.level + 1); save(); showResult(); }
 function lose() { G.mode = 'result'; G.won = false; showResult(); }
@@ -85,9 +84,9 @@ export function updateFly(dt) {
   if (proj.x < CELL / 2 || proj.x > 960 - CELL / 2) proj.vx *= -1;
   if (tryAttach()) {
     setProj(null);
+    if (isEmpty()) return win();
     shotCount++;
     if (shotCount % SHOTS_PER_INSERT === 0) insertRow();
-    if (isEmpty()) return win();
     if (hasOverflow()) return lose();
     G.mode = 'aim';
   }
