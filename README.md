@@ -31,6 +31,7 @@ games/
   ban-na/               Bắn Ná
   chay-lang/            Chạy Làng
   noi-ngoc/             Nối Ngọc
+  ban-bong/             Bắn Bóng
   _template/            game mẫu để chép khi làm game mới
 tests/                  kiểm thử bằng Playwright
 ```
