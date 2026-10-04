@@ -32,6 +32,7 @@ games/
   chay-lang/            Chạy Làng
   noi-ngoc/             Nối Ngọc
   ban-bong/             Bắn Bóng
+  lang-nghe/            Làng Nghề
   _template/            game mẫu để chép khi làm game mới
 tests/                  kiểm thử bằng Playwright
 ```

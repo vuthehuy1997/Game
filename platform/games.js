@@ -12,5 +12,6 @@ import banNa from '../games/ban-na/meta.js';
 import chayLang from '../games/chay-lang/meta.js';
 import noiNgoc from '../games/noi-ngoc/meta.js';
 import banBong from '../games/ban-bong/meta.js';
+import langNghe from '../games/lang-nghe/meta.js';
 
-export const GAMES = [haoKhi, doiKhangAnhHung, giuNuoc, banNa, chayLang, noiNgoc, banBong];
+export const GAMES = [haoKhi, doiKhangAnhHung, giuNuoc, banNa, chayLang, noiNgoc, banBong, langNghe];
