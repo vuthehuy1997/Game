@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chạy Làng · Game Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Itim&family=Pattaya&display=swap">
+<link rel="stylesheet" href="../../platform/css/kit.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="stage" id="stage">
+  <canvas id="cv" width="960" height="540" aria-label="Đường chạy"></canvas>
+  <div class="cardWrap" id="cardWrap" hidden><div class="card" id="card"></div></div>
+  <div class="touch" id="touch">
+    <button data-k="up" aria-label="Làn trên">▲</button>
+    <button data-k="down" aria-label="Làn dưới">▼</button>
+    <button data-k="duck" aria-label="Trượt">_</button>
+    <button data-k="jump">Nhảy</button>
+  </div>
+</div>
+<p class="keys">W/S hoặc ↑/↓ đổi làn · Space nhảy · X/Shift trượt</p>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
