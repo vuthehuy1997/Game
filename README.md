@@ -34,6 +34,7 @@ games/
   ban-bong/             Bắn Bóng
   lang-nghe/            Làng Nghề
   dung-nuoc/            Dựng Nước
+  mo-coi/               Mở Cõi
   _template/            game mẫu để chép khi làm game mới
 tests/                  kiểm thử bằng Playwright
 ```
