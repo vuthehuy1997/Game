@@ -28,6 +28,7 @@ games/
   hao-khi/              Hào Khí Việt Nam
   doi-khang-anh-hung/   Đối Kháng Anh Hùng
   giu-nuoc-qua-ngan-nam/ Giữ Nước Qua Ngàn Năm
+  ban-na/               Bắn Ná
   _template/            game mẫu để chép khi làm game mới
 tests/                  kiểm thử bằng Playwright
 ```
