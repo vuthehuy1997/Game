@@ -12,15 +12,15 @@ import { toMenu } from './flow.js';
 import { render } from './render.js';
 
 function update(dt) {
-  if (pressed.has('up')) moveLane(-1);
-  if (pressed.has('down')) moveLane(1);
+  if (pressed.has('left')) moveLane(-1);
+  if (pressed.has('right')) moveLane(1);
   if (pressed.has('jump')) doJump();
   setDuck(held.has('duck'));
   updateRun(dt);
   updateParticles(dt, G.t);
 }
 
-bindKeys({ ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', Space: 'jump', KeyX: 'duck', ShiftLeft: 'duck' }, { onPress: () => ac() });
+bindKeys({ ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'jump', KeyX: 'duck', ShiftLeft: 'duck' }, { onPress: () => ac() });
 bindTouch($('touch'));
 mountHomeLink($('stage'));
 toMenu();

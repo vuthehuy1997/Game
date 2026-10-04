@@ -28,7 +28,7 @@ def test_wrong_dodge_still_collides(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     pg.evaluate("startRun()")
     pg.evaluate("""() => {
-      P.lane = 1; obstacles.push({ lane: 1, x: 160, kind: 'duck' });
+      P.lane = 1; obstacles.push({ lane: 1, y: 460, kind: 'duck' });
       doJump();  // né sai hành động cho chướng ngại 'duck' (phải trượt, không phải nhảy)
       update(1/60);
     }""")
@@ -40,7 +40,7 @@ def test_correct_dodge_avoids_collision(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     pg.evaluate("startRun()")
     pg.evaluate("""() => {
-      P.lane = 1; obstacles.push({ lane: 1, x: 160, kind: 'jump' });
+      P.lane = 1; obstacles.push({ lane: 1, y: 460, kind: 'jump' });
       doJump();
       update(1/60);
     }""")
@@ -53,7 +53,7 @@ def test_score_saved_as_new_best(pg, browser, base):
     pg.evaluate("startRun()")
     pg.evaluate("""() => {
       G.dist = 5000; G.coins = 10;
-      obstacles.push({ lane: P.lane, x: 160, kind: 'block' });
+      obstacles.push({ lane: P.lane, y: 460, kind: 'block' });
       update(1/60);
     }""")
     assert pg.evaluate("G.mode") == 'over'
