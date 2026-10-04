@@ -30,6 +30,7 @@ games/
   giu-nuoc-qua-ngan-nam/ Giữ Nước Qua Ngàn Năm
   ban-na/               Bắn Ná
   chay-lang/            Chạy Làng
+  noi-ngoc/             Nối Ngọc
   _template/            game mẫu để chép khi làm game mới
 tests/                  kiểm thử bằng Playwright
 ```

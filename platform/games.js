@@ -10,5 +10,6 @@ import doiKhangAnhHung from '../games/doi-khang-anh-hung/meta.js';
 import giuNuoc from '../games/giu-nuoc-qua-ngan-nam/meta.js';
 import banNa from '../games/ban-na/meta.js';
 import chayLang from '../games/chay-lang/meta.js';
+import noiNgoc from '../games/noi-ngoc/meta.js';
 
-export const GAMES = [haoKhi, doiKhangAnhHung, giuNuoc, banNa, chayLang];
+export const GAMES = [haoKhi, doiKhangAnhHung, giuNuoc, banNa, chayLang, noiNgoc];
