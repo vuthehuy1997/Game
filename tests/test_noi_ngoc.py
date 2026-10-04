@@ -49,11 +49,10 @@ def test_invalid_swap_with_no_match_reverts_grid(pg, browser, base):
 def test_running_out_of_moves_without_target_is_a_loss(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     pg.evaluate("startLevel(0)")
-    pg.evaluate("G.movesLeft = 0; G.score = 0; selectCell(0, 0)")  # chạm 1 ô bất kỳ để trigger checkEnd qua 1 lượt đổi hợp lệ giả lập
     pg.evaluate("""() => {
-      G.movesLeft = 1; G.score = 0;
+      G.movesLeft = 1; G.score = 0; G.selected = null;
       for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) grid[y * 8 + x] = ((x + y) % 2) + 1;
-      selectCell(0, 0); selectCell(0, 1);  // đổi không hợp lệ: không tốn lượt, không kết thúc
+      selectCell(0, 0); selectCell(1, 0);  // (0,0) và (1,0) liền kề theo hàng ngang; bàn ca-rô -> đổi chỗ không hợp lệ
     }""")
     assert pg.evaluate("G.mode") == 'play', 'đổi chỗ không hợp lệ không được tính là hết lượt'
 
