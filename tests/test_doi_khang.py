@@ -125,7 +125,10 @@ def test_ai_approaches_and_attacks(pg, browser, base):
 def test_edge_hazard_on_bachdang(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     pg.evaluate("startMatch(G, G)")
-    pg.evaluate("G.stageId = 'bachdang'; G.f1.x = 50; G.f1.hp = 100; G.f2.x = 500")
+    # Tắt máy (p2cpu=false): bài này kiểm tra cơ chế mắc cọc ở mép sân của f1, không liên quan tới AI —
+    # để máy bật sẽ khiến f2 tự tiếp cận/tấn công (nhất là khi AI biết xông/dash) và có thể đẩy f1 ra khỏi
+    # mép trước khi đủ 1.5s, làm sai lệch phép đo không liên quan tới hành vi đang test.
+    pg.evaluate("G.p2cpu = false; G.stageId = 'bachdang'; G.f1.x = 50; G.f1.hp = 100; G.f2.x = 500")
     pg.evaluate("for (let i = 0; i < 80; i++) update(1/60)")  # ~1.33s, chưa đủ 1.5s
     hp1 = pg.evaluate("G.f1.hp")
     assert hp1 == 100, hp1
