@@ -56,4 +56,97 @@ def test_reload_keeps_wealth_and_upgrades(pg, browser, base):
     assert pg.evaluate("S.owned.tho") == 2, 'tải lại trang phải giữ nguyên số nâng cấp đã mua'
 
 
+@test
+def test_old_save_is_migrated_with_total_and_achievements(pg, browser, base):
+    # Đặt save cũ ở trang chủ: trang game đang mở sẽ tự lưu lại khi bị rời đi, làm đè dữ liệu vừa đặt
+    pg.goto(root(base)); pg.wait_for_timeout(200)
+    pg.evaluate("localStorage.setItem('lang-nghe-v1', JSON.stringify({wealth: 500, owned: {tho: 2}}))")
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.evaluate("S.wealth") >= 500 and pg.evaluate("S.owned.tho") == 2
+    assert pg.evaluate("S.total") >= 500, 'save cũ phải được suy ra tổng xu kiếm được'
+    assert pg.evaluate("Array.isArray(S.achv)"), 'save cũ phải có danh sách thành tựu'
+
+
+@test
+def test_upgrade_locked_until_total_reached(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    ok = pg.evaluate("() => { S.wealth = 1e6; S.total = 0; return buy(UPGRADES[2]); }")  # 'xuong' cần 150 tổng
+    assert ok is False, 'nâng cấp chưa mở khoá không được mua dù đủ tiền'
+    ok = pg.evaluate("() => { S.total = 150; return buy(UPGRADES[2]); }")
+    assert ok is True
+
+
+@test
+def test_mouse_click_on_village_adds_wealth(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    box = pg.locator('#cv').bounding_box()
+    pg.mouse.click(box['x'] + box['width'] * .5, box['y'] + box['height'] * .25)
+    assert pg.evaluate("S.wealth") == 1, 'bấm vào làng phải cộng xu'
+
+
+@test
+def test_festival_doubles_auto_income(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+      S.owned = { tho: 10 }; S.wealth = 0; G.festival = 20; tickAuto(1); const a = S.wealth;
+      S.wealth = 0; G.festival = 0; tickAuto(1); return [a, S.wealth];
+    }""")
+    assert r == [20, 10], ('hội làng phải nhân đôi thu nhập tự động', r)
+
+
+@test
+def test_festival_starts_when_timer_runs_out(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("() => { G.festival = 0; G.nextFestival = 0; updateEvents(0.01); return G.festival; }")
+    assert r == 20, 'hết thời gian chờ thì hội làng phải khai mạc'
+
+
+@test
+def test_workers_follow_auto_upgrades_and_are_capped(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+      S.owned = { tho: 3, xuong: 2 }; const a = workerCount();
+      S.owned = { tho: 20, xuong: 20, lo_gom: 5 }; const b = workerCount();
+      S.owned = { tho: 2 }; updateScene(1/60);
+      return [a, b, G.workers.length];
+    }""")
+    assert r == [5, 6, 2], r
+
+
+@test
+def test_building_rises_after_purchase(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.evaluate("(G.appear.house || 0)") == 0
+    pg.evaluate("() => { S.wealth = 1e6; S.total = 1e6; S.owned = {}; buy(UPGRADES[1]); }")
+    pg.wait_for_timeout(1500)
+    assert pg.evaluate("G.appear.house") >= .99, 'nhà thợ mộc phải hiện dần sau khi mua'
+
+
+@test
+def test_milestone_grants_achievement_and_log(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("() => { S.total = 120; S.achv = []; update(1/60); return [S.achv.slice(), G.log.at(-1).txt]; }")
+    assert 'khoi-nghiep' in r[0], r
+    assert 'Khởi nghiệp' in r[1], r
+
+
+@test
+def test_purchase_is_logged_in_village_diary(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    txt = pg.evaluate("() => { S.wealth = 1e6; S.total = 1e6; buy(UPGRADES[1]); return G.log.at(-1).txt; }")
+    assert 'Thợ mộc' in txt
+
+
+@test
+def test_shop_marks_locked_upgrades(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.locator('.upBtn').count() == 7
+    pg.evaluate("S.total = 0")
+    pg.wait_for_timeout(150)
+    assert 'locked' in pg.locator('.upBtn[data-id="xuong"]').get_attribute('class')
+    pg.evaluate("S.total = 200")
+    pg.wait_for_timeout(150)
+    assert 'locked' not in pg.locator('.upBtn[data-id="xuong"]').get_attribute('class')
+
+
 run(TESTS)

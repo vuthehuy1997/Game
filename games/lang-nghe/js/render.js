@@ -1,19 +1,26 @@
 import { $ } from '../../../platform/core/util.js';
-import { outlinedText, ell } from '../../../platform/art/draw.js';
+import { outlinedText } from '../../../platform/art/draw.js';
+import { drawParticles, drawTexts } from '../../../platform/core/fx.js';
 import { FD, FB } from '../../../platform/ui/theme.js';
 import { G } from './state.js';
 import { S } from './save.js';
-import { autoPerSec, fmt } from './clicker.js';
+import { ACHIEVEMENTS } from './data.js';
+import { incomePerSec, fmt } from './clicker.js';
+import { drawScene } from './scene.js';
 
 const cv = $('cv'), ctx = cv.getContext('2d');
 export function render() {
-  ctx.fillStyle = '#12141a'; ctx.fillRect(0, 0, 960, 540);
+  drawScene(ctx, G.t);
+  drawParticles(ctx, G.t); drawTexts(ctx, FB);
+
   ctx.textAlign = 'center';
-  outlinedText(ctx, fmt(S.wealth), 480, 140, `56px ${FD}`, '#ffe6a8');
-  outlinedText(ctx, `+${fmt(autoPerSec())} / giây · bấm +${S.perClick}`, 480, 180, `18px ${FB}`, '#a3a8b8');
-  const s = 1 + G.pulse * .25;
-  ctx.save(); ctx.translate(480, 300); ctx.scale(s, s);
-  ell(ctx, 0, 0, 70, 70, '#6b8f3a'); ell(ctx, 0, -10, 40, 30, '#8a6a3e');
-  ctx.restore();
-  outlinedText(ctx, 'Bấm vào làng để sản xuất', 480, 400, `16px ${FB}`, '#fff');
+  outlinedText(ctx, `${fmt(S.wealth)} xu`, 480, 56, `46px ${FD}`, '#ffe6a8');
+  outlinedText(ctx, `+${fmt(incomePerSec())}/giây · mỗi lần bấm +${S.perClick}`, 480, 84, `17px ${FB}`, '#f3efe6');
+
+  ctx.textAlign = 'left';
+  G.log.slice(-2).forEach((l, i) => outlinedText(ctx, l.txt, 24, 124 + i * 22, `15px ${FB}`, '#fff6dc'));
+
+  ctx.textAlign = 'right';
+  outlinedText(ctx, `Thành tựu ${S.achv.length}/${ACHIEVEMENTS.length}`, 936, 30, `17px ${FB}`, '#fff');
+  if (G.festival > 0) outlinedText(ctx, `Hội làng · x2 · còn ${Math.ceil(G.festival)}s`, 936, 54, `17px ${FB}`, '#ffd35a');
 }
