@@ -160,4 +160,33 @@ def test_saved_progress_survives_reload(pg, browser, base):
     assert pg.evaluate("isUnlocked(3)") is True
 
 
+@test
+def test_each_era_has_three_tiers_ordered_by_cost(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.evaluate("ERAS.every(e => e.tiers.length === 3 && e.tiers.every(k => !!e.troops[k]))") is True
+    assert pg.evaluate("ERAS.every(e => e.tiers.every((k, i, a) => i === 0 || e.troops[a[i - 1]].gold <= e.troops[k].gold))") is True
+    assert pg.evaluate("ERAS.every(e => e.waves.flat().every(g => !!e.troops[g.kind]))") is True
+
+
+@test
+def test_troop_names_are_unique_across_eras(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.evaluate("new Set(ERAS.flatMap(e => Object.values(e.troops).map(t => t.name))).size === ERAS.length * 3") is True
+
+
+@test
+def test_spawned_troop_uses_current_era_roster(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startEra(2); beginPrep(); G.mode = 'battle'; spawnEnemy('khien', 0)")
+    assert pg.evaluate("enemies[0].name") == pg.evaluate("ERAS[2].troops.khien.name")
+
+
+@test
+def test_old_save_without_troop_data_still_loads(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("localStorage.setItem('co-thanh-ngan-nam-v1', JSON.stringify({ cleared: 2, stars: [3, 2] }))")
+    assert pg.evaluate("loadSave().cleared") == 2
+    assert pg.evaluate("isUnlocked(2)") is True
+
+
 run(TESTS)

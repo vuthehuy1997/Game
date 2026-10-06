@@ -10,14 +10,6 @@ import { card, BACK, pal, START, LORE_BTN, OVER_MENU, OVER_NEXT } from './ui.js'
 
 const cv = $('cv'), ctx = cv.getContext('2d');
 const PICK_KINDS = ['wall', 'tower', 'pit', 'fire'];
-const LOOK = {
-  bo: { skin: '#e3b98f', hair: '#201810', shirt: '#7a2d2d', trim: '#c99a4a', pants: '#2a2020', belt: '#c99a4a', hat: 'mongol', cap: '#3a2a1a', fur: '#d9c7a0', weapon: 'glaive' },
-  ky: { skin: '#e3b98f', hair: '#201810', shirt: '#5a3a2a', trim: '#c99a4a', pants: '#2a2020', belt: '#c99a4a', hat: 'mongol', cap: '#3a2a1a', fur: '#d9c7a0', weapon: 'bow' },
-  khien: { skin: '#e0b48a', hair: '#201810', shirt: '#4a4f5c', trim: '#9aa0ac', pants: '#2a2a33', belt: '#9aa0ac', hat: 'helmet', helm: '#8a8f9a', plume: '#b3261e', shield: 1, weapon: 'saber' },
-  phao: { skin: '#e0b48a', hair: '#201810', shirt: '#3a4a3a', trim: '#c9a449', pants: '#2a2a2a', belt: '#c9a449', hat: 'helmet', helm: '#3a3f4a', plume: '#2f6b57' },
-  phao_tay: { skin: '#f0cfae', hair: '#6a4a2a', shirt: '#2e3a52', trim: '#c7d0d8', pants: '#2a2a33', belt: '#c7d0d8', hat: 'helmet', helm: '#4a5a6a', plume: '#c7d0d8' },
-  hao: { skin: '#d8ae80', hair: '#201810', shirt: '#6a5a3a', trim: '#a0844a', pants: '#3a3020', belt: '#a0844a', hat: 'bandana', band: '#6a5a3a' },
-};
 
 export function render() {
   if (G.mode === 'menu') return drawMenu();
@@ -194,25 +186,25 @@ function drawEnemy(e) {
     ell(ctx, e.x, y + 4, 14, 6, 'rgba(20,14,8,.9)');
     return;
   }
-  const walking = { t: G.t, walk: e.walk };
-  if (e.kind === 'ky') {
+  const d = e.spec, walking = { t: G.t, walk: e.walk };
+  if (d.cav) {
     ell(ctx, e.x, y + 16, 34, 12, 'rgba(0,0,0,.25)');
     ctx.fillStyle = '#5a3a1e'; ctx.beginPath(); ctx.ellipse(e.x, y + 2, 28, 12, 0, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#3a2412'; ctx.lineWidth = 4;
     const s = Math.sin(e.walk) * 8;
     ctx.beginPath(); ctx.moveTo(e.x - 16, y + 10); ctx.lineTo(e.x - 18 + s, y + 26); ctx.moveTo(e.x + 16, y + 10); ctx.lineTo(e.x + 18 - s, y + 26); ctx.stroke();
-    drawChibi(ctx, e.x, y - 6, LOOK.ky, { face: -1, t: G.t, scale: .8, ...POSES.run(walking) });
-  } else if (e.kind === 'phao' || e.kind === 'phao_tay') {
-    const big = e.kind === 'phao_tay';
+    drawChibi(ctx, e.x, y - 6, d.look, { face: -1, t: G.t, scale: .8, ...POSES.run(walking) });
+  } else if (d.cannon) {
+    const big = !!d.shellEvery;
     ell(ctx, e.x + 8, y + 22, big ? 40 : 34, 8, 'rgba(0,0,0,.25)');
     ctx.fillStyle = '#4a3a2a'; ctx.fillRect(e.x - 26, y + 6, big ? 52 : 46, big ? 12 : 10);
     ctx.fillStyle = '#2a2a2a'; ell(ctx, e.x - 22, y + 20, 7, 7, '#2a2a2a'); ell(ctx, e.x + 22, y + 20, 7, 7, '#2a2a2a');
     ctx.fillStyle = big ? '#7a8590' : '#5a5a5a';
     ctx.save(); ctx.translate(e.x - 26, y + 2); ctx.rotate(-.25); ctx.fillRect(-6, -6, big ? 42 : 36, big ? 9 : 7); ctx.restore();
-    drawChibi(ctx, e.x + 6, y + 4, LOOK[e.kind], { face: -1, t: G.t, scale: big ? .95 : .9, ...POSES.idle({ t: G.t }) });
+    drawChibi(ctx, e.x + 6, y + 4, d.look, { face: -1, t: G.t, scale: big ? .95 : .9, ...POSES.idle({ t: G.t }) });
   } else {
     ell(ctx, e.x, y + 16, 26, 8, 'rgba(0,0,0,.25)');
-    drawChibi(ctx, e.x, y + 16, LOOK[e.kind], { face: -1, t: G.t, scale: e.kind === 'khien' ? 1.05 : .95, ...POSES.run(walking) });
+    drawChibi(ctx, e.x, y + 16, d.look, { face: -1, t: G.t, scale: d.shield ? 1.05 : .95, ...POSES.run(walking) });
   }
   hpBar(e.x, y - 80, 40, e.hp / e.max);
 }
@@ -286,6 +278,7 @@ function drawLore(e) {
   ctx.textAlign = 'left';
   wrapText(e.lore, W / 2 - 280, y + 130, 560, 26, `19px ${FB}`, '#eeede8');
   ctx.textAlign = 'center';
+  outlinedText(ctx, `Quân địch: ${e.tiers.map(k => e.troops[k].name).join(' · ')}`, W / 2, y + 262, `15px ${FB}`, '#c9cdd8');
   outlinedText(ctx, `Luật thời kỳ: ${e.ruleName} — ${e.ruleText}`, W / 2, y + 290, `15px ${FB}`, '#ffd35a');
   ctx.fillStyle = '#b3261e'; rr(ctx, LORE_BTN.x, LORE_BTN.y, LORE_BTN.w, LORE_BTN.h, 10); ctx.fill();
   outlinedText(ctx, 'Vào trận', LORE_BTN.x + LORE_BTN.w / 2, LORE_BTN.y + 32, `20px ${FD}`, '#fff');

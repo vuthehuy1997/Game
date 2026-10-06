@@ -1,6 +1,6 @@
 // Luật chơi thuần (không đụng canvas): xây dựng, đợt quân, va chạm, sát thương, kết thúc.
 import { prune } from '../../../platform/core/util.js';
-import { ERAS, BUILD, ENEMY, INCOME, WAVE_BONUS, GATE_MAX, STAR_THRESHOLDS } from './data.js';
+import { ERAS, BUILD, INCOME, WAVE_BONUS, GATE_MAX, STAR_THRESHOLDS } from './data.js';
 import { G, slots, enemies, shots, fires, GATE_X, SPAWN_X, LANES, LANE_HIT } from './state.js';
 import { saveProgress } from './save.js';
 
@@ -45,8 +45,8 @@ export function startWave() {
 }
 
 export function spawnEnemy(kind, lane) {
-  const d = ENEMY[kind];
-  enemies.push({ kind, lane, x: SPAWN_X, hp: d.hp, max: d.hp, pitHit: false, shellT: d.shellEvery || 0, walk: 0, hidden: false });
+  const spec = ERAS[G.era].troops[kind];
+  enemies.push({ kind, name: spec.name, spec, lane, x: SPAWN_X, hp: spec.hp, max: spec.hp, pitHit: false, shellT: spec.shellEvery || 0, walk: 0, hidden: false });
 }
 
 export function tick(dt) {
@@ -84,7 +84,7 @@ function buildingAct(s, dt) {
     b.cd = d.cd;
     const mul = G.rule === 'nho' ? 1.5 : 1;
     shots.push({ x1: s.x, y1: s.y - 50, x2: e.x, y2: LANES[e.lane], t: .25 });
-    hurtEnemy(e, d.dmg * mul * (ENEMY[e.kind].shield ? .5 : 1));
+    hurtEnemy(e, d.dmg * mul * (e.spec.shield ? .5 : 1));
   } else if (b.kind === 'fire') {
     b.cd -= dt;
     if (b.cd > 0) return;
@@ -96,7 +96,7 @@ function buildingAct(s, dt) {
 }
 
 function enemyAct(e, dt) {
-  const d = ENEMY[e.kind];
+  const d = e.spec;
   e.walk += dt * 10;
   e.hidden = !!d.trench && G.rule === 'hao' && e.x > HIDE_X;
 
@@ -104,7 +104,7 @@ function enemyAct(e, dt) {
     if (s.lane === e.lane && s.b && s.b.kind === 'pit' && !e.pitHit && Math.abs(s.x - e.x) <= 30) {
       e.pitHit = true;
       s.b.flash = .3;
-      hurtEnemy(e, BUILD.pit.dmg * (G.rule === 'ky' && e.kind === 'ky' ? 2 : 1));
+      hurtEnemy(e, BUILD.pit.dmg * (G.rule === 'ky' && e.spec.cav ? 2 : 1));
     }
   }
   if (e.hp <= 0) return;
@@ -168,7 +168,7 @@ function inRadius(s, e, r) {
 function hurtEnemy(e, dmg) {
   if (e.hp <= 0) return;
   e.hp -= dmg;
-  if (e.hp <= 0) G.gold += ENEMY[e.kind].gold;
+  if (e.hp <= 0) G.gold += e.spec.gold;
 }
 
 function hurtBuilding(s, dmg) {
