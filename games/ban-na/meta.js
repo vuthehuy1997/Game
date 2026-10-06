@@ -9,13 +9,14 @@ const ENEMY_LOOK = { skin: '#e3b98f', hair: '#201810', shirt: '#7a2d2d', trim: '
 export default {
   id: 'ban-na',
   title: 'Bắn Ná',
-  tagline: 'Kéo ná, ngắm, phá sạch mục tiêu',
-  desc: 'Kéo dây ná để ngắm rồi thả, đạn bay theo trọng lực phá công trình và tiêu diệt mục tiêu qua từng màn.',
+  tagline: 'Ải Chi Lăng 1427: gió, đạn tẩm dầu, giặc đi tuần',
+  desc: 'Kéo dây ná, tính gió rồi thả. Đạn đá đánh trực diện, đạn tẩm dầu nổ lan qua 8 màn Chi Lăng, giặc di chuyển và ngã xuống khi trúng đòn.',
   tags: ['Vật lý', 'Chuột · Cảm ứng'],
   url: new URL('./', import.meta.url).href,
+  // Phải khớp số màn trong js/data.js (LEVELS.length); tests/test_ban_na.py kiểm tra điều này
   progress() {
     const s = readJSON(STORE_KEY);
-    return s && s.maxLevel ? { pct: Math.min(1, s.maxLevel / 4), text: `Đã phá ${s.maxLevel}/4 màn`, updated: 0 } : null;
+    return s && s.maxLevel ? { pct: Math.min(1, s.maxLevel / 8), text: `Đã phá ${s.maxLevel}/8 màn`, updated: 0 } : null;
   },
 
   // Ảnh bìa: ná cao su ở cận cảnh, lính giặc đứng sau hàng rào gỗ
