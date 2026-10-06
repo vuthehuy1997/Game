@@ -208,4 +208,35 @@ def test_winning_final_era_offers_map_not_a_crashing_next_era(pg, browser, base)
     pg.click('#rGo'); pg.wait_for_timeout(100)  # không được crash khi bấm nút chính
 
 
+@test
+def test_higher_level_buildings_are_taller(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    h = pg.evaluate("[buildingHeight('camp', 1), buildingHeight('camp', 2), buildingHeight('camp', 3), buildingHeight('hq', 1), buildingHeight('hq', 3)]")
+    assert h[0] < h[1] < h[2], 'trại cấp cao phải cao hơn'
+    assert h[3] < h[4], 'Nhà chính cấp 3 phải cao hơn cấp 1'
+
+
+@test
+def test_each_era_has_its_own_roof_and_flag(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    n_eras, roofs, flags = pg.evaluate("[ERAS.length, ERA_ART.map(a => a.roof), ERA_ART.map(a => a.flag)]")
+    assert len(roofs) == n_eras, 'mỗi thời kỳ phải có bộ màu riêng'
+    assert len(set(roofs)) == n_eras and len(set(flags)) == n_eras, 'màu mái và cờ phải khác nhau giữa các thời kỳ'
+
+
+@test
+def test_every_building_kind_level_and_era_draws_without_error(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    res = pg.evaluate("""() => {
+      const cv = document.createElement('canvas'); cv.width = 960; cv.height = 540;
+      const c = cv.getContext('2d');
+      for (let e = 0; e < ERAS.length; e++) {
+        for (const k of ['camp', 'tower', 'stake']) for (let l = 1; l <= 3; l++) drawBuilding(c, k, l, e, 200, 300, 0);
+        for (let l = 1; l <= 3; l++) drawHQ(c, l, e, 0);
+      }
+      return 'ok';
+    }""")
+    assert res == 'ok'
+
+
 run(TESTS)

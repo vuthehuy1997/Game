@@ -2,10 +2,11 @@
 import { $, clamp } from '../../../platform/core/util.js';
 import { drawChibi } from '../../../platform/art/chibi.js';
 import { POSES } from '../../../platform/art/poses.js';
-import { rr, ell, outlinedText } from '../../../platform/art/draw.js';
+import { ell, outlinedText } from '../../../platform/art/draw.js';
 import { drawParticles, drawTexts } from '../../../platform/core/fx.js';
 import { FD, FB } from '../../../platform/ui/theme.js';
 import { G, B, troops, projs, LANES, PLOTS, HQ_X } from './state.js';
+import { drawPlotGround, drawBuilding, drawHQ as drawKeep, buildingHeight, WALL_TOP } from './art.js';
 
 const cv = $('cv'), ctx = cv.getContext('2d');
 const ALLY_LOOK = { skin: '#f6d2ae', hair: '#1c1410', shirt: '#2f6b57', trim: '#e9b949', pants: '#2a2630', belt: '#e9b949', hat: 'khan', khan: '#2e3142', weapon: 'spear', scale: .5 };
@@ -29,22 +30,16 @@ export function render() {
   drawHud();
 }
 function drawHQ() {
-  LANES.forEach(y => { ctx.fillStyle = '#5a4a36'; rr(ctx, HQ_X - 36, y - 56, 72, 56, 6); ctx.fill(); });
-  const y = LANES[1];
+  drawKeep(ctx, G.hq.lvl, G.eraIdx, G.t);
+  const top = WALL_TOP - buildingHeight('hq', G.hq.lvl);
   ctx.textAlign = 'center';
-  outlinedText(ctx, `Nhà chính Lv${G.hq.lvl}`, HQ_X, y - 70, `13px ${FB}`, '#fff');
-  drawBar(HQ_X - 36, y - 80, 72, 7, G.hq.hp / G.hq.maxHp, '#7bbf5a');
+  outlinedText(ctx, `Nhà chính Lv${G.hq.lvl}`, HQ_X, top - 30, `13px ${FB}`, '#fff');
+  drawBar(HQ_X - 34, top - 22, 68, 6, G.hq.hp / G.hq.maxHp, '#7bbf5a');
 }
 function drawPlot(p) {
-  const b = B.find(x => x.plot === p.id);
-  ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.setLineDash(b ? [] : [4, 4]);
-  rr(ctx, p.x - 28, LANES[p.lane] - 48, 56, 48, 6); ctx.stroke(); ctx.setLineDash([]);
-  if (b) {
-    ctx.fillStyle = b.kind === 'camp' ? '#6b8f3a' : b.kind === 'tower' ? '#4a6f9a' : '#8a6a3a';
-    rr(ctx, p.x - 24, LANES[p.lane] - 42, 48, 36, 5); ctx.fill();
-    ctx.textAlign = 'center';
-    outlinedText(ctx, b.kind === 'camp' ? `C${b.lvl}` : b.kind === 'tower' ? 'T' : 'X', p.x, LANES[p.lane] - 18, `15px ${FD}`, '#fff');
-  }
+  const b = B.find(x => x.plot === p.id), L = LANES[p.lane];
+  drawPlotGround(ctx, p.x, L, !!b, G.eraIdx, G.t);
+  if (b) drawBuilding(ctx, b.kind, b.lvl, G.eraIdx, p.x, L + 4, G.t);
 }
 function drawTroop(u) {
   const look = u.side === 'ally' ? ALLY_LOOK : ENEMY_LOOK, face = u.side === 'ally' ? 1 : -1;

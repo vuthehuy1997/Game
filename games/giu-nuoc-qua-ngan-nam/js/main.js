@@ -12,6 +12,7 @@ import { updateTowers, updateProjs } from './towers.js';
 import { G, B, troops, projs, PLOTS, buildingOn } from './state.js';
 import { toTitle, showEraSelect, initHud, updateHud } from './flow.js';
 import { render } from './render.js';
+import { ERA_ART, buildingHeight, drawBuilding, drawHQ } from './art.js';
 
 function update(dt) {
   G.t += dt; G.shake = Math.max(0, G.shake - dt * 30);
@@ -26,5 +27,5 @@ function update(dt) {
 mountHomeLink($('stage'));
 initHud();
 toTitle();
-if (debugOn()) exposeGlobals([{ G, B, troops, projs, PLOTS, buildingOn, update, render, ERAS, S, unlocked, startEra, startWave, showEraSelect, build, upgrade, upgradeHQ }]);
+if (debugOn()) exposeGlobals([{ G, B, troops, projs, PLOTS, buildingOn, update, render, ERAS, S, unlocked, startEra, startWave, showEraSelect, build, upgrade, upgradeHQ, ERA_ART, buildingHeight, drawBuilding, drawHQ }]);
 startLoop(update, render);
