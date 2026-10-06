@@ -16,5 +16,13 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .card .levels,.card .actions{display:flex;flex-wrap:wrap;gap:.5em}
 .card .actions{justify-content:flex-end}
 .card .lvBtn{flex:1 1 40%;font:inherit;padding:.6em;border-radius:.5em;border:1px solid #ffffff40;background:#ffffff14;color:#f3efe6;cursor:pointer}
+.card .lvBtn{display:flex;flex-direction:column;align-items:flex-start;gap:.15em}
+.card .lvBtn b{font-weight:400;font-family:'Pattaya',Georgia,serif;font-size:1.05em}
+.card .lvBtn span{font-size:.8em;opacity:.75}
 .card .lvBtn:disabled{opacity:.4;cursor:not-allowed}
+.card .lore{margin:0;font-size:.9em;line-height:1.45;color:#e6dcc4}
+.card .stats{display:grid;grid-template-columns:1fr 1fr;gap:.5em;margin:.2em 0}
+.card .stats div{background:#ffffff0d;border:1px solid #ffffff1f;border-radius:.5em;padding:.5em .7em}
+.card .stats dt{font-size:.75em;letter-spacing:.06em;text-transform:uppercase;color:#caa65a}
+.card .stats dd{margin:0;font-size:1.35em}
 .keys{margin:0;color:#a3a8b8;font-size:14px;text-align:center}

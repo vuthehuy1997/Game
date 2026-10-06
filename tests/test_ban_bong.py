@@ -75,4 +75,105 @@ def test_shooting_into_a_column_full_to_the_ceiling_does_not_crash(pg, browser, 
     # Mục đích riêng: trước khi vá, dòng `grid[row][col]` với row=-1 ném TypeError ngay khi đạn chạm đỉnh cột đầy.
 
 
+@test
+def test_menu_lists_six_levels(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.locator('.lvBtn').count() == 6
+
+
+@test
+def test_levels_have_names_and_lore(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.evaluate("LEVELS.length === 6 && LEVELS.every(l => l.name && l.lore)")
+
+
+@test
+def test_level_start_shows_banner(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startLevel(1)")
+    assert pg.evaluate("G.banner && G.banner.title === LEVELS[1].name"), 'vào màn phải có lời dẫn tên màn'
+
+
+@test
+def test_pop_scores_points_and_combo(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startLevel(0)")
+    r = pg.evaluate("""() => {
+      const out = {};
+      for (const row of grid) row.fill(0);
+      grid[0][0] = 1; grid[0][1] = 1; grid[0][9] = 2;  // (0,9) bám trần, không nằm trong cụm
+      fire(480, 50); let p = getProj(); p.color = 1; p.x = 260 + 2 * 44 + 22; p.y = 50;
+      for (let i = 0; i < 200; i++) update(1/60);
+      out.c1 = G.combo; out.s1 = G.score;
+      grid[0][4] = 1; grid[0][5] = 1;
+      fire(480, 50); p = getProj(); p.color = 1; p.x = 260 + 6 * 44 + 22; p.y = 50;
+      for (let i = 0; i < 200; i++) update(1/60);
+      out.c2 = G.combo; out.s2 = G.score;
+      return out;
+    }""")
+    assert r['c1'] == 1 and r['s1'] == 30, f'cụm 3 bóng đầu tiên: 3×10×1 điểm, thực tế {r}'
+    assert r['c2'] == 2 and r['s2'] - r['s1'] == 60, f'pop liên tiếp tăng combo: 3×10×2 điểm, thực tế {r}'
+
+
+@test
+def test_dropped_bubbles_fall_and_leave_grid(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startLevel(0)")
+    r = pg.evaluate("""() => {
+      for (const row of grid) row.fill(0);
+      grid[0][0] = 1; grid[0][1] = 1; grid[1][1] = 2;  // (1,1) chỉ bám qua (0,1): cụm nổ thì nó rơi
+      fire(480, 50); const p = getProj(); p.color = 1; p.x = 260 + 2 * 44 + 22; p.y = 50;
+      for (let i = 0; i < 200 && G.mode === 'fly'; i++) update(1/60);  // dừng ngay khi viên bắn vừa gắn vào lưới
+      return { cell: grid[1][1], falling: G.falling.map(f => f.color) };
+    }""")
+    assert r['cell'] == 0, 'bóng bị tách khỏi lưới phải rời khỏi ô lưới'
+    assert 2 in r['falling'], f'bóng bị tách phải thành bóng rơi tự do, thực tế {r}'
+    pg.evaluate("update(1/60); for (let i = 0; i < 240; i++) update(1/60)")
+    assert pg.evaluate("G.falling.length") == 0, 'bóng rơi phải biến mất khi ra khỏi màn hình'
+
+
+@test
+def test_aim_path_bounces_off_wall(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startLevel(0)")
+    bounced = pg.evaluate("""() => {
+      const pts = aimPath(0, 300);
+      const hit = pts.findIndex(p => p.x <= 24);
+      return hit >= 0 && pts.slice(hit + 1).some(p => p.x > 30);
+    }""")
+    assert bounced, 'đường ngắm chạm tường trái phải nảy lại'
+
+
+@test
+def test_fire_triggers_bow_recoil(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startLevel(0)")
+    pg.evaluate("fire(480, 50)")
+    assert pg.evaluate("G.recoil") > 0, 'bắn phải kích hoạt động tác kéo-bắn của cung thủ'
+    pg.evaluate("for (let i = 0; i < 90; i++) update(1/60)")
+    assert pg.evaluate("G.recoil") == 0, 'động tác phải tự kết thúc'
+
+
+@test
+def test_win_records_best_score(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startLevel(0)")
+    pg.evaluate("""() => {
+      for (const row of grid) row.fill(0);
+      grid[0][0] = 1; grid[0][1] = 1;
+      fire(480, 50); const p = getProj(); p.color = 1; p.x = 260 + 2 * 44 + 22; p.y = 50;
+      for (let i = 0; i < 200; i++) update(1/60);
+    }""")
+    assert pg.evaluate("G.won") == True and pg.evaluate("S.maxLevel") == 1
+    assert pg.evaluate("S.best") == pg.evaluate("G.score") and pg.evaluate("G.score") > 0
+
+
+@test
+def test_old_save_still_loads(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("localStorage.setItem('ban-bong-v1', JSON.stringify({ maxLevel: 2 }))")
+    pg.reload(); pg.wait_for_timeout(300)
+    assert pg.evaluate("S.maxLevel") == 2 and pg.evaluate("unlocked(2) && !unlocked(3)")
+
+
 run(TESTS)

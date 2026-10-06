@@ -7,13 +7,13 @@ export const STORE_KEY = 'ban-bong-v1';
 export default {
   id: 'ban-bong',
   title: 'Bắn Bóng',
-  tagline: 'Ngắm bắn, nối 3 bóng cùng màu',
-  desc: 'Ngắm và bắn bóng màu lên lưới, từ 3 bóng cùng màu liền kề trở lên sẽ nổ. Dọn sạch lưới trước khi bóng tràn xuống.',
+  tagline: 'Cung thủ dưới đền cổ, nối bóng đẩy giặc lui',
+  desc: 'Ngắm từ đền cổ, bắn bóng màu lên lưới. Nối từ 3 bóng cùng màu để nổ, bóng bị tách khỏi trần sẽ rơi xuống. Combo liên tiếp nhân điểm, qua 6 màn đến đỉnh tháp.',
   tags: ['Bắn bóng', 'Chuột · Cảm ứng'],
   url: new URL('./', import.meta.url).href,
   progress() {
     const s = readJSON(STORE_KEY);
-    return s && s.maxLevel ? { pct: Math.min(1, s.maxLevel / 4), text: `Đã qua ${s.maxLevel}/4 màn`, updated: 0 } : null;
+    return s && s.maxLevel ? { pct: Math.min(1, s.maxLevel / 6), text: `Đã qua ${s.maxLevel}/6 màn`, updated: 0 } : null;
   },
 
   // Ảnh bìa: lưới bóng màu phía trên, bóng đang bắn lên từ dưới
