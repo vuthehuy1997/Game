@@ -53,7 +53,7 @@ def test_attack_loses_when_weaker_and_target_unchanged(pg, browser, base):
 @test
 def test_cannot_attack_non_adjacent_region(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
-    far = pg.evaluate("N - 1")
+    far = pg.evaluate("S.owner.length - 1")
     pg.evaluate("S.troops[HOME] = 50")
     ok = pg.evaluate(f"canAttack(HOME, {far})")
     assert ok == False, 'không được tấn công vùng không kề'
@@ -78,6 +78,87 @@ def test_reload_keeps_conquered_regions(pg, browser, base):
     owner_before = pg.evaluate("S.owner.slice()")
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     assert pg.evaluate("S.owner") == owner_before, 'tải lại trang phải giữ nguyên các vùng đã chiếm'
+
+
+@test
+def test_three_maps_grow_in_size(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    sizes = pg.evaluate("MAPS.map(m => m.cols * m.rows)")
+    assert len(sizes) == 3 and all(a < b for a, b in zip(sizes, sizes[1:])), sizes
+
+
+@test
+def test_river_tiles_block_attacks(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    # Ải 1: ô 5 là sông (cùng cột, kề ô 1)
+    pg.evaluate("S.owner[1] = 1; S.troops[1] = 50")
+    assert pg.evaluate("canAttack(1, 5)") == False, 'không được tấn công vào ô sông'
+
+
+@test
+def test_win_does_not_require_river_tiles(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    cleared = pg.evaluate("""() => {
+      S.owner = S.owner.map((o, i) => MAPS[S.stage].terrain[i] === 'r' ? 0 : 1);
+      return stageCleared();
+    }""")
+    assert cleared == True, 'chiếm hết đất liền là đủ, sông không bắt buộc'
+
+
+@test
+def test_fog_hides_tiles_far_from_owned_land(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    vis = pg.evaluate("[isVisible(0), isVisible(1), isVisible(11)]")
+    assert vis == [True, True, False], vis
+
+
+@test
+def test_hill_tile_resists_capture(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    # Ải 1: ô 2 là đồi. Quân đánh 17 < 12*1.5 = 18 nên không được chiếm.
+    pg.evaluate("S.owner[1] = 1; S.troops[1] = 18; S.owner[2] = 0; S.troops[2] = 12")
+    pg.evaluate("attack(1, 2)")
+    assert pg.evaluate("S.owner[2]") == 0, 'đồi phải khó chiếm hơn đồng bằng'
+
+
+@test
+def test_enemy_counterattack_can_capture_a_region(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("S.owner[0] = 1; S.troops[0] = 5; S.owner[1] = 0; S.troops[1] = 50")
+    ok = pg.evaluate("enemyAttack(1, 0)")
+    assert ok and pg.evaluate("S.owner[0]") == 0, 'giặc phản công phải chiếm được vùng yếu'
+    assert 'Giặc' in pg.evaluate("G.log[G.log.length - 1].text"), 'mất vùng phải có dòng sự kiện'
+
+
+@test
+def test_capture_writes_event_line_and_march(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("S.owner[0] = 1; S.troops[0] = 50; S.owner[1] = 0; S.troops[1] = 5; attack(0, 1)")
+    assert pg.evaluate("G.marches.length") >= 1, 'đường hành quân phải được ghi để vẽ animation'
+    assert 'Quân ta' in pg.evaluate("G.log[G.log.length - 1].text"), 'chiếm vùng phải có dòng sự kiện'
+
+
+@test
+def test_clearing_a_map_opens_the_next_one(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    res = pg.evaluate("""() => {
+      S.owner = S.owner.map((o, i) => MAPS[S.stage].terrain[i] === 'r' ? 0 : 1);
+      advanceIfCleared();
+      return [S.stage, S.maxStage, S.owner.length];
+    }""")
+    assert res == [1, 1, 20], res
+
+
+@test
+def test_old_save_without_stage_keeps_owned_regions(pg, browser, base):
+    # Ghi bản lưu cũ TRƯỚC khi script trang chạy: nếu ghi sau khi trang đã mở, lần lưu khi ẩn trang sẽ đè mất nó
+    pg.add_init_script("""if (!sessionStorage.getItem('seeded')) {
+      localStorage.setItem('mo-coi-v1', JSON.stringify({
+        owner: [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], troops: [5, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8], lastSeen: Date.now() }));
+      sessionStorage.setItem('seeded', '1'); }""")
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    res = pg.evaluate("[S.stage, S.owner[1], S.owner.length]")
+    assert res == [0, 1, 12], ('bản lưu cũ (chưa có ải) phải giữ vùng đã chiếm', res)
 
 
 run(TESTS)

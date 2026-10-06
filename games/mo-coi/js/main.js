@@ -3,23 +3,27 @@ import { $ } from '../../../platform/core/util.js';
 import { ac } from '../../../platform/core/audio.js';
 import { debugOn, exposeGlobals } from '../../../platform/core/debug.js';
 import { mountHomeLink } from '../../../platform/ui/bar.js';
-import { COLS, ROWS, N, HOME, MAX_TROOPS, SPAWN_PER_SEC, DEFENSE_GROW_PER_SEC, DEFENSE_CAP, G } from './state.js';
-import { S, save } from './save.js';
-import { neighbors, tick, canAttack, attack, hasWon, collectOffline } from './conquest.js';
-import { initRegions, updateRegions } from './flow.js';
+import * as state from './state.js';
+import * as save from './save.js';
+import * as conquest from './conquest.js';
+import { initRegions, updateRegions, showIntro, showWin } from './flow.js';
 import { render } from './render.js';
 
 const cv = $('cv');
 cv.addEventListener('pointerdown', () => ac(), { once: true });
 
-function update(dt) { tick(dt); updateRegions(); }
+function update(dt) { conquest.step(dt); updateRegions(); }
 
 mountHomeLink($('stage'));
-initRegions(N);
-collectOffline(); save();
-setInterval(save, 5000);
+conquest.collectOffline();
+if (save.S.maxStage >= state.MAPS.length) state.G.won = true;
+conquest.advanceIfCleared();
+initRegions();
+if (save.S.introStage !== save.S.stage && !state.G.won) showIntro();
+save.save();
+setInterval(save.save, 5000);
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) save(); else collectOffline();
+  if (document.hidden) save.save(); else conquest.collectOffline();
 });
-if (debugOn()) exposeGlobals([{ S, G, N, HOME, MAX_TROOPS, update, render, neighbors, tick, canAttack, attack, hasWon, collectOffline }]);
+if (debugOn()) exposeGlobals([state, save, conquest, { update, render, initRegions, showWin }]);
 startLoop(update, render);
