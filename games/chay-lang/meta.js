@@ -9,8 +9,8 @@ const HERO = { skin: '#f6d2ae', hair: '#1c1410', hat: 'khan', khan: '#2f6b57', s
 export default {
   id: 'chay-lang',
   title: 'Chạy Làng',
-  tagline: 'Đổi làn, nhảy, trượt — chạy càng xa càng tốt',
-  desc: 'Tự động chạy về phía trước, đổi làn/nhảy/trượt để né chướng ngại, nhặt xu dọc đường, phá kỷ lục quãng đường.',
+  tagline: 'Chú bé đưa thư chạy qua đồng lúa, rừng tre, bến sông',
+  desc: 'Tiểu Tuấn chạy đưa thư tránh giặc: đổi làn, nhảy, trượt qua hàng rào, xe bò, cổng tre. Nhặt khiên, giày gió, nam châm; mỗi chặng một cảnh mới.',
   tags: ['Chạy vô tận', 'Bàn phím · Cảm ứng'],
   url: new URL('./', import.meta.url).href,
   progress() {

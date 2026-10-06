@@ -2,12 +2,12 @@ import { startLoop } from '../../../platform/core/loop.js';
 import { $ } from '../../../platform/core/util.js';
 import { ac } from '../../../platform/core/audio.js';
 import { bindKeys, bindTouch, pressed, held } from '../../../platform/core/input.js';
-import { updateParticles } from '../../../platform/core/fx.js';
+import { updateParticles, parts } from '../../../platform/core/fx.js';
 import { debugOn, exposeGlobals } from '../../../platform/core/debug.js';
 import { mountHomeLink } from '../../../platform/ui/bar.js';
-import { G, P, obstacles, pickups } from './state.js';
+import { G, P, obstacles, pickups, items, banner } from './state.js';
 import { S } from './save.js';
-import { startRun, updateRun, moveLane, doJump, setDuck } from './game.js';
+import { startRun, updateRun, moveLane, doJump, setDuck, zoneAt } from './game.js';
 import { toMenu } from './flow.js';
 import { render } from './render.js';
 
@@ -24,5 +24,5 @@ bindKeys({ ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', 
 bindTouch($('touch'));
 mountHomeLink($('stage'));
 toMenu();
-if (debugOn()) exposeGlobals([{ G, P, obstacles, pickups, S, update, render, startRun, moveLane, doJump, setDuck }]);
+if (debugOn()) exposeGlobals([{ G, P, obstacles, pickups, items, banner, parts, S, update, render, startRun, moveLane, doJump, setDuck, zoneAt }]);
 startLoop(update, render);
