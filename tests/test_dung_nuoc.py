@@ -71,4 +71,87 @@ def test_fresh_save_can_eventually_afford_and_build_market(pg, browser, base):
     assert ok == True, 'phải tích đủ vàng để xây Chợ chỉ bằng xây nhà dân và chờ, không cần set tay tài nguyên'
 
 
+@test
+def test_milestone_follows_population_and_reigns(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.evaluate("milestoneFor(0).pop") == 0
+    assert pg.evaluate("milestoneFor(10).pop") == 10
+    assert pg.evaluate("milestoneFor(25).pop") == 20
+    assert pg.evaluate("milestoneFor(9999).pop") == pg.evaluate("MILESTONES[MILESTONES.length - 1].pop")
+    assert 'Lý' in pg.evaluate("milestoneFor(0).reign"), 'lời dẫn phải gắn với triều đại'
+
+
+@test
+def test_kiln_unlocks_at_population_15(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.evaluate("unlockedKinds().includes('kiln')") == False
+    pg.evaluate("S.pop = 15")
+    assert pg.evaluate("unlockedKinds().includes('kiln')") == True
+
+
+@test
+def test_tooltip_shows_cost_and_output(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    tip = pg.evaluate("tipText('farm')")
+    assert 'Giá: 15 vàng' in tip, tip
+    assert '+2 lương thực/giây' in tip, tip
+
+
+@test
+def test_flood_warns_then_cuts_food_income(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("S.gold = 1000; S.food = 1000; build('0', 'farm'); startEvent('flood')")
+    assert pg.evaluate("EV.phase") == 'warn'
+    assert pg.evaluate("eventMult('food')") == 1, 'pha cảnh báo chưa được tác động lên sản lượng'
+    pg.evaluate("for (let i = 0; i < 60 * 10; i++) update(1/60)")
+    assert pg.evaluate("EV.phase") == 'active'
+    assert pg.evaluate("eventMult('food')") == 0.4
+    food0 = pg.evaluate("S.food")
+    pg.evaluate("for (let i = 0; i < 60; i++) update(1/60)")
+    gain = pg.evaluate("S.food") - food0
+    assert abs(gain - 2 * 0.4) < 0.05, ('lũ phải giảm còn 40% lương thực, nhận được', gain)
+
+
+@test
+def test_harvest_boosts_food_and_events_schedule_themselves(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startEvent('harvest'); for (let i = 0; i < 60 * 10; i++) update(1/60)")
+    assert pg.evaluate("eventMult('food')") == 1.8
+    pg.evaluate("EV.phase = 'idle'; EV.next = 0; update(1/60)")
+    assert pg.evaluate("EV.phase") != 'idle', 'sự kiện ngẫu nhiên phải tự kích hoạt khi hết thời gian chờ'
+
+
+@test
+def test_old_save_without_new_fields_still_loads(pg, browser, base):
+    # seed trước khi trang chạy: trang cũ sẽ ghi đè localStorage khi rời đi (visibilitychange -> save)
+    pg.add_init_script("localStorage.setItem('dung-nuoc-v1', JSON.stringify({grid: {'0': 'house'}, gold: 33, food: 7, pop: 4, lastSeen: Date.now()}))")
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.evaluate("S.grid['0']") == 'house'
+    assert pg.evaluate("S.gold") >= 33
+
+
+@test
+def test_new_milestone_shows_lore_once(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("S.seenMs = 0; S.pop = 10; checkMilestone()")
+    assert pg.locator('#cardWrap').is_visible(), 'đạt mốc mới phải hiện lời dẫn'
+    assert pg.evaluate("S.seenMs") == 1
+    pg.evaluate("showOnly(null); checkMilestone()")
+    assert pg.locator('#cardWrap').is_hidden(), 'cùng một mốc không hiện lại'
+
+
+@test
+def test_plots_are_positioned_over_the_map(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.locator('.plot').count() == 48
+    assert pg.evaluate("document.querySelector('[data-plot=\"0\"]').style.left") != ''
+
+
+@test
+def test_day_night_palette_changes_over_the_day(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    a = pg.evaluate("skyPalette(0)"); b = pg.evaluate("skyPalette(0.5)")
+    assert len(a) == 2 and a != b
+
+
 run(TESTS)

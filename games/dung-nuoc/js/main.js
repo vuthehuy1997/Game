@@ -4,24 +4,26 @@ import { ac } from '../../../platform/core/audio.js';
 import { debugOn, exposeGlobals } from '../../../platform/core/debug.js';
 import { mountHomeLink } from '../../../platform/ui/bar.js';
 import { COLS, ROWS } from './state.js';
-import { BUILDING_DEFS } from './data.js';
 import { S, save } from './save.js';
-import { recomputePop, unlockedKinds, canAfford, canBuild, build, incomePerSec, tick, collectOffline } from './buildings.js';
-import { initPlots, updatePlots } from './flow.js';
+import * as D from './data.js';
+import * as B from './buildings.js';
+import * as E from './events.js';
+import * as F from './flow.js';
+import * as SC from './scene.js';
 import { render } from './render.js';
 
 const cv = $('cv');
 cv.addEventListener('pointerdown', () => ac(), { once: true });
 
-function update(dt) { tick(dt); updatePlots(); }
+function update(dt) { B.tick(dt); E.updateEvents(dt); F.updatePlots(); F.checkMilestone(); }
 
 mountHomeLink($('stage'));
-recomputePop();
-initPlots(COLS * ROWS);
-collectOffline(); save();
+B.recomputePop();
+F.initPlots(COLS * ROWS);
+B.collectOffline(); save();
 setInterval(save, 5000);
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) save(); else collectOffline();
+  if (document.hidden) save(); else B.collectOffline();
 });
-if (debugOn()) exposeGlobals([{ S, BUILDING_DEFS, update, render, recomputePop, unlockedKinds, canAfford, canBuild, build, incomePerSec, tick, collectOffline, save }]);
+if (debugOn()) exposeGlobals([{ S, save, update, render }, D, B, E, F, SC]);
 startLoop(update, render);

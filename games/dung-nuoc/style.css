@@ -9,14 +9,28 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn.ghost{background:#0000;border:1px solid #ffffff80;color:#f3efe6}
 .cardWrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000a;padding:1em;z-index:2}
-.card{width:min(90%,28em);background:#2a2418;border:.18em solid #caa65a;border-radius:.8em;padding:1em 1.2em;display:flex;flex-direction:column;gap:.6em}
+.card{width:min(92%,30em);background:linear-gradient(#2e2718,#221d12);border:.18em solid #caa65a;border-radius:.8em;padding:1em 1.2em;
+  display:flex;flex-direction:column;gap:.6em;box-shadow:0 .6em 2em #000a}
 .card .eyebrow{font-size:.8em;letter-spacing:.1em;text-transform:uppercase;color:#caa65a;margin:0}
 .card h2{font-family:'Pattaya',Georgia,serif;font-weight:400;font-size:1.5em;margin:0}
-.card .kinds,.card .actions{display:flex;flex-wrap:wrap;gap:.5em}
-.card .actions{justify-content:flex-end}
-.card .kindBtn{flex:1 1 40%;font:inherit;padding:.5em;border-radius:.5em;border:1px solid #ffffff40;background:#ffffff14;color:#f3efe6;cursor:pointer}
-.card .kindBtn:disabled{opacity:.4;cursor:not-allowed}
-.plots{position:absolute;inset:auto 0 0 0;max-height:62%;overflow:auto;background:#0006;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(6,1fr);gap:.25cqw;padding:1cqw}
-.plot{font:inherit;font-size:.68em;border-radius:.4em;border:1px dashed #ffffff40;background:#ffffff0f;color:#f3efe6;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;padding:.2em}
-.plot.filled{border-style:solid;background:#caa65a30;border-color:#caa65a}
+.card .desc,.card .lore{margin:0;line-height:1.45;color:#e9e2d0}
+.card .stat{margin:0;color:#bfe6a0}
+.card .kinds{display:grid;grid-template-columns:1fr 1fr;gap:.5em}
+.card .actions{display:flex;flex-wrap:wrap;gap:.5em;justify-content:flex-end}
+.card .kindBtn{font:inherit;text-align:left;padding:.5em .6em;border-radius:.5em;border:1px solid #ffffff40;background:#ffffff12;color:#f3efe6;cursor:pointer;
+  display:flex;flex-direction:column;gap:.1em}
+.card .kindBtn:hover:not(:disabled){border-color:#caa65a;background:#caa65a22}
+.card .kindBtn b{font-weight:400;font-family:'Pattaya',Georgia,serif;font-size:1.1em;color:#ffe6a8}
+.card .kindBtn span{color:#f3efe6}
+.card .kindBtn small{color:#bfe6a0}
+.card .kindBtn em{color:#e9a13a;font-style:normal;font-size:.85em}
+.card .kindBtn:disabled{opacity:.45;cursor:not-allowed}
+.plots{position:absolute;inset:0}
+.plot{position:absolute;margin:0;padding:0;border:none;background:transparent;border-radius:.4em;cursor:pointer}
+.plot:hover,.plot:focus-visible{outline:2px solid #ffe6a8;outline-offset:-2px;background:#ffffff14}
+.tip{position:absolute;z-index:1;transform:translate(-50%,calc(-100% - .4em));pointer-events:none;white-space:pre-line;
+  width:max(15em,26cqw);max-width:90%;padding:.55em .75em;border-radius:.5em;background:#15120ceb;border:1px solid #caa65a;
+  color:#f3efe6;font-size:.82em;line-height:1.4;box-shadow:0 .3em 1em #0008}
+.tip.below{transform:translate(-50%,.4em)}
+.tip::first-line{font-family:'Pattaya',Georgia,serif;font-size:1.25em;color:#ffe6a8}
 .keys{margin:0;color:#a3a8b8;font-size:14px;text-align:center}
