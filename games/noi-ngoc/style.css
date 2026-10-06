@@ -18,3 +18,10 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .card .lvBtn{flex:1 1 40%;font:inherit;padding:.6em;border-radius:.5em;border:1px solid #ffffff40;background:#ffffff14;color:#f3efe6;cursor:pointer}
 .card .lvBtn:disabled{opacity:.4;cursor:not-allowed}
 .keys{margin:0;color:#a3a8b8;font-size:14px;text-align:center}
+.card .chapter{font-size:.8em;letter-spacing:.08em;text-transform:uppercase;color:#caa65a;margin:.6em 0 0}
+.card .lvBtn{flex:1 1 30%;display:flex;flex-direction:column;align-items:flex-start;gap:.2em;text-align:left}
+.card .lvBtn b{font-weight:400;font-size:.95em}
+.card .stars{color:#ffd35a;letter-spacing:.12em;font-size:.85em}
+.card .intro{line-height:1.55;margin:0;font-size:1.02em}
+.card .meta{margin:0;color:#c9bf9f;font-size:.9em}
+.card .outro{margin:0;font-style:italic;color:#e9dcb8}

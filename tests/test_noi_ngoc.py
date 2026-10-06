@@ -57,4 +57,85 @@ def test_running_out_of_moves_without_target_is_a_loss(pg, browser, base):
     assert pg.evaluate("G.mode") == 'play', 'đổi chỗ không hợp lệ không được tính là hết lượt'
 
 
+# Mẫu không có hàng/cột nào ≥3 liên tiếp: màu đổi +2 theo hàng và +1 theo cột (mod 3)
+PATTERN = "(x, y) => ((2 * x + y) % 3) + 1"
+
+
+@test
+def test_four_in_row_creates_row_special(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startLevel(0)")
+    ok, sp = pg.evaluate("""() => {
+      for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) grid[y * 8 + x] = (%s)(x, y);
+      grid[0] = 1; grid[1] = 1; grid[2] = 1; grid[3] = 2; grid[11] = 1;   // (3,1)=1 đổi lên (3,0) -> 4 ô liên tiếp hàng 0
+      special.fill(0);
+      const ok = trySwap(11, 3);
+      tick(0.21);                                                        // một bước giải quyết
+      return [ok, special[3]];
+    }""" % PATTERN)
+    assert ok is True and sp == 1, f'nối 4 hàng ngang phải tạo ngọc hàng (1) tại ô đổi, nhận {sp}'
+
+
+@test
+def test_five_in_row_creates_jewel(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startLevel(0)")
+    sp = pg.evaluate("""() => {
+      for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) grid[y * 8 + x] = (%s)(x, y);
+      grid[0] = 1; grid[1] = 1; grid[2] = 1; grid[3] = 2; grid[4] = 1; grid[11] = 1;
+      special.fill(0);
+      trySwap(11, 3);
+      tick(0.21);
+      return special[3];
+    }""" % PATTERN)
+    assert sp == 3, f'nối 5 thẳng hàng phải tạo ngọc vạn năng (3), nhận {sp}'
+
+
+@test
+def test_row_special_swap_clears_its_row(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startLevel(0)")
+    score = pg.evaluate("""() => {
+      for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) grid[y * 8 + x] = (%s)(x, y);
+      special.fill(0);
+      special[2 * 8 + 2] = 1;                          // ngọc hàng ở (2,2)... đổi xuống (2,3)
+      trySwap(2 * 8 + 2, 3 * 8 + 2);
+      tick(0.21);
+      return G.score;
+    }""" % PATTERN)
+    assert score >= 80, f'kích hoạt ngọc hàng phải xoá cả hàng (8 ô, 80 điểm), điểm {score}'
+
+
+@test
+def test_input_is_blocked_while_resolving(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startLevel(0)")
+    sel = pg.evaluate("""() => {
+      for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) grid[y * 8 + x] = (%s)(x, y);
+      grid[0] = 1; grid[1] = 1; grid[2] = 1; grid[3] = 2; grid[11] = 1;
+      special.fill(0);
+      trySwap(11, 3);                 // bắt đầu giải quyết, chưa tick
+      selectCell(0, 5);               // bấm khi đang giải quyết phải bị bỏ qua
+      return G.selected;
+    }""" % PATTERN)
+    assert sel is None, 'không được nhận thao tác khi bàn đang giải quyết'
+
+
+@test
+def test_menu_lists_three_chapters_and_eight_levels(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.locator('.chapter').count() == 3
+    assert pg.locator('.lvBtn').count() == 8
+
+
+@test
+def test_winning_saves_stars_and_progress(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startLevel(0)")
+    pg.evaluate("G.score = LEVELS[0].target * 2; G.movesLeft = 5; G.resolving = false; G.ending = true; tick(0.01)")
+    assert pg.evaluate("S.stars[0]") == 3, 'đạt 2x mục tiêu phải được 3 sao'
+    assert pg.evaluate("S.maxLevel") == 1
+
+
+
 run(TESTS)
