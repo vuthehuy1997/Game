@@ -161,4 +161,24 @@ def test_old_save_without_stage_keeps_owned_regions(pg, browser, base):
     assert res == [0, 1, 12], ('bản lưu cũ (chưa có ải) phải giữ vùng đã chiếm', res)
 
 
+@test
+def test_fortress_tile_is_drawn_as_stone_not_a_flat_square(pg, browser, base):
+    # Ô thành lũy phải có tường đá xám (kênh màu gần nhau), không phải nền gradient màu trơn
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    n = pg.evaluate("""() => {
+      S.owner.fill(1); render();
+      const b = document.querySelector('.hit[data-r="10"]');
+      const x = parseFloat(b.style.left) * 9.6, y = parseFloat(b.style.top) * 5.4;
+      const w = parseFloat(b.style.width) * 9.6, h = parseFloat(b.style.height) * 5.4;
+      const d = document.getElementById('cv').getContext('2d').getImageData(Math.round(x + w * .2), Math.round(y + h * .3), Math.round(w * .6), Math.round(h * .5)).data;
+      let stone = 0;
+      for (let k = 0; k < d.length; k += 4) {
+        const r = d[k], g = d[k + 1], b2 = d[k + 2];
+        if (Math.max(r, g, b2) - Math.min(r, g, b2) <= 12 && r >= 100 && r <= 180) stone++;
+      }
+      return stone;
+    }""")
+    assert n >= 60, ('thành lũy phải được vẽ tường đá, số điểm đá =', n)
+
+
 run(TESTS)
