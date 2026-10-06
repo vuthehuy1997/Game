@@ -77,8 +77,8 @@ def test_hq_loses_when_health_reaches_zero(pg, browser, base):
     # console dù vòng lặp còn chạy tiếp nhiều khung hình sau đó (không gọi lặp lại màn kết quả).
     pg.evaluate("""() => {
       G.phase = 'battle'; G.hq.hp = 1;
-      for (let i = 0; i < 3; i++) troops.push({side:'ally', lane:i % 3, x:300 + i * 20, hp:50, maxHp:50, dmg:5, reach:20, spd:40, name:'a', walk:0});
-      for (let i = 0; i < 3; i++) troops.push({side:'enemy', lane:i % 3, x:100 + i * 10, hp:40, maxHp:40, dmg:50, reach:0, spd:40, name:'e', walk:0});
+      for (let i = 0; i < 3; i++) troops.push({side:'ally', lane:i % 3, x:300 + i * 20, hp:50, maxHp:50, dmg:5, reach:20, spd:40, name:'a', walk:0, look:G.era.troopTypes[0].look});
+      for (let i = 0; i < 3; i++) troops.push({side:'enemy', lane:i % 3, x:100 + i * 10, hp:40, maxHp:40, dmg:50, reach:0, spd:40, name:'e', walk:0, look:G.era.enemy.look});
     }""")
     pg.evaluate("for (let i = 0; i < 30; i++) update(1/60)")
     assert pg.evaluate("G.phase") == 'lose'
@@ -109,7 +109,7 @@ def test_tower_fires_only_within_range(pg, browser, base):
     pg.evaluate("startEra(0)")
     pg.evaluate("build(2, 'tower')")  # lô 2 = làn 1, x 190, tầm 170
     pg.evaluate("G.phase = 'battle'")
-    pg.evaluate("troops.push({side:'enemy', lane:1, x:900, hp:30, maxHp:30, dmg:0, reach:0, spd:0, name:'t', walk:0})")
+    pg.evaluate("troops.push({side:'enemy', lane:1, x:900, hp:30, maxHp:30, dmg:0, reach:0, spd:0, name:'t', walk:0, look:G.era.enemy.look})")
     pg.evaluate("for (let i = 0; i < 30; i++) update(1/60)")
     assert pg.evaluate("projs.length") == 0, 'bắn khi địch còn ngoài tầm'
     pg.evaluate("troops.find(u => u.side === 'enemy').x = 260")
@@ -127,8 +127,8 @@ def test_stake_damages_all_nearby_enemies_once_per_wave_then_recharges(pg, brows
     # và lúc thêm địch thử nghiệm, khiến updateWaveSpawns tưởng đợt đã xong và tự finishWave() mất.
     hps = pg.evaluate("""() => {
       startWave(); G.queue = [];
-      troops.push({side:'enemy', lane:1, x:190, hp:200, maxHp:200, dmg:0, reach:0, spd:0, name:'a', walk:0});
-      troops.push({side:'enemy', lane:1, x:215, hp:200, maxHp:200, dmg:0, reach:0, spd:0, name:'b', walk:0});
+      troops.push({side:'enemy', lane:1, x:190, hp:200, maxHp:200, dmg:0, reach:0, spd:0, name:'a', walk:0, look:G.era.enemy.look});
+      troops.push({side:'enemy', lane:1, x:215, hp:200, maxHp:200, dmg:0, reach:0, spd:0, name:'b', walk:0, look:G.era.enemy.look});
       update(1/60);
       return troops.map(u => u.hp);
     }""")
@@ -140,7 +140,7 @@ def test_stake_damages_all_nearby_enemies_once_per_wave_then_recharges(pg, brows
     assert pg.evaluate("G.phase") == 'prep'
     hp2 = pg.evaluate("""() => {
       startWave(); G.queue = [];
-      troops.push({side:'enemy', lane:1, x:190, hp:200, maxHp:200, dmg:0, reach:0, spd:0, name:'c', walk:0});
+      troops.push({side:'enemy', lane:1, x:190, hp:200, maxHp:200, dmg:0, reach:0, spd:0, name:'c', walk:0, look:G.era.enemy.look});
       update(1/60);
       return troops[0].hp;
     }""")
@@ -237,6 +237,41 @@ def test_every_building_kind_level_and_era_draws_without_error(pg, browser, base
       return 'ok';
     }""")
     assert res == 'ok'
+
+
+@test
+def test_each_era_has_its_own_three_troop_tiers(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    rosters = pg.evaluate("ERAS.map(e => e.troopTypes.map(t => t.name))")
+    assert all(len(r) == 3 and len(set(r)) == 3 for r in rosters), rosters
+    assert len({tuple(r) for r in rosters}) == 6, 'mỗi thời kỳ phải có bộ lính riêng: ' + str(rosters)
+
+
+@test
+def test_higher_troop_tier_is_stronger(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    stats = pg.evaluate("ERAS.map(e => e.troopTypes.map(t => [t.hp, t.dmg]))")
+    for era_stats in stats:
+        hps = [s[0] for s in era_stats]; dmgs = [s[1] for s in era_stats]
+        assert hps == sorted(set(hps)) and dmgs == sorted(set(dmgs)), era_stats
+
+
+@test
+def test_each_era_has_distinct_enemy_look(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    shirts = pg.evaluate("ERAS.map(e => e.enemy.look.shirt)")
+    assert len(set(shirts)) == 6, shirts
+
+
+@test
+def test_spawned_troop_carries_its_tier_name_and_look(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startEra(1); spawnTroop('ally', 0, G.era.troopTypes[2])")
+    ok = pg.evaluate("""() => {
+      const u = troops[troops.length - 1], d = G.era.troopTypes[2];
+      return u.name === d.name && u.look != null && JSON.stringify(u.look) === JSON.stringify(d.look);
+    }""")
+    assert ok
 
 
 run(TESTS)

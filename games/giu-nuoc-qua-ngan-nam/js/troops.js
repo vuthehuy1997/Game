@@ -7,7 +7,7 @@ import { showResult } from './flow.js';
 export function spawnTroop(side, lane, def) {
   troops.push({
     side, lane, x: side === 'ally' ? HQ_FRONT_X + 10 : SPAWN_X,
-    hp: def.hp, maxHp: def.hp, dmg: def.dmg, reach: def.reach, spd: def.spd, name: def.name || '', walk: 0,
+    hp: def.hp, maxHp: def.hp, dmg: def.dmg, reach: def.reach, spd: def.spd, name: def.name || '', look: def.look, walk: 0,
   });
 }
 function nearestFoe(u) {

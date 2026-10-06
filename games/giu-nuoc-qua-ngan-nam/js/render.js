@@ -9,8 +9,6 @@ import { G, B, troops, projs, LANES, PLOTS, HQ_X } from './state.js';
 import { drawPlotGround, drawBuilding, drawHQ as drawKeep, buildingHeight, WALL_TOP } from './art.js';
 
 const cv = $('cv'), ctx = cv.getContext('2d');
-const ALLY_LOOK = { skin: '#f6d2ae', hair: '#1c1410', shirt: '#2f6b57', trim: '#e9b949', pants: '#2a2630', belt: '#e9b949', hat: 'khan', khan: '#2e3142', weapon: 'spear', scale: .5 };
-const ENEMY_LOOK = { skin: '#e3b98f', hair: '#201810', shirt: '#7a2d2d', trim: '#c99a4a', pants: '#2a2020', belt: '#c99a4a', hat: 'mongol', cap: '#3a2a1a', fur: '#d9c7a0', weapon: 'glaive', scale: .5 };
 
 export function render() {
   if (!G.era) { ctx.fillStyle = '#12141a'; ctx.fillRect(0, 0, 960, 540); return; }
@@ -42,8 +40,8 @@ function drawPlot(p) {
   if (b) drawBuilding(ctx, b.kind, b.lvl, G.eraIdx, p.x, L + 4, G.t);
 }
 function drawTroop(u) {
-  const look = u.side === 'ally' ? ALLY_LOOK : ENEMY_LOOK, face = u.side === 'ally' ? 1 : -1;
-  drawChibi(ctx, u.x, LANES[u.lane], look, { face, t: G.t, ...POSES.run({ walk: u.walk }) });
+  const face = u.side === 'ally' ? 1 : -1;
+  drawChibi(ctx, u.x, LANES[u.lane], u.look, { face, t: G.t, ...POSES.run({ walk: u.walk }) });
   drawBar(u.x - 16, LANES[u.lane] - 76, 32, 5, u.hp / u.maxHp, u.side === 'ally' ? '#8fd6ff' : '#ff8f6b');
 }
 function drawProj(q) { ell(ctx, q.x, LANES[q.lane] - 36, 5, 5, '#ffe6a8'); }

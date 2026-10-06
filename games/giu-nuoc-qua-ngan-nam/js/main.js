@@ -7,7 +7,7 @@ import { ERAS } from './data.js';
 import { S, unlocked } from './save.js';
 import { startEra, startWave, updateWaveSpawns, updateStakes } from './waves.js';
 import { build, upgrade, upgradeHQ, updateIncome } from './buildings.js';
-import { updateCamps, updateTroops } from './troops.js';
+import { updateCamps, updateTroops, spawnTroop } from './troops.js';
 import { updateTowers, updateProjs } from './towers.js';
 import { G, B, troops, projs, PLOTS, buildingOn } from './state.js';
 import { toTitle, showEraSelect, initHud, updateHud } from './flow.js';
@@ -27,5 +27,5 @@ function update(dt) {
 mountHomeLink($('stage'));
 initHud();
 toTitle();
-if (debugOn()) exposeGlobals([{ G, B, troops, projs, PLOTS, buildingOn, update, render, ERAS, S, unlocked, startEra, startWave, showEraSelect, build, upgrade, upgradeHQ, ERA_ART, buildingHeight, drawBuilding, drawHQ }]);
+if (debugOn()) exposeGlobals([{ G, B, troops, projs, PLOTS, buildingOn, update, render, ERAS, S, unlocked, startEra, startWave, showEraSelect, build, upgrade, upgradeHQ, ERA_ART, buildingHeight, drawBuilding, drawHQ, spawnTroop }]);
 startLoop(update, render);
