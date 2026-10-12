@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kháng Chiến Cứu Quốc · Game Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Itim&family=Pattaya&display=swap">
+<link rel="stylesheet" href="../../platform/css/kit.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="stage" id="stage">
+  <canvas id="cv" width="960" height="540" aria-label="Khung nhìn chiến trường"></canvas>
+  <div class="cardWrap" id="cardWrap" hidden><div class="card" id="card"></div></div>
+  <div class="joy" id="joy" aria-hidden="true"><div class="knob" id="knob"></div></div>
+  <div class="touch" id="touch">
+    <button data-k="wpn1" class="small" aria-label="Súng trường">1</button>
+    <button data-k="wpn2" class="small" aria-label="Tiểu liên">2</button>
+    <button data-k="wpn3" class="small" aria-label="Súng tấn công">3</button>
+    <button data-k="reload" class="small" aria-label="Nạp đạn">⟳</button>
+    <button data-k="fire" class="fireBtn" aria-label="Bắn">Bắn</button>
+  </div>
+</div>
+<p class="keys">WASD di chuyển · kéo chuột / vuốt để ngắm · click hoặc nút Bắn để bắn · R nạp đạn · 1/2/3 đổi súng · Esc tạm dừng</p>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
