@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lũy Tre Làng · Game Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Itim&family=Pattaya&display=swap">
+<link rel="stylesheet" href="../../platform/css/kit.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="stage" id="stage">
+  <canvas id="cv" width="960" height="540" aria-label="Thế giới Lũy Tre Làng"></canvas>
+  <div class="topbtns">
+    <button class="btn ghost" id="btnCraft" aria-label="Chế tạo">🔨 Chế tạo</button>
+    <button class="btn ghost" id="btnTrade" hidden aria-label="Giao thương">🤝 Giao thương</button>
+    <button class="btn ghost" id="btnPlaceMode" aria-label="Đổi chế độ đặt">🧱 Đặt</button>
+    <button class="btn ghost" id="btnNew" aria-label="Ván mới">🔄 Ván mới</button>
+  </div>
+  <div class="hotbar" id="hotbar"></div>
+  <div class="panelWrap" id="craftPanel" hidden><div class="panel" id="craftList"></div></div>
+  <div class="panelWrap" id="shopPanel" hidden><div class="panel" id="shopList"></div></div>
+  <div class="touch" id="touch">
+    <button data-k="left" aria-label="Sang trái">◀</button>
+    <button data-k="right" aria-label="Sang phải">▶</button>
+    <button data-k="jump">Nhảy</button>
+  </div>
+</div>
+<p class="keys">A/D hoặc ← → để đi · Space nhảy · Chuột trái đào/đánh · Chuột phải đặt block · 1-8 chọn ô đồ · E chế tạo · F giao thương</p>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

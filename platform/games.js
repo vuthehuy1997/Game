@@ -18,5 +18,6 @@ import moCoi from '../games/mo-coi/meta.js';
 import coThanh from '../games/co-thanh-ngan-nam/meta.js';
 import namTien from '../games/nam-tien/meta.js';
 import khangChienFps from '../games/khang-chien-fps/meta.js';
+import luyTreLang from '../games/luy-tre-lang/meta.js';
 
-export const GAMES = [haoKhi, doiKhangAnhHung, khangChienFps, giuNuoc, banNa, chayLang, noiNgoc, banBong, langNghe, dungNuoc, moCoi, coThanh, namTien];
+export const GAMES = [haoKhi, doiKhangAnhHung, khangChienFps, giuNuoc, banNa, chayLang, noiNgoc, banBong, langNghe, dungNuoc, moCoi, coThanh, namTien, luyTreLang];
