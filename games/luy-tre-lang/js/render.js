@@ -6,7 +6,7 @@ import { FD, FB } from '../../../platform/ui/theme.js';
 import { COLS, ROWS, TS, TILE, WEAPON_LOOK, BIOME_SKY, BIOME_NAME, MOB_DEF } from './data.js';
 import { G } from './state.js';
 import { getTile, biomeAt } from './world.js';
-import { drawTile, drawMob, drawBackdrop, drawCrop, drawAnimal } from './art.js';
+import { drawTile, drawMob, drawBackdrop, drawCrop, drawAnimal, drawItemIcon } from './art.js';
 import { heldItem, cropStage } from './player.js';
 
 export const W = 960, H = 540;
@@ -73,6 +73,7 @@ function drawHud(ctx, night, biome) {
   ctx.fillStyle = G.hp > 30 ? '#8fdc6a' : '#e2574c'; ctx.fillRect(14, 78, 180 * Math.max(0, G.hp / G.maxHp), 16);
   ctx.strokeStyle = '#fff8'; ctx.lineWidth = 1; ctx.strokeRect(14, 78, 180, 16);
   outlinedText(ctx, `${Math.max(0, G.hp)}/${G.maxHp}`, 20, 91, `12px ${FB}`, '#fff');
+  if (G.armor) drawItemIcon(ctx, G.armor, 208, 86, 26);
   outlinedText(ctx, `Ngày ${G.day} · ${night ? 'Đêm' : 'Ngày'} · ${BIOME_NAME[biome]}`, 14, 114, `18px ${FD}`, '#ffe6a8');
   ctx.textAlign = 'right';
   outlinedText(ctx, `${G.gold} vàng`, W - 16, 96, `20px ${FD}`, '#ffd76a');

@@ -63,6 +63,11 @@ export const ITEMS = {
   hat_dua: { name: 'Hạt dưa', color: '#4a8a4a', seed: true },
   lua: { name: 'Lúa', color: '#e9c349' }, rau: { name: 'Rau', color: '#5a9a3a' }, dua: { name: 'Dưa', color: '#4a8a4a' },
   trung: { name: 'Trứng', color: '#f2e4c6' }, thit_lon: { name: 'Thịt lợn', color: '#e8a8ad' },
+  giap_tre: { name: 'Giáp tre', color: '#7fae4a', armor: .05 },
+  giap_da: { name: 'Giáp đá', color: '#8a8a8f', armor: .10 },
+  giap_dong: { name: 'Giáp đồng', color: '#c97a45', armor: .15 },
+  giap_sat: { name: 'Giáp sắt', color: '#9a8a7a', armor: .22 },
+  giap_ngoc_dam: { name: 'Giáp Ngọc Đầm', color: '#4a8a6a', armor: .30 },
 };
 
 // Thú nuôi: loanh quanh ban ngày ở Đồng Bằng, thuần hoá bằng đúng thức ăn, gà/lợn đã thuần tự sinh vật phẩm.
@@ -95,6 +100,15 @@ export const RECIPES = [
   { id: 'cuoc_sat', out: 'cuoc_sat', qty: 1, need: { sat: 3, tre: 1 }, bench: true },
   { id: 'kiem_sat', out: 'kiem_sat', qty: 1, need: { sat: 3, tre: 1 }, bench: true },
   { id: 'kiem_ngoc', out: 'kiem_ngoc', qty: 1, need: { ngoc_quy: 1, sat: 2 }, bench: true },
+  { id: 'giap_tre', out: 'giap_tre', qty: 1, need: { tre: 6 }, bench: true },
+  { id: 'giap_da', out: 'giap_da', qty: 1, need: { da: 6, tre: 2 }, bench: true },
+  { id: 'giap_dong', out: 'giap_dong', qty: 1, need: { dong: 6, tre: 2 }, bench: true },
+  { id: 'giap_sat', out: 'giap_sat', qty: 1, need: { sat: 6, tre: 2 }, bench: true },
+];
+
+// Công thức chỉ chế được qua NPC thợ rèn (Task 7 sẽ thêm kiem_ngoc vào đây và bỏ khỏi RECIPES).
+export const BLACKSMITH_RECIPES = [
+  { id: 'giap_ngoc_dam', out: 'giap_ngoc_dam', qty: 1, need: { ngoc_dam_lay: 2, sat: 4 }, bench: true },
 ];
 
 export const MOB_DEF = {

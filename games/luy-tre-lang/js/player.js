@@ -85,6 +85,30 @@ export function unlockSkill(branch, tier) {
   return true;
 }
 
+export function isArmor(item) { return item != null && ITEMS[item] != null && ITEMS[item].armor != null; }
+
+// Mặc/cởi giáp đang chọn trong hotbar (phím R). Đang cầm giáp -> mặc (trả giáp cũ về túi đồ
+// nếu có); đang cầm thứ khác và đã mặc giáp -> cởi ra. Không làm gì nếu không áp dụng được.
+export function toggleArmor() {
+  const item = heldItem();
+  if (isArmor(item)) {
+    invRemove(G.inv, item, 1);
+    const old = G.armor;
+    G.armor = item;
+    if (old) invAdd(G.inv, old, 1);
+    tone(400, .08, 'triangle', .05);
+    return true;
+  }
+  if (G.armor) {
+    const old = G.armor;
+    G.armor = null;
+    invAdd(G.inv, old, 1);
+    tone(300, .08, 'triangle', .05);
+    return true;
+  }
+  return false;
+}
+
 export function inReach(c, r) {
   const dx = (c + .5) * TS - G.px, dy = (r + .5) * TS - (G.py - PLAYER_H / 2);
   return Math.hypot(dx, dy) <= REACH;

@@ -1,7 +1,7 @@
 // Quái đêm: sinh ra, di chuyển, cận chiến với người chơi.
 import { rand, prune } from '../../../platform/core/util.js';
 import { tone } from '../../../platform/core/audio.js';
-import { COLS, TS, MOB_DEF, MAX_MOBS, SPAWN_EVERY, PLAYER_H, BOSS_EVERY_DAYS, BOSS2_EVERY_DAYS, HIT_COOLDOWN, XP_KILL_MOB, XP_KILL_BOSS, SKILL_WARRIOR } from './data.js';
+import { COLS, TS, MOB_DEF, MAX_MOBS, SPAWN_EVERY, PLAYER_H, BOSS_EVERY_DAYS, BOSS2_EVERY_DAYS, HIT_COOLDOWN, XP_KILL_MOB, XP_KILL_BOSS, SKILL_WARRIOR, ITEMS } from './data.js';
 import { G, isNight, invAdd } from './state.js';
 import { topSolidRow } from './world.js';
 import { weaponDmg, gainXp } from './player.js';
@@ -53,7 +53,8 @@ export function despawnAllMobs() { G.mobs.length = 0; }
 
 export function damagePlayer(dmg) {
   if (G.hurt > 0 || G.hp <= 0) return;
-  G.hp -= dmg; G.hurt = .6;
+  const reduce = G.armor ? (ITEMS[G.armor].armor || 0) : 0;
+  G.hp -= dmg * (1 - reduce); G.hurt = .6;
   tone(120, .12, 'sawtooth', .06);
   if (G.hp <= 0) respawnPlayer();
 }

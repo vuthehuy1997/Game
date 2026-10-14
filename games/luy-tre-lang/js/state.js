@@ -38,6 +38,7 @@ export function newGame(seed = Date.now() >>> 0) {
     mobs: [], spawnT: 0, mode: 'play', bossSpawnedDay: 0, boss2SpawnedDay: 0, crops: [],
     animals: [], pets: [], animalSpawnT: 0, riding: false,
     xp: 0, level: 1, skillPoints: 0, skills: freshSkills(),
+    armor: null,
   });
   invAdd(G.inv, 'tre', 6);
 }
@@ -53,6 +54,7 @@ export function buildSave() {
     boss2SpawnedDay: G.boss2SpawnedDay,
     npc: G.npc, tilesRLE: encodeTiles(G.tiles), crops: G.crops, pets: G.pets,
     xp: G.xp, level: G.level, skillPoints: G.skillPoints, skills: G.skills,
+    armor: G.armor,
   };
 }
 export function saveGame() { writeJSON(STORE_KEY, buildSave()); }
@@ -69,6 +71,7 @@ export function loadGame() {
     boss2SpawnedDay: s.boss2SpawnedDay || 0, crops: s.crops || [],
     animals: [], pets: s.pets || [], animalSpawnT: 0, riding: false,
     xp: s.xp || 0, level: s.level || 1, skillPoints: s.skillPoints || 0, skills: s.skills || freshSkills(),
+    armor: s.armor || null,
   });
   return true;
 }

@@ -235,6 +235,13 @@ export function drawItemIcon(c, id, cx, cy, size) {
     ell(c, 0, 0, s * .34, s * .3, col);
     c.strokeStyle = shade(col, -30); c.lineWidth = 1;
     for (const dy of [-.1, 0, .1]) { c.beginPath(); c.moveTo(-s * .32, s * dy); c.lineTo(s * .32, s * dy); c.stroke(); }
+  } else if (def.armor != null) {
+    c.fillStyle = col;
+    c.beginPath();
+    c.moveTo(0, -s * .42); c.lineTo(s * .32, -s * .24); c.lineTo(s * .28, s * .18); c.lineTo(0, s * .42); c.lineTo(-s * .28, s * .18); c.lineTo(-s * .32, -s * .24);
+    c.closePath(); c.fill();
+    c.strokeStyle = shade(col, -30); c.lineWidth = 1; c.stroke();
+    c.fillStyle = shade(col, 30); c.beginPath(); c.arc(0, -s * .04, s * .12, 0, Math.PI * 2); c.fill();
   } else if (id === 'ngoc_quy') {
     c.fillStyle = col;
     c.beginPath(); c.moveTo(0, -s * .38); c.lineTo(s * .28, -s * .05); c.lineTo(s * .16, s * .36); c.lineTo(-s * .16, s * .36); c.lineTo(-s * .28, -s * .05); c.closePath(); c.fill();

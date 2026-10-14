@@ -670,4 +670,58 @@ def test_save_and_load_keeps_skills_state(pg, browser, base):
     assert pg.evaluate("G.maxHp") == 100  # chỉ bậc1 đã mở, bậc2 (+20hp) chưa
 
 
+@test
+def test_wearing_armor_reduces_damage_taken(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("pause(true)")
+    pg.evaluate("G.hp = 100; G.maxHp = 100; G.hurt = 0")
+    pg.evaluate("G.inv[0] = { item: 'giap_sat', count: 1 }; G.sel = 0")
+    assert pg.evaluate("toggleArmor()") is True
+    assert pg.evaluate("G.armor") == 'giap_sat'
+    pg.evaluate("damagePlayer(20)")
+    hp = pg.evaluate("G.hp")
+    pg.evaluate("pause(false)")
+    # giáp sắt giảm 22% sát thương: dmg thực = 20*(1-.22) = 15.6
+    assert abs(hp - (100 - 20 * (1 - .22))) < 1e-6, hp
+
+
+@test
+def test_removing_armor_returns_item_to_inventory(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.inv = new Array(8).fill(null); G.armor = null")
+    pg.evaluate("G.inv[0] = { item: 'giap_tre', count: 1 }; G.sel = 0")
+    assert pg.evaluate("toggleArmor()") is True
+    assert pg.evaluate("G.armor") == 'giap_tre'
+    assert pg.evaluate("invCount(G.inv, 'giap_tre')") == 0  # đã mặc, rời khỏi túi đồ
+    pg.evaluate("G.inv[0] = { item: 'tre', count: 1 }; G.sel = 0")  # chọn vật phẩm không phải giáp
+    assert pg.evaluate("toggleArmor()") is True  # cởi giáp đang mặc
+    assert pg.evaluate("G.armor") is None
+    assert pg.evaluate("invCount(G.inv, 'giap_tre')") == 1
+
+
+@test
+def test_swapping_armor_returns_old_armor_to_inventory(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.inv = new Array(8).fill(null); G.armor = null")
+    pg.evaluate("G.inv[0] = { item: 'giap_tre', count: 1 }; G.sel = 0")
+    pg.evaluate("toggleArmor()")
+    assert pg.evaluate("G.armor") == 'giap_tre'
+    pg.evaluate("G.inv[1] = { item: 'giap_sat', count: 1 }; G.sel = 1")
+    assert pg.evaluate("toggleArmor()") is True
+    assert pg.evaluate("G.armor") == 'giap_sat'
+    assert pg.evaluate("invCount(G.inv, 'giap_tre')") == 1  # giáp cũ trả lại túi đồ
+    assert pg.evaluate("invCount(G.inv, 'giap_sat')") == 0  # giáp mới đang mặc
+
+
+@test
+def test_save_and_load_keeps_armor(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.armor = 'giap_dong'")
+    pg.evaluate("saveGame()")
+    pg.evaluate("newGame(1)")
+    assert pg.evaluate("G.armor") is None
+    assert pg.evaluate("loadGame()") is True
+    assert pg.evaluate("G.armor") == 'giap_dong'
+
+
 run(TESTS)

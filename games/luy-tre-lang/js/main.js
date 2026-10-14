@@ -10,7 +10,7 @@ import * as WLD from './world.js';
 import * as ST from './state.js';
 import { G, newGame, saveGame, loadGame, invCount } from './state.js';
 import * as PL from './player.js';
-import { heldItem, hitTile, placeTile, craft, nearBench, nearNpc, claimQuest, buy, sell, tillSoil, plantCrop, harvestCrop, unlockSkill } from './player.js';
+import { heldItem, hitTile, placeTile, craft, nearBench, nearNpc, claimQuest, buy, sell, tillSoil, plantCrop, harvestCrop, unlockSkill, toggleArmor } from './player.js';
 import * as MB from './mobs.js';
 import { attackMobs } from './mobs.js';
 import * as AN from './animals.js';
@@ -179,7 +179,7 @@ function renderHotbar() {
   });
 }
 
-const keymap = { KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right', Space: 'jump', KeyW: 'jump', ArrowUp: 'jump', KeyE: 'craft', KeyF: 'trade', KeyT: 'till' };
+const keymap = { KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right', Space: 'jump', KeyW: 'jump', ArrowUp: 'jump', KeyE: 'craft', KeyF: 'trade', KeyT: 'till', KeyR: 'wear' };
 for (let i = 0; i < 8; i++) keymap['Digit' + (i + 1)] = 'slot' + i;
 bindKeys(keymap, {
   onPress: k => {
@@ -201,6 +201,7 @@ let paused = false;
 function update(dt) {
   if (paused) return;
   if (pressed.has('till')) tillSoil(Math.floor(G.px / TS) + G.face, Math.floor(G.py / TS));
+  if (pressed.has('wear')) toggleArmor();
   tick(dt);
 }
 function frame() { render(cv.getContext('2d')); btnTrade.hidden = !nearNpc(); renderHotbar(); }
