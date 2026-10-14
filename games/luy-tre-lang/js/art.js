@@ -7,6 +7,7 @@ export const TILE_COLOR = {
   [TILE.COPPER]: '#787c82', [TILE.IRON]: '#787c82', [TILE.SILVER]: '#787c82', [TILE.GOLD]: '#787c82',
   [TILE.WALL]: '#9a7a4a', [TILE.ROOF]: '#c9a54a', [TILE.BRICK]: '#b5583a', [TILE.DOOR]: '#6b4a2a',
   [TILE.BENCH]: '#5a4228', [TILE.BEDROCK]: '#2a2420', [TILE.FARMLAND]: '#5a3f24', [TILE.WATER]: '#3a6a7a',
+  [TILE.ANVIL]: '#4a4a52',
 };
 const ORE_FLECK = {
   [TILE.COPPER]: '#e08a4a', [TILE.IRON]: '#d8dde2', [TILE.SILVER]: '#f0f4f8', [TILE.GOLD]: '#ffd93a',
@@ -40,6 +41,18 @@ export function drawTile(c, code, x, y, s, grassTop) {
     c.beginPath(); c.moveTo(x + s * .76, y + s); c.lineTo(x + s * .72, y + s * .18); c.stroke();
     c.fillStyle = shade('#5a8a4a', -15);
     ell(c, x + s * .58, y - s * .05, s * .05, s * .14, shade('#5a8a4a', -15));
+    return;
+  }
+  if (code === TILE.ANVIL) {
+    const col = TILE_COLOR[code];
+    c.fillStyle = col;
+    c.fillRect(x + s * .2, y + s * .62, s * .6, s * .3); // đế
+    c.fillRect(x + s * .12, y + s * .38, s * .76, s * .18); // thân trên loe rộng
+    c.fillRect(x + s * .36, y + s * .18, s * .3, s * .22); // sừng đe
+    c.strokeStyle = shade(col, -35); c.lineWidth = 1;
+    c.strokeRect(x + s * .2, y + s * .62, s * .6, s * .3);
+    c.strokeRect(x + s * .12, y + s * .38, s * .76, s * .18);
+    c.fillStyle = shade(col, 45); c.fillRect(x + s * .18, y + s * .4, s * .64, s * .035);
     return;
   }
   c.fillStyle = TILE_COLOR[code] || '#444';
@@ -218,6 +231,12 @@ export function drawItemIcon(c, id, cx, cy, size) {
   } else if (id === 'ban_che') {
     c.fillStyle = col; rr(c, -s * .34, -s * .1, s * .68, s * .3, s * .05); c.fill();
     c.fillStyle = shade(col, -25); c.fillRect(-s * .28, s * .2, s * .08, s * .18); c.fillRect(s * .2, s * .2, s * .08, s * .18);
+  } else if (id === 'anvil') {
+    c.fillStyle = col;
+    c.fillRect(-s * .3, s * .12, s * .6, s * .3); c.fillRect(-s * .38, -s * .06, s * .76, s * .18); c.fillRect(-s * .15, -s * .3, s * .3, s * .24);
+    c.strokeStyle = shade(col, -35); c.lineWidth = 1;
+    c.strokeRect(-s * .3, s * .12, s * .6, s * .3); c.strokeRect(-s * .38, -s * .06, s * .76, s * .18);
+    c.fillStyle = shade(col, 45); c.fillRect(-s * .34, -s * .04, s * .68, s * .035);
   } else if (def.seed) {
     c.fillStyle = '#d8c9a0'; rr(c, -s * .28, -s * .34, s * .56, s * .6, s * .06); c.fill();
     c.strokeStyle = shade('#d8c9a0', -30); c.lineWidth = 1; c.stroke();

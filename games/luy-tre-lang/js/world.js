@@ -83,26 +83,35 @@ export function topSolidRow(tiles, c) {
   return ROWS - 1;
 }
 
-// Nhà hợp lệ: tường trái+phải (một bên có thể là cửa), mái phía trên, có đuốc trong phòng 3x2,
-// nền (tile đặc) ngay dưới sàn. (fx,fy) là ô sàn trống nơi người ở, (fx,fy-1) là ô đầu.
+// Nhà hợp lệ: tường trái+phải (một bên có thể là cửa), mái phía trên, có đuốc HOẶC đe rèn
+// trong phòng 3x2, nền (tile đặc) ngay dưới sàn. (fx,fy) là ô sàn trống nơi người ở, (fx,fy-1)
+// là ô đầu. Trả về 'blacksmith' | 'merchant' | false — nhà có cả đuốc lẫn đe rèn ưu tiên thợ rèn.
 export function checkHouse(tiles, fx, fy) {
   const g = (dx, dy) => getTile(tiles, fx + dx, fy + dy);
-  if (g(0, 0) !== TILE.AIR && g(0, 0) !== TILE.TORCH) return false;
-  if (g(0, -1) !== TILE.AIR && g(0, -1) !== TILE.TORCH) return false;
+  const isLight = t => t === TILE.AIR || t === TILE.TORCH || t === TILE.ANVIL;
+  if (!isLight(g(0, 0))) return false;
+  if (!isLight(g(0, -1))) return false;
   if (!isSolid(g(0, 1))) return false; // nền
   const left0 = g(-1, 0), left1 = g(-1, -1), right0 = g(1, 0), right1 = g(1, -1);
   const isBound = t => HOUSE_BOUND.has(t);
   if (!isBound(left0) || !isBound(left1) || !isBound(right0) || !isBound(right1)) return false;
   if (left0 !== TILE.DOOR && right0 !== TILE.DOOR && left1 !== TILE.DOOR && right1 !== TILE.DOOR) return false;
   if (g(-1, -2) !== TILE.ROOF && g(0, -2) !== TILE.ROOF && g(1, -2) !== TILE.ROOF) return false;
+  const hasAnvil = g(0, 0) === TILE.ANVIL || g(0, -1) === TILE.ANVIL;
   const hasTorch = g(0, 0) === TILE.TORCH || g(0, -1) === TILE.TORCH;
-  return hasTorch;
+  if (hasAnvil) return 'blacksmith';
+  if (hasTorch) return 'merchant';
+  return false;
 }
 
-// Quét toàn bản đồ tìm một ngôi nhà hợp lệ (dùng sau khi người chơi đặt block); trả về {fx,fy} hoặc null
-export function findHouse(tiles) {
+// Quét toàn bản đồ tìm một ngôi nhà hợp lệ chưa bị chiếm (dùng sau khi người chơi đặt block);
+// `exclude` là danh sách {fx,fy} các vị trí NPC đã có sẵn, bỏ qua để không "nâng cấp" NPC đã tồn
+// tại khi người chơi thêm đe rèn vào đúng căn nhà cũ. Trả về {fx,fy,kind} hoặc null.
+export function findHouse(tiles, exclude = []) {
   for (let c = 2; c < COLS - 2; c++) for (let r = 2; r < ROWS - 2; r++) {
-    if (checkHouse(tiles, c, r)) return { fx: c, fy: r };
+    if (exclude.some(e => e.fx === c && e.fy === r)) continue;
+    const kind = checkHouse(tiles, c, r);
+    if (kind) return { fx: c, fy: r, kind };
   }
   return null;
 }

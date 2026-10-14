@@ -5,12 +5,12 @@ import { held, pressed, bindKeys, bindTouch } from '../../../platform/core/input
 import { debugOn, exposeGlobals } from '../../../platform/core/debug.js';
 import { mountHomeLink } from '../../../platform/ui/bar.js';
 import * as D from './data.js';
-import { TS, ITEMS, RECIPES, QUESTS, SHOP_BUY, SHOP_SELL, BENCH_RADIUS } from './data.js';
+import { TS, ITEMS, RECIPES, BLACKSMITH_RECIPES, QUESTS, SHOP_BUY, SHOP_SELL, BENCH_RADIUS } from './data.js';
 import * as WLD from './world.js';
 import * as ST from './state.js';
 import { G, newGame, saveGame, loadGame, invCount } from './state.js';
 import * as PL from './player.js';
-import { heldItem, hitTile, placeTile, craft, nearBench, nearNpc, claimQuest, buy, sell, tillSoil, plantCrop, harvestCrop, unlockSkill, toggleArmor } from './player.js';
+import { heldItem, hitTile, placeTile, craft, nearBench, nearNpc, nearBlacksmith, claimQuest, buy, sell, tillSoil, plantCrop, harvestCrop, unlockSkill, toggleArmor } from './player.js';
 import * as MB from './mobs.js';
 import { attackMobs } from './mobs.js';
 import * as AN from './animals.js';
@@ -25,8 +25,9 @@ const cv = $('cv'), stage = $('stage');
 const hotbarEl = $('hotbar'), craftPanel = $('craftPanel'), craftList = $('craftList');
 const shopPanel = $('shopPanel'), shopList = $('shopList');
 const skillPanel = $('skillPanel'), skillList = $('skillList');
+const blacksmithPanel = $('blacksmithPanel'), blacksmithList = $('blacksmithList');
 const btnCraft = $('btnCraft'), btnTrade = $('btnTrade'), btnPlaceMode = $('btnPlaceMode'), btnNew = $('btnNew');
-const btnSkills = $('btnSkills');
+const btnSkills = $('btnSkills'), btnBlacksmith = $('btnBlacksmith');
 
 let placeMode = false;
 cv.addEventListener('pointerdown', () => ac(), { once: true });
@@ -47,6 +48,7 @@ cv.addEventListener('pointerdown', e => {
     placeTile(c, r, item); return;
   }
   if (G.npc.active && Math.hypot(G.npc.x - wx, G.npc.y - wy) < 28) { openShop(); return; }
+  if (G.blacksmith.active && Math.hypot(G.blacksmith.x - wx, G.blacksmith.y - wy) < 28) { openBlacksmith(); return; }
   const mob = G.mobs.find(m => Math.hypot(m.x - wx, m.y - wy) < 24);
   if (mob) { attackMobs(); return; }
   if (harvestCrop(c, r)) return;
@@ -58,8 +60,10 @@ btnNew.addEventListener('click', () => { newGame(); closePanels(); });
 btnCraft.addEventListener('click', () => toggle(craftPanel, renderCraftList));
 btnTrade.addEventListener('click', () => openShop());
 btnSkills.addEventListener('click', () => toggle(skillPanel, renderSkillList));
+btnBlacksmith.addEventListener('click', () => openBlacksmith());
 function openShop() { closePanels(); shopPanel.hidden = false; renderShopList(); }
-function closePanels() { craftPanel.hidden = true; shopPanel.hidden = true; skillPanel.hidden = true; }
+function openBlacksmith() { closePanels(); blacksmithPanel.hidden = false; renderBlacksmithList(); }
+function closePanels() { craftPanel.hidden = true; shopPanel.hidden = true; skillPanel.hidden = true; blacksmithPanel.hidden = true; }
 function toggle(panel, fill) {
   const open = panel.hidden;
   closePanels();
@@ -89,6 +93,23 @@ function renderCraftList() {
   }
   const close = document.createElement('button'); close.className = 'btn ghost close'; close.textContent = 'Đóng';
   close.addEventListener('click', closePanels); craftList.appendChild(close);
+}
+function renderBlacksmithList() {
+  blacksmithList.innerHTML = '';
+  const h = document.createElement('h2'); h.textContent = 'Thợ rèn'; blacksmithList.appendChild(h);
+  for (const rec of BLACKSMITH_RECIPES) {
+    const ok = Object.entries(rec.need).every(([it, q]) => invCount(G.inv, it) >= q) && (!rec.bench || nearBench());
+    const row = document.createElement('div'); row.className = 'row';
+    row.appendChild(iconCanvas(rec.out));
+    const span = document.createElement('span');
+    span.innerHTML = `<b>${ITEMS[rec.out].name}</b> x${rec.qty}<small>${fmtNeed(rec.need)}${rec.bench ? ' · cần bàn chế tác' : ''}</small>`;
+    row.appendChild(span);
+    const b = document.createElement('button'); b.className = 'btn'; b.textContent = 'Làm'; b.disabled = !ok;
+    b.addEventListener('click', () => { craft(rec.id, BLACKSMITH_RECIPES); renderBlacksmithList(); });
+    row.appendChild(b); blacksmithList.appendChild(row);
+  }
+  const close = document.createElement('button'); close.className = 'btn ghost close'; close.textContent = 'Đóng';
+  close.addEventListener('click', closePanels); blacksmithList.appendChild(close);
 }
 function renderShopList() {
   shopList.innerHTML = '';
@@ -187,6 +208,7 @@ bindKeys(keymap, {
     if (k === 'craft') toggle(craftPanel, renderCraftList);
     else if (k === 'trade') {
       if (nearNpc()) openShop();
+      else if (nearBlacksmith()) openBlacksmith();
       else if (!tameAnimal(BENCH_RADIUS)) tryMountNearbyTrau(BENCH_RADIUS);
     }
     else if (k.startsWith('slot')) G.sel = Number(k.slice(4));
@@ -204,7 +226,12 @@ function update(dt) {
   if (pressed.has('wear')) toggleArmor();
   tick(dt);
 }
-function frame() { render(cv.getContext('2d')); btnTrade.hidden = !nearNpc(); renderHotbar(); }
+function frame() {
+  render(cv.getContext('2d'));
+  btnTrade.hidden = !nearNpc();
+  btnBlacksmith.hidden = !nearBlacksmith();
+  renderHotbar();
+}
 
 setInterval(saveGame, 5000);
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });

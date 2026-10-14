@@ -12,6 +12,7 @@ import { heldItem, cropStage } from './player.js';
 export const W = 960, H = 540;
 const HERO = { skin: '#f6d2ae', hair: '#1c1410', hat: 'nonla', shirt: '#2f6b57', trim: '#e9b949', pants: '#2a2630', belt: '#e9b949' };
 const MERCHANT = { skin: '#e3b98f', hair: '#2a1e12', hat: 'khan', khan: '#8a3b1f', shirt: '#caa65a', trim: '#5a4228', pants: '#3a2a1a', belt: '#5a4228', beard: 1 };
+const BLACKSMITH = { skin: '#c99a6a', hair: '#1c1410', hat: 'khan', khan: '#3a3a3a', shirt: '#5a4228', trim: '#8a8a8f', pants: '#2a2630', belt: '#8a8a8f', beard: 1 };
 
 export function getCamera() {
   return {
@@ -43,6 +44,7 @@ export function render(ctx) {
   if (night) { ctx.fillStyle = 'rgba(6,10,30,.38)'; ctx.fillRect(0, 0, W, H); }
 
   if (G.npc.active) drawChibi(ctx, G.npc.x - cam.x, G.npc.y - cam.y, MERCHANT, { face: -1, t: G.time * 10, scale: .62 });
+  if (G.blacksmith.active) drawChibi(ctx, G.blacksmith.x - cam.x, G.blacksmith.y - cam.y, BLACKSMITH, { face: -1, t: G.time * 10, scale: .62 });
   for (const a of G.animals) drawAnimal(ctx, a.kind, a.x - cam.x, a.y - cam.y);
   for (const p of G.pets) drawAnimal(ctx, p.kind, p.x - cam.x, p.y - cam.y);
   for (const m of G.mobs) drawMob(ctx, m.kind, m.x - cam.x, m.y - cam.y, G.time * 90 + G.day);

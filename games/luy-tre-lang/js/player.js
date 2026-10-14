@@ -201,8 +201,8 @@ export function nearBench() {
   return false;
 }
 
-export function craft(id) {
-  const rec = RECIPES.find(x => x.id === id); if (!rec) return false;
+export function craft(id, list = RECIPES) {
+  const rec = list.find(x => x.id === id); if (!rec) return false;
   if (rec.bench && !nearBench()) return false;
   for (const [item, qty] of Object.entries(rec.need)) if (invCount(G.inv, item) < qty) return false;
   for (const [item, qty] of Object.entries(rec.need)) invRemove(G.inv, item, qty);
@@ -211,17 +211,35 @@ export function craft(id) {
   return true;
 }
 
+// Dò nhà mới chưa bị NPC nào chiếm; nhà có đe rèn -> thợ rèn, nhà có đuốc -> thương nhân.
+// Nhà đã có NPC không bao giờ bị "nâng cấp" lại dù người chơi thêm đe rèn vào sau đó, vì vị
+// trí đó luôn nằm trong danh sách loại trừ một khi đã có NPC hoạt động ở đó.
 export function maybeSpawnNpc() {
-  if (G.npc.active) return false;
-  const h = findHouse(G.tiles);
+  if (G.npc.active && G.blacksmith.active) return false;
+  const exclude = [];
+  if (G.npc.active) exclude.push({ fx: G.npc.fx, fy: G.npc.fy });
+  if (G.blacksmith.active) exclude.push({ fx: G.blacksmith.fx, fy: G.blacksmith.fy });
+  const h = findHouse(G.tiles, exclude);
   if (!h) return false;
-  G.npc = { active: true, x: (h.fx + .5) * TS, y: (h.fy + 1) * TS, fx: h.fx, fy: h.fy };
-  return true;
+  if (h.kind === 'blacksmith' && !G.blacksmith.active) {
+    G.blacksmith = { active: true, x: (h.fx + .5) * TS, y: (h.fy + 1) * TS, fx: h.fx, fy: h.fy };
+    return true;
+  }
+  if (h.kind === 'merchant' && !G.npc.active) {
+    G.npc = { active: true, x: (h.fx + .5) * TS, y: (h.fy + 1) * TS, fx: h.fx, fy: h.fy };
+    return true;
+  }
+  return false;
 }
 
 export function nearNpc() {
   if (!G.npc.active) return false;
   return Math.hypot(G.npc.x - G.px, G.npc.y - G.py) <= 2.5 * TS;
+}
+
+export function nearBlacksmith() {
+  if (!G.blacksmith.active) return false;
+  return Math.hypot(G.blacksmith.x - G.px, G.blacksmith.y - G.py) <= 2.5 * TS;
 }
 
 export function claimQuest(id) {

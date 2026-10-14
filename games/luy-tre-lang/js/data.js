@@ -17,10 +17,10 @@ export const BIOME_SKY = {
 export const TILE = {
   AIR: 0, DIRT: 1, STONE: 2, BAMBOO: 3, COPPER: 4, IRON: 5, SILVER: 6, GOLD: 7,
   WALL: 8, ROOF: 9, BRICK: 10, DOOR: 11, TORCH: 12, BENCH: 13, BEDROCK: 14, FARMLAND: 15,
-  WATER: 16, REED: 17,
+  WATER: 16, REED: 17, ANVIL: 18,
 };
 export const SOLID = new Set([TILE.DIRT, TILE.STONE, TILE.BAMBOO, TILE.COPPER, TILE.IRON, TILE.SILVER, TILE.GOLD,
-  TILE.WALL, TILE.BRICK, TILE.BENCH, TILE.BEDROCK, TILE.FARMLAND]);
+  TILE.WALL, TILE.BRICK, TILE.BENCH, TILE.BEDROCK, TILE.FARMLAND, TILE.ANVIL]);
 export const WATER_SPEED_MULT = .6, WATER_JUMP_MULT = .7;
 // Tile coi là "tường/mái" hợp lệ khi xét nhà (tường, mái, gạch, cửa đều tính)
 export const HOUSE_BOUND = new Set([TILE.WALL, TILE.ROOF, TILE.BRICK, TILE.DOOR]);
@@ -28,13 +28,13 @@ export const HOUSE_BOUND = new Set([TILE.WALL, TILE.ROOF, TILE.BRICK, TILE.DOOR]
 export const HARDNESS = {
   [TILE.DIRT]: 1, [TILE.STONE]: 2, [TILE.BAMBOO]: 1, [TILE.COPPER]: 3, [TILE.IRON]: 4, [TILE.SILVER]: 5, [TILE.GOLD]: 6,
   [TILE.WALL]: 2, [TILE.ROOF]: 1, [TILE.BRICK]: 3, [TILE.DOOR]: 2, [TILE.TORCH]: 1, [TILE.BENCH]: 2, [TILE.BEDROCK]: Infinity,
-  [TILE.FARMLAND]: 1,
+  [TILE.FARMLAND]: 1, [TILE.ANVIL]: 3,
 };
 // Vật phẩm rơi ra khi đào vỡ một tile
 export const DROP = {
   [TILE.DIRT]: 'dat', [TILE.STONE]: 'da', [TILE.BAMBOO]: 'tre', [TILE.COPPER]: 'dong', [TILE.IRON]: 'sat',
   [TILE.SILVER]: 'bac', [TILE.GOLD]: 'vang', [TILE.WALL]: 'tuong_tre', [TILE.ROOF]: 'mai_tranh', [TILE.BRICK]: 'gach_gom',
-  [TILE.DOOR]: 'cua_tre', [TILE.TORCH]: 'duoc', [TILE.BENCH]: 'ban_che', [TILE.FARMLAND]: 'dat',
+  [TILE.DOOR]: 'cua_tre', [TILE.TORCH]: 'duoc', [TILE.BENCH]: 'ban_che', [TILE.FARMLAND]: 'dat', [TILE.ANVIL]: 'anvil',
 };
 // Hạt giống -> loại nông sản thu hoạch được
 export const SEED_TO_CROP = { hat_lua: 'lua', hat_rau: 'rau', hat_dua: 'dua' };
@@ -43,6 +43,7 @@ export const CROP_GROW_DAYS = 3; // số ngày trôi qua để chín (giai đo�
 // Vật phẩm đặt được -> tile sẽ đặt xuống
 export const PLACE_TILE = {
   tuong_tre: TILE.WALL, mai_tranh: TILE.ROOF, gach_gom: TILE.BRICK, cua_tre: TILE.DOOR, duoc: TILE.TORCH, ban_che: TILE.BENCH,
+  anvil: TILE.ANVIL,
 };
 
 export const ITEMS = {
@@ -68,6 +69,7 @@ export const ITEMS = {
   giap_dong: { name: 'Giáp đồng', color: '#c97a45', armor: .15 },
   giap_sat: { name: 'Giáp sắt', color: '#9a8a7a', armor: .22 },
   giap_ngoc_dam: { name: 'Giáp Ngọc Đầm', color: '#4a8a6a', armor: .30 },
+  anvil: { name: 'Đe rèn', color: '#4a4a52' },
 };
 
 // Thú nuôi: loanh quanh ban ngày ở Đồng Bằng, thuần hoá bằng đúng thức ăn, gà/lợn đã thuần tự sinh vật phẩm.
@@ -99,15 +101,16 @@ export const RECIPES = [
   { id: 'kiem_dong', out: 'kiem_dong', qty: 1, need: { dong: 3, tre: 1 }, bench: true },
   { id: 'cuoc_sat', out: 'cuoc_sat', qty: 1, need: { sat: 3, tre: 1 }, bench: true },
   { id: 'kiem_sat', out: 'kiem_sat', qty: 1, need: { sat: 3, tre: 1 }, bench: true },
-  { id: 'kiem_ngoc', out: 'kiem_ngoc', qty: 1, need: { ngoc_quy: 1, sat: 2 }, bench: true },
   { id: 'giap_tre', out: 'giap_tre', qty: 1, need: { tre: 6 }, bench: true },
   { id: 'giap_da', out: 'giap_da', qty: 1, need: { da: 6, tre: 2 }, bench: true },
   { id: 'giap_dong', out: 'giap_dong', qty: 1, need: { dong: 6, tre: 2 }, bench: true },
   { id: 'giap_sat', out: 'giap_sat', qty: 1, need: { sat: 6, tre: 2 }, bench: true },
+  { id: 'anvil', out: 'anvil', qty: 1, need: { sat: 4, da: 2 }, bench: true },
 ];
 
-// Công thức chỉ chế được qua NPC thợ rèn (Task 7 sẽ thêm kiem_ngoc vào đây và bỏ khỏi RECIPES).
+// Công thức cao cấp chỉ chế được qua NPC thợ rèn (nhà có đe rèn), không hiện trong bảng Chế tạo thường.
 export const BLACKSMITH_RECIPES = [
+  { id: 'kiem_ngoc', out: 'kiem_ngoc', qty: 1, need: { ngoc_quy: 1, sat: 2 }, bench: true },
   { id: 'giap_ngoc_dam', out: 'giap_ngoc_dam', qty: 1, need: { ngoc_dam_lay: 2, sat: 4 }, bench: true },
 ];
 

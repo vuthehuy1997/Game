@@ -163,7 +163,7 @@ def test_valid_house_spawns_npc(pg, browser, base):
       setTile(G.tiles, fx, fy - 2, TILE.ROOF);
       setTile(G.tiles, fx + 1, fy - 2, TILE.ROOF);
     }""")
-    assert pg.evaluate("checkHouse(G.tiles, 20, 40)") is True
+    assert pg.evaluate("checkHouse(G.tiles, 20, 40)") == 'merchant'
     assert pg.evaluate("maybeSpawnNpc()") is True
     assert pg.evaluate("G.npc.active") is True
 
@@ -360,13 +360,16 @@ def test_kill_boss_grants_gold_and_rare_gem(pg, browser, base):
 
 @test
 def test_kiem_ngoc_recipe_needs_gem_and_bench(pg, browser, base):
+    # kiem_ngoc giờ chỉ chế được qua thợ rèn (BLACKSMITH_RECIPES, xem Task 7), không còn trong
+    # bảng Chế tạo thường (RECIPES) — craft('kiem_ngoc') mặc định (RECIPES) luôn False.
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     pg.evaluate("G.inv = freshInventory(); invAdd(G.inv, 'ngoc_quy', 1); invAdd(G.inv, 'sat', 2)")
     assert pg.evaluate("craft('kiem_ngoc')") is False
+    assert pg.evaluate("craft('kiem_ngoc', BLACKSMITH_RECIPES)") is False  # chưa có bàn chế tác
     col = pg.evaluate("Math.floor(G.px / TS)")
     row = pg.evaluate("Math.floor(G.py / TS) - 1")
     pg.evaluate(f"setTile(G.tiles, {col}, {row}, TILE.BENCH)")
-    assert pg.evaluate("craft('kiem_ngoc')") is True
+    assert pg.evaluate("craft('kiem_ngoc', BLACKSMITH_RECIPES)") is True
     assert pg.evaluate("invCount(G.inv, 'kiem_ngoc')") == 1
     assert pg.evaluate("WEAPON_DMG.kiem_ngoc") == 36
 
@@ -722,6 +725,82 @@ def test_save_and_load_keeps_armor(pg, browser, base):
     assert pg.evaluate("G.armor") is None
     assert pg.evaluate("loadGame()") is True
     assert pg.evaluate("G.armor") == 'giap_dong'
+
+
+@test
+def test_house_with_anvil_spawns_blacksmith_not_merchant(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("""() => {
+      const fx = 20, fy = 40;
+      setTile(G.tiles, fx, fy, TILE.ANVIL);
+      setTile(G.tiles, fx, fy - 1, TILE.AIR);
+      setTile(G.tiles, fx, fy + 1, TILE.STONE);
+      setTile(G.tiles, fx - 1, fy, TILE.WALL);
+      setTile(G.tiles, fx - 1, fy - 1, TILE.WALL);
+      setTile(G.tiles, fx + 1, fy, TILE.DOOR);
+      setTile(G.tiles, fx + 1, fy - 1, TILE.WALL);
+      setTile(G.tiles, fx - 1, fy - 2, TILE.ROOF);
+      setTile(G.tiles, fx, fy - 2, TILE.ROOF);
+      setTile(G.tiles, fx + 1, fy - 2, TILE.ROOF);
+    }""")
+    assert pg.evaluate("checkHouse(G.tiles, 20, 40)") == 'blacksmith'
+    assert pg.evaluate("maybeSpawnNpc()") is True
+    assert pg.evaluate("G.blacksmith.active") is True
+    assert pg.evaluate("G.npc.active") is False
+
+
+@test
+def test_house_with_torch_and_anvil_spawns_only_blacksmith(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("""() => {
+      const fx = 20, fy = 40;
+      setTile(G.tiles, fx, fy, TILE.ANVIL);
+      setTile(G.tiles, fx, fy - 1, TILE.TORCH);
+      setTile(G.tiles, fx, fy + 1, TILE.STONE);
+      setTile(G.tiles, fx - 1, fy, TILE.WALL);
+      setTile(G.tiles, fx - 1, fy - 1, TILE.WALL);
+      setTile(G.tiles, fx + 1, fy, TILE.DOOR);
+      setTile(G.tiles, fx + 1, fy - 1, TILE.WALL);
+      setTile(G.tiles, fx - 1, fy - 2, TILE.ROOF);
+      setTile(G.tiles, fx, fy - 2, TILE.ROOF);
+      setTile(G.tiles, fx + 1, fy - 2, TILE.ROOF);
+    }""")
+    assert pg.evaluate("checkHouse(G.tiles, 20, 40)") == 'blacksmith'
+    assert pg.evaluate("maybeSpawnNpc()") is True
+    assert pg.evaluate("G.blacksmith.active") is True
+    assert pg.evaluate("G.npc.active") is False
+    assert pg.evaluate("maybeSpawnNpc()") is False  # không tự nâng cấp/spawn thêm
+
+
+@test
+def test_blacksmith_recipes_not_in_regular_craft_table(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.evaluate("RECIPES.some(r => r.id === 'kiem_ngoc')") is False
+    assert pg.evaluate("RECIPES.some(r => r.id === 'giap_ngoc_dam')") is False
+    assert pg.evaluate("BLACKSMITH_RECIPES.some(r => r.id === 'kiem_ngoc')") is True
+    assert pg.evaluate("BLACKSMITH_RECIPES.some(r => r.id === 'giap_ngoc_dam')") is True
+    assert pg.evaluate("craft('kiem_ngoc')") is False  # danh sách mặc định (RECIPES) không còn công thức này
+
+
+@test
+def test_crafting_blacksmith_recipes_consumes_correct_materials(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("""() => {
+      const pc = Math.floor(G.px / 24), pr = Math.floor(G.py / 24);
+      setTile(G.tiles, pc, pr, TILE.BENCH);
+      G.inv = new Array(8).fill(null);
+      G.inv[0] = { item: 'ngoc_quy', count: 1 };
+      G.inv[1] = { item: 'sat', count: 6 };
+      G.inv[2] = { item: 'ngoc_dam_lay', count: 2 };
+    }""")
+    assert pg.evaluate("craft('kiem_ngoc', BLACKSMITH_RECIPES)") is True
+    assert pg.evaluate("invCount(G.inv, 'kiem_ngoc')") == 1
+    assert pg.evaluate("invCount(G.inv, 'ngoc_quy')") == 0
+    assert pg.evaluate("invCount(G.inv, 'sat')") == 4  # kiem_ngoc tiêu 2 sắt trong 6 đã có
+    assert pg.evaluate("craft('giap_ngoc_dam', BLACKSMITH_RECIPES)") is True
+    assert pg.evaluate("invCount(G.inv, 'giap_ngoc_dam')") == 1
+    assert pg.evaluate("invCount(G.inv, 'ngoc_dam_lay')") == 0
+    assert pg.evaluate("invCount(G.inv, 'sat')") == 0  # giáp cần 4 sắt còn lại
 
 
 run(TESTS)
