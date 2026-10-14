@@ -427,4 +427,85 @@ def test_shop_buys_seeds_and_sells_produce(pg, browser, base):
     assert pg.evaluate("invCount(G.inv, 'lua')") == 0
 
 
+@test
+def test_animals_spawn_only_day_and_plains_biome(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.time = 0.2; G.animals.length = 0; G.animalSpawnT = 999")
+    pg.evaluate("spawnAnimalsIfNeeded(0.1)")
+    assert pg.evaluate("G.animals.length") > 0
+    assert pg.evaluate("biomeAt(Math.floor(G.animals[0].x / TS))") == 'plains'
+    pg.evaluate("G.time = 0.5; G.animals.length = 0; G.animalSpawnT = 999")
+    pg.evaluate("spawnAnimalsIfNeeded(0.1)")
+    assert pg.evaluate("G.animals.length") == 0
+
+
+@test
+def test_taming_consumes_feed_and_marks_tamed(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.animals.length = 0; G.pets.length = 0")
+    pg.evaluate("G.animals.push({kind: 'ga', x: G.px, y: G.py, dir: 1, wanderT: 1})")
+    pg.evaluate("G.inv = freshInventory(); G.sel = 0")
+    assert pg.evaluate("tameAnimal(BENCH_RADIUS)") is False  # chưa có thức ăn
+    pg.evaluate("invAdd(G.inv, 'lua', 2); G.sel = 0")
+    assert pg.evaluate("heldItem()") == 'lua'
+    assert pg.evaluate("tameAnimal(BENCH_RADIUS)") is True
+    assert pg.evaluate("G.animals.length") == 0
+    assert pg.evaluate("G.pets.length") == 1
+    assert pg.evaluate("G.pets[0].kind") == 'ga'
+    assert pg.evaluate("G.pets[0].tamed") is True
+    assert pg.evaluate("invCount(G.inv, 'lua')") == 1
+
+
+@test
+def test_tamed_chicken_produces_egg_over_time(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.pets.length = 0; G.pets.push({kind: 'ga', x: G.px, y: G.py, tamed: true, prodT: 0})")
+    pg.evaluate("G.inv = freshInventory()")
+    pg.evaluate("updateAnimals(19)")
+    assert pg.evaluate("invCount(G.inv, 'trung')") == 0
+    pg.evaluate("updateAnimals(2)")
+    assert pg.evaluate("invCount(G.inv, 'trung')") == 1
+
+
+@test
+def test_tamed_pig_produces_pork_over_time(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.pets.length = 0; G.pets.push({kind: 'lon', x: G.px, y: G.py, tamed: true, prodT: 0})")
+    pg.evaluate("G.inv = freshInventory()")
+    pg.evaluate("updateAnimals(29)")
+    assert pg.evaluate("invCount(G.inv, 'thit_lon')") == 0
+    pg.evaluate("updateAnimals(2)")
+    assert pg.evaluate("invCount(G.inv, 'thit_lon')") == 1
+
+
+@test
+def test_riding_buffalo_increases_speed_and_jump_dismounts(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.pets.length = 0; G.pets.push({kind: 'trau', x: G.px, y: G.py, tamed: true})")
+    pg.evaluate("G.riding = false")
+    assert pg.evaluate("tryMountNearbyTrau(BENCH_RADIUS)") is True
+    assert pg.evaluate("G.riding") is True
+    pg.evaluate("held.add('right'); physicsStep(1 / 60)")
+    vx_riding = pg.evaluate("G.vx")
+    pg.evaluate("G.riding = false; physicsStep(1 / 60)")
+    vx_normal = pg.evaluate("G.vx")
+    pg.evaluate("held.delete('right')")
+    assert abs(vx_riding) > abs(vx_normal) * 1.3, (vx_riding, vx_normal)
+    pg.evaluate("G.riding = true; G.grounded = true; pressed.add('jump')")
+    pg.evaluate("tick(1 / 60)")
+    assert pg.evaluate("G.riding") is False
+
+
+@test
+def test_save_and_load_keeps_pets_and_tamed_state(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.pets.length = 0; G.pets.push({kind: 'ga', x: 240, y: 480, tamed: true, prodT: 5})")
+    pg.evaluate("saveGame()")
+    pg.evaluate("newGame(1)")
+    assert pg.evaluate("loadGame()") is True
+    assert pg.evaluate("G.pets.length") == 1
+    assert pg.evaluate("G.pets[0].kind") == 'ga'
+    assert pg.evaluate("G.pets[0].tamed") is True
+
+
 run(TESTS)

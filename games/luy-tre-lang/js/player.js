@@ -4,7 +4,7 @@ import { tone } from '../../../platform/core/audio.js';
 import { clamp } from '../../../platform/core/util.js';
 import {
   TS, COLS, ROWS, TILE, HARDNESS, DROP, PLACE_TILE, ITEMS, RECIPES, QUESTS, TOOL_POWER, WEAPON_DMG, HAND_POWER, HAND_DMG,
-  PLAYER_W, PLAYER_H, GRAV, MOVE_SPEED, JUMP_V, REACH, BENCH_RADIUS, SEED_TO_CROP, CROP_GROW_DAYS,
+  PLAYER_W, PLAYER_H, GRAV, MOVE_SPEED, JUMP_V, REACH, BENCH_RADIUS, SEED_TO_CROP, CROP_GROW_DAYS, RIDE_SPEED_MULT,
 } from './data.js';
 import { G, invAdd, invRemove, invCount } from './state.js';
 import { getTile, setTile, isSolid, findHouse, checkHouse } from './world.js';
@@ -28,8 +28,12 @@ function moveAxis(dx, axis) {
 
 export function physicsStep(dt) {
   const dir = (held.has('right') ? 1 : 0) - (held.has('left') ? 1 : 0);
-  G.vx = dir * MOVE_SPEED; if (dir) G.face = dir;
-  if (pressed.has('jump') && G.grounded) { G.vy = -JUMP_V; tone(330, .12, 'triangle', .05, 260); }
+  const speed = MOVE_SPEED * (G.riding ? RIDE_SPEED_MULT : 1);
+  G.vx = dir * speed; if (dir) G.face = dir;
+  if (pressed.has('jump')) {
+    if (G.riding) G.riding = false; // nhảy để xuống trâu, lần nhảy này không nhảy thật
+    else if (G.grounded) { G.vy = -JUMP_V; tone(330, .12, 'triangle', .05, 260); }
+  }
   G.vy += GRAV * dt;
   G.grounded = false;
   moveAxis(G.vx * dt, 'x');

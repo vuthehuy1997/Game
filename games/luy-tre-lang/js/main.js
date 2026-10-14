@@ -5,7 +5,7 @@ import { held, pressed, bindKeys, bindTouch } from '../../../platform/core/input
 import { debugOn, exposeGlobals } from '../../../platform/core/debug.js';
 import { mountHomeLink } from '../../../platform/ui/bar.js';
 import * as D from './data.js';
-import { TS, ITEMS, RECIPES, QUESTS, SHOP_BUY, SHOP_SELL } from './data.js';
+import { TS, ITEMS, RECIPES, QUESTS, SHOP_BUY, SHOP_SELL, BENCH_RADIUS } from './data.js';
 import * as WLD from './world.js';
 import * as ST from './state.js';
 import { G, newGame, saveGame, loadGame, invCount } from './state.js';
@@ -13,6 +13,8 @@ import * as PL from './player.js';
 import { heldItem, hitTile, placeTile, craft, nearBench, nearNpc, claimQuest, buy, sell, tillSoil, plantCrop, harvestCrop } from './player.js';
 import * as MB from './mobs.js';
 import { attackMobs } from './mobs.js';
+import * as AN from './animals.js';
+import { tameAnimal, tryMountNearbyTrau } from './animals.js';
 import * as FL from './flow.js';
 import { tick } from './flow.js';
 import * as RD from './render.js';
@@ -138,7 +140,10 @@ bindKeys(keymap, {
   onPress: k => {
     ac();
     if (k === 'craft') toggle(craftPanel, renderCraftList);
-    else if (k === 'trade') { if (nearNpc()) openShop(); }
+    else if (k === 'trade') {
+      if (nearNpc()) openShop();
+      else if (!tameAnimal(BENCH_RADIUS)) tryMountNearbyTrau(BENCH_RADIUS);
+    }
     else if (k.startsWith('slot')) G.sel = Number(k.slice(4));
   },
 });
@@ -158,5 +163,5 @@ function frame() { render(cv.getContext('2d')); btnTrade.hidden = !nearNpc(); re
 setInterval(saveGame, 5000);
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
 
-if (debugOn()) exposeGlobals([D, WLD, ST, PL, MB, FL, RD, { G, update, held, pressed, pause: v => { paused = v; } }]);
+if (debugOn()) exposeGlobals([D, WLD, ST, PL, MB, AN, FL, RD, { G, update, held, pressed, pause: v => { paused = v; } }]);
 startLoop(update, frame);

@@ -6,7 +6,7 @@ import { FD, FB } from '../../../platform/ui/theme.js';
 import { COLS, ROWS, TS, TILE, WEAPON_LOOK, BIOME_SKY, BIOME_NAME, MOB_DEF } from './data.js';
 import { G } from './state.js';
 import { getTile, biomeAt } from './world.js';
-import { drawTile, drawMob, drawBackdrop, drawCrop } from './art.js';
+import { drawTile, drawMob, drawBackdrop, drawCrop, drawAnimal } from './art.js';
 import { heldItem, cropStage } from './player.js';
 
 export const W = 960, H = 540;
@@ -43,6 +43,8 @@ export function render(ctx) {
   if (night) { ctx.fillStyle = 'rgba(6,10,30,.38)'; ctx.fillRect(0, 0, W, H); }
 
   if (G.npc.active) drawChibi(ctx, G.npc.x - cam.x, G.npc.y - cam.y, MERCHANT, { face: -1, t: G.time * 10, scale: .62 });
+  for (const a of G.animals) drawAnimal(ctx, a.kind, a.x - cam.x, a.y - cam.y);
+  for (const p of G.pets) drawAnimal(ctx, p.kind, p.x - cam.x, p.y - cam.y);
   for (const m of G.mobs) drawMob(ctx, m.kind, m.x - cam.x, m.y - cam.y, G.time * 90 + G.day);
 
   const look = { ...HERO, weapon: WEAPON_LOOK[heldItem()] };

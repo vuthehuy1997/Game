@@ -105,6 +105,30 @@ export function drawBackdrop(c, biome, W, H) {
   ell(c, W * 1.02, baseY, W * .2, H * .13, pal.hill);
 }
 
+// Thú nuôi: gà (nhỏ, mào đỏ), lợn (hồng, tròn), trâu (to, sừng cong).
+export function drawAnimal(c, kind, x, y) {
+  if (kind === 'ga') {
+    ell(c, x, y - 10, 10, 9, '#f2e4c6');
+    ell(c, x + 7, y - 14, 5, 4, '#f2e4c6');
+    c.fillStyle = '#c23a2a';
+    c.beginPath(); c.moveTo(x + 8, y - 18); c.lineTo(x + 11, y - 20); c.lineTo(x + 9, y - 16); c.closePath(); c.fill();
+    c.fillStyle = '#e9b949';
+    c.beginPath(); c.moveTo(x + 11, y - 13); c.lineTo(x + 16, y - 12); c.lineTo(x + 11, y - 10); c.closePath(); c.fill();
+  } else if (kind === 'lon') {
+    ell(c, x, y - 13, 15, 11, '#e8a8ad');
+    ell(c, x + 13, y - 11, 5.5, 4.2, '#e8a8ad');
+    ell(c, x + 16.5, y - 11, 2.2, 1.7, shade('#e8a8ad', -25));
+    c.fillStyle = shade('#e8a8ad', -15); ell(c, x - 6, y - 4, 3, 5, shade('#e8a8ad', -15));
+  } else if (kind === 'trau') {
+    rr(c, x - 20, y - 30, 40, 26, 8); c.fillStyle = '#3a3a3a'; c.fill();
+    c.strokeStyle = shade('#3a3a3a', -20); c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#d8d0c0';
+    c.beginPath(); c.moveTo(x - 14, y - 28); c.lineTo(x - 23, y - 40); c.lineTo(x - 7, y - 26); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(x + 14, y - 28); c.lineTo(x + 23, y - 40); c.lineTo(x + 7, y - 26); c.closePath(); c.fill();
+    ell(c, x - 10, y - 18, 2, 2.4, '#fff'); ell(c, x + 10, y - 18, 2, 2.4, '#fff');
+  }
+}
+
 export function drawMob(c, kind, x, y, t) {
   if (kind === 'ma_troi') {
     const bob = Math.sin(t * 3 + x * .1) * 6;

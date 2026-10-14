@@ -58,7 +58,17 @@ export const ITEMS = {
   hat_lua: { name: 'Hạt lúa', color: '#e9c349', seed: true }, hat_rau: { name: 'Hạt rau', color: '#5a9a3a', seed: true },
   hat_dua: { name: 'Hạt dưa', color: '#4a8a4a', seed: true },
   lua: { name: 'Lúa', color: '#e9c349' }, rau: { name: 'Rau', color: '#5a9a3a' }, dua: { name: 'Dưa', color: '#4a8a4a' },
+  trung: { name: 'Trứng', color: '#f2e4c6' }, thit_lon: { name: 'Thịt lợn', color: '#e8a8ad' },
 };
+
+// Thú nuôi: loanh quanh ban ngày ở Đồng Bằng, thuần hoá bằng đúng thức ăn, gà/lợn đã thuần tự sinh vật phẩm.
+export const ANIMAL_DEF = {
+  ga: { name: 'Gà', hp: 6, speed: 30, produce: 'trung', produceEvery: 20 },
+  lon: { name: 'Lợn', hp: 10, speed: 20, produce: 'thit_lon', produceEvery: 30 },
+  trau: { name: 'Trâu', hp: 20, speed: 15 },
+};
+export const FEED_FOR_ANIMAL = { ga: 'lua', lon: 'rau', trau: 'dua' };
+export const MAX_ANIMALS = 4, ANIMAL_SPAWN_EVERY = 6, RIDE_SPEED_MULT = 1.6;
 export const TOOL_POWER = { cuoc_tre: 3, cuoc_da: 5, cuoc_dong: 7, cuoc_sat: 10 };
 export const WEAPON_DMG = { giao_tre: 8, kiem_da: 12, kiem_dong: 18, kiem_sat: 26, kiem_ngoc: 36 };
 export const HAND_POWER = 1, HAND_DMG = 3;
@@ -99,7 +109,7 @@ export const QUESTS = [
 
 export const SHOP_BUY = [{ item: 'duoc', price: 3 }, { item: 'gach_gom', price: 4 }, { item: 'tre', price: 1 },
   { item: 'hat_lua', price: 2 }, { item: 'hat_rau', price: 3 }, { item: 'hat_dua', price: 4 }];
-export const SHOP_SELL = { dong: 2, sat: 3, bac: 5, vang: 8, lua: 2, rau: 3, dua: 4 };
+export const SHOP_SELL = { dong: 2, sat: 3, bac: 5, vang: 8, lua: 2, rau: 3, dua: 4, trung: 3, thit_lon: 5 };
 
 export const HOTBAR_SLOTS = 8;
 export const PLAYER_W = 16, PLAYER_H = 40, GRAV = 2300, MOVE_SPEED = 230, JUMP_V = 760, REACH = 5 * TS;
