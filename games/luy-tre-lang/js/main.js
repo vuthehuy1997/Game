@@ -10,7 +10,7 @@ import * as WLD from './world.js';
 import * as ST from './state.js';
 import { G, newGame, saveGame, loadGame, invCount } from './state.js';
 import * as PL from './player.js';
-import { heldItem, hitTile, placeTile, craft, nearBench, nearNpc, claimQuest, buy, sell, tillSoil, plantCrop, harvestCrop } from './player.js';
+import { heldItem, hitTile, placeTile, craft, nearBench, nearNpc, claimQuest, buy, sell, tillSoil, plantCrop, harvestCrop, unlockSkill } from './player.js';
 import * as MB from './mobs.js';
 import { attackMobs } from './mobs.js';
 import * as AN from './animals.js';
@@ -24,7 +24,9 @@ import { drawItemIcon } from './art.js';
 const cv = $('cv'), stage = $('stage');
 const hotbarEl = $('hotbar'), craftPanel = $('craftPanel'), craftList = $('craftList');
 const shopPanel = $('shopPanel'), shopList = $('shopList');
+const skillPanel = $('skillPanel'), skillList = $('skillList');
 const btnCraft = $('btnCraft'), btnTrade = $('btnTrade'), btnPlaceMode = $('btnPlaceMode'), btnNew = $('btnNew');
+const btnSkills = $('btnSkills');
 
 let placeMode = false;
 cv.addEventListener('pointerdown', () => ac(), { once: true });
@@ -55,8 +57,9 @@ btnPlaceMode.addEventListener('click', () => { placeMode = !placeMode; btnPlaceM
 btnNew.addEventListener('click', () => { newGame(); closePanels(); });
 btnCraft.addEventListener('click', () => toggle(craftPanel, renderCraftList));
 btnTrade.addEventListener('click', () => openShop());
-function openShop() { craftPanel.hidden = true; shopPanel.hidden = false; renderShopList(); }
-function closePanels() { craftPanel.hidden = true; shopPanel.hidden = true; }
+btnSkills.addEventListener('click', () => toggle(skillPanel, renderSkillList));
+function openShop() { closePanels(); shopPanel.hidden = false; renderShopList(); }
+function closePanels() { craftPanel.hidden = true; shopPanel.hidden = true; skillPanel.hidden = true; }
 function toggle(panel, fill) {
   const open = panel.hidden;
   closePanels();
@@ -121,6 +124,48 @@ function renderShopList() {
   }
   const close = document.createElement('button'); close.className = 'btn ghost close'; close.textContent = 'Đóng';
   close.addEventListener('click', closePanels); shopList.appendChild(close);
+}
+
+const SKILL_TIERS = {
+  warrior: [
+    { label: 'Bậc 1: +10% sát thương cận chiến' },
+    { label: 'Bậc 2: +20 máu tối đa' },
+    { label: 'Bậc 3: -30% thời gian hồi chiêu đánh' },
+  ],
+  miner: [
+    { label: 'Bậc 1: +20% tốc độ đào' },
+    { label: 'Bậc 2: +15% cơ hội rơi gấp đôi nguyên liệu' },
+    { label: 'Bậc 3: +10% vàng khi bán' },
+  ],
+};
+function renderSkillBranch(branch, title) {
+  const col = document.createElement('div'); col.className = 'skillCol';
+  const h = document.createElement('h3'); h.textContent = title; col.appendChild(h);
+  SKILL_TIERS[branch].forEach((t, tier) => {
+    const unlocked = G.skills[branch][tier];
+    const locked = tier > 0 && !G.skills[branch][tier - 1];
+    const row = document.createElement('div'); row.className = 'row';
+    const span = document.createElement('span'); span.innerHTML = `<small>${t.label}</small>`;
+    row.appendChild(span);
+    const b = document.createElement('button'); b.className = 'btn'; b.textContent = unlocked ? 'Đã mở' : 'Mở (1 điểm)';
+    b.disabled = unlocked || locked || G.skillPoints <= 0;
+    b.addEventListener('click', () => { unlockSkill(branch, tier); renderSkillList(); });
+    row.appendChild(b); col.appendChild(row);
+  });
+  return col;
+}
+function renderSkillList() {
+  skillList.innerHTML = '';
+  const h = document.createElement('h2'); h.textContent = 'Kỹ năng'; skillList.appendChild(h);
+  const info = document.createElement('p');
+  info.innerHTML = `Cấp ${G.level} · ${G.xp}/${G.level * 100} XP · Còn ${G.skillPoints} điểm`;
+  skillList.appendChild(info);
+  const cols = document.createElement('div'); cols.className = 'skillCols';
+  cols.appendChild(renderSkillBranch('warrior', 'Chiến Binh'));
+  cols.appendChild(renderSkillBranch('miner', 'Thợ Mỏ'));
+  skillList.appendChild(cols);
+  const close = document.createElement('button'); close.className = 'btn ghost close'; close.textContent = 'Đóng';
+  close.addEventListener('click', closePanels); skillList.appendChild(close);
 }
 
 function renderHotbar() {

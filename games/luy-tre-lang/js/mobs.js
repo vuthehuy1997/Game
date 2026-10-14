@@ -1,10 +1,10 @@
 // Quái đêm: sinh ra, di chuyển, cận chiến với người chơi.
 import { rand, prune } from '../../../platform/core/util.js';
 import { tone } from '../../../platform/core/audio.js';
-import { COLS, TS, MOB_DEF, MAX_MOBS, SPAWN_EVERY, PLAYER_H, BOSS_EVERY_DAYS, BOSS2_EVERY_DAYS } from './data.js';
+import { COLS, TS, MOB_DEF, MAX_MOBS, SPAWN_EVERY, PLAYER_H, BOSS_EVERY_DAYS, BOSS2_EVERY_DAYS, HIT_COOLDOWN, XP_KILL_MOB, XP_KILL_BOSS, SKILL_WARRIOR } from './data.js';
 import { G, isNight, invAdd } from './state.js';
 import { topSolidRow } from './world.js';
-import { weaponDmg } from './player.js';
+import { weaponDmg, gainXp } from './player.js';
 
 export function spawnOneMob() {
   const kind = Math.random() < .5 ? 'ma_troi' : 'quai_rung';
@@ -63,9 +63,11 @@ export function respawnPlayer() {
 }
 
 function killMob(mob) {
+  const isBoss = MOB_DEF[mob.kind].boss;
   if (mob.kind === 'boss_than_dam') { G.gold += 250; invAdd(G.inv, 'ngoc_dam_lay', 2); }
-  else if (MOB_DEF[mob.kind].boss) { G.gold += 150; invAdd(G.inv, 'ngoc_quy', 1); }
+  else if (isBoss) { G.gold += 150; invAdd(G.inv, 'ngoc_quy', 1); }
   else G.gold += 3;
+  gainXp(isBoss ? XP_KILL_BOSS : XP_KILL_MOB);
   for (const q of G.quests) if (q.type === 'kill' && !q.claimed) q.have = Math.min(q.need, q.have + 1);
 }
 
@@ -103,7 +105,7 @@ export function updateMobs(dt) {
 
 export function attackMobs() {
   if (G.atkCd > 0) return false;
-  G.atkCd = .35;
+  G.atkCd = HIT_COOLDOWN * (G.skills.warrior[2] ? SKILL_WARRIOR.cooldownMult : 1);
   const range = 1.4 * TS, dmg = weaponDmg();
   let hit = false;
   for (const m of G.mobs) {

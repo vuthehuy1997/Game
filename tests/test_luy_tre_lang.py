@@ -609,4 +609,65 @@ def test_kill_boss2_grants_gold_and_two_swamp_gems(pg, browser, base):
     pg.evaluate("pause(false)")
 
 
+@test
+def test_mining_ore_grants_xp_by_type(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.xp = 0; G.inv[0] = { item: 'cuoc_sat', count: 1 }; G.sel = 0")
+    col = pg.evaluate("Math.floor(G.px / TS)")
+    row = pg.evaluate("Math.floor(G.py / TS) - 1")
+    pg.evaluate(f"setTile(G.tiles, {col}, {row}, TILE.GOLD)")
+    pg.evaluate(f"while (!hitTile({col}, {row})) {{}}")
+    assert pg.evaluate("G.xp") == 6  # vàng = +6 XP
+    pg.evaluate(f"setTile(G.tiles, {col}, {row}, TILE.DIRT)")
+    pg.evaluate(f"while (!hitTile({col}, {row})) {{}}")
+    assert pg.evaluate("G.xp") == 6  # đất không cộng XP
+
+
+@test
+def test_enough_xp_levels_up_and_keeps_remainder(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.xp = 0; G.level = 1; G.skillPoints = 0")
+    pg.evaluate("gainXp(130)")  # ngưỡng cấp 1->2 là 100, dư 30
+    assert pg.evaluate("G.level") == 2
+    assert pg.evaluate("G.skillPoints") == 1
+    assert pg.evaluate("G.xp") == 30
+
+
+@test
+def test_unlock_skill_consumes_point_and_applies_warrior_tier1(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.skillPoints = 1; G.skills = { warrior: [false,false,false], miner: [false,false,false] }")
+    pg.evaluate("G.inv[0] = { item: 'kiem_sat', count: 1 }; G.sel = 0")
+    before = pg.evaluate("weaponDmg()")
+    assert pg.evaluate("unlockSkill('warrior', 0)") is True
+    assert pg.evaluate("G.skillPoints") == 0
+    after = pg.evaluate("weaponDmg()")
+    assert abs(after - before * 1.10) < 1e-6, (before, after)
+
+
+@test
+def test_cannot_unlock_tier2_without_tier1(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.skillPoints = 3; G.skills = { warrior: [false,false,false], miner: [false,false,false] }")
+    assert pg.evaluate("unlockSkill('warrior', 1)") is False
+    assert pg.evaluate("G.skills.warrior[1]") is False
+    assert pg.evaluate("G.skillPoints") == 3
+
+
+@test
+def test_save_and_load_keeps_skills_state(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.skillPoints = 2; G.skills = { warrior: [false,false,false], miner: [false,false,false] }")
+    pg.evaluate("unlockSkill('warrior', 0)")
+    pg.evaluate("G.xp = 42; G.level = 3")
+    pg.evaluate("saveGame()")
+    pg.evaluate("newGame(1)")
+    assert pg.evaluate("loadGame()") is True
+    assert pg.evaluate("G.xp") == 42
+    assert pg.evaluate("G.level") == 3
+    assert pg.evaluate("G.skillPoints") == 1
+    assert pg.evaluate("G.skills.warrior[0]") is True
+    assert pg.evaluate("G.maxHp") == 100  # chỉ bậc1 đã mở, bậc2 (+20hp) chưa
+
+
 run(TESTS)

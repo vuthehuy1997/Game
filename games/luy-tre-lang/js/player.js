@@ -5,7 +5,7 @@ import { clamp } from '../../../platform/core/util.js';
 import {
   TS, COLS, ROWS, TILE, HARDNESS, DROP, PLACE_TILE, ITEMS, RECIPES, QUESTS, TOOL_POWER, WEAPON_DMG, HAND_POWER, HAND_DMG,
   PLAYER_W, PLAYER_H, GRAV, MOVE_SPEED, JUMP_V, REACH, BENCH_RADIUS, SEED_TO_CROP, CROP_GROW_DAYS, RIDE_SPEED_MULT,
-  WATER_SPEED_MULT, WATER_JUMP_MULT,
+  WATER_SPEED_MULT, WATER_JUMP_MULT, XP_MINE, XP_QUEST, XP_LEVEL_BASE, SKILL_WARRIOR, SKILL_MINER,
 } from './data.js';
 import { G, invAdd, invRemove, invCount } from './state.js';
 import { getTile, setTile, isSolid, findHouse, checkHouse } from './world.js';
@@ -52,8 +52,38 @@ export function physicsStep(dt) {
 }
 
 export function heldItem() { const s = G.inv[G.sel]; return s ? s.item : null; }
-export function digPower() { return TOOL_POWER[heldItem()] ?? HAND_POWER; }
-export function weaponDmg() { return WEAPON_DMG[heldItem()] ?? HAND_DMG; }
+export function digPower() {
+  const base = TOOL_POWER[heldItem()] ?? HAND_POWER;
+  return G.skills.miner[0] ? base * SKILL_MINER.digSpeedMult : base;
+}
+export function weaponDmg() {
+  const base = WEAPON_DMG[heldItem()] ?? HAND_DMG;
+  return G.skills.warrior[0] ? base * SKILL_WARRIOR.dmgMult : base;
+}
+
+// Nhận XP, lên cấp tự động (ngưỡng level->level+1 = level*XP_LEVEL_BASE, XP dư giữ lại).
+export function gainXp(amount) {
+  if (amount <= 0) return;
+  G.xp += amount;
+  while (G.xp >= G.level * XP_LEVEL_BASE) {
+    G.xp -= G.level * XP_LEVEL_BASE;
+    G.level += 1;
+    G.skillPoints += 1;
+  }
+}
+
+// Mở 1 bậc kỹ năng (branch: 'warrior'|'miner', tier: 0,1,2 = bậc 1,2,3). Phải mở tuần tự, tốn 1 điểm.
+export function unlockSkill(branch, tier) {
+  const arr = G.skills[branch];
+  if (!arr || arr[tier]) return false;
+  if (tier > 0 && !arr[tier - 1]) return false;
+  if (G.skillPoints <= 0) return false;
+  arr[tier] = true;
+  G.skillPoints -= 1;
+  if (branch === 'warrior' && tier === 1) { G.maxHp += SKILL_WARRIOR.hpBonus; G.hp += SKILL_WARRIOR.hpBonus; }
+  tone(440, .1, 'square', .05);
+  return true;
+}
 
 export function inReach(c, r) {
   const dx = (c + .5) * TS - G.px, dy = (r + .5) * TS - (G.py - PLAYER_H / 2);
@@ -74,8 +104,10 @@ export function hitTile(c, r) {
   const drop = DROP[code];
   setTile(G.tiles, c, r, TILE.AIR);
   if (drop) {
-    invAdd(G.inv, drop, 1);
+    const doubled = G.skills.miner[1] && Math.random() < SKILL_MINER.doubleDropChance;
+    invAdd(G.inv, drop, doubled ? 2 : 1);
     for (const q of G.quests) if (q.type === 'mine' && q.item === drop && !q.claimed) q.have = Math.min(q.need, q.have + 1);
+    gainXp(XP_MINE[drop] || 0);
   }
   tone(180, .08, 'square', .05);
   maybeSpawnNpc();
@@ -174,6 +206,7 @@ export function claimQuest(id) {
   q.claimed = true;
   const reward = (QUESTS.find(x => x.id === id) || {}).reward;
   if (reward) { if (reward.gold) G.gold += reward.gold; if (reward.item) invAdd(G.inv, reward.item, 1); }
+  gainXp(XP_QUEST);
   tone(660, .15, 'square', .06, 220);
   return true;
 }
@@ -184,5 +217,8 @@ export function buy(item, price) {
 }
 export function sell(item, unitPrice, qty = 1) {
   if (invCount(G.inv, item) < qty) return false;
-  invRemove(G.inv, item, qty); G.gold += unitPrice * qty; return true;
+  invRemove(G.inv, item, qty);
+  const mult = G.skills.miner[2] ? SKILL_MINER.sellBonusMult : 1;
+  G.gold += Math.round(unitPrice * qty * mult);
+  return true;
 }

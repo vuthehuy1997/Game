@@ -25,6 +25,9 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:cro
 .panel .row span{flex:1}
 .panel .row .icon{flex:0 0 auto;width:1.8em;height:1.8em;border-radius:.3em;background:#0000002a}
 .panel .close{align-self:flex-end}
+.skillCols{display:flex;gap:1em}
+.skillCol{flex:1;display:flex;flex-direction:column;gap:.4em;min-width:0}
+.skillCol h3{font-family:'Pattaya',Georgia,serif;font-weight:400;margin:0;color:#ffe6a8}
 .touch{position:absolute;inset:auto 0 3.2em 0;display:none;gap:1.5cqw;padding:2cqw;pointer-events:none}
 .touch.on{display:flex}
 .touch button{pointer-events:auto;width:10cqw;height:10cqw;border-radius:50%;border:2px solid #ffffff80;background:#0009;color:#fff;font:inherit;touch-action:none}

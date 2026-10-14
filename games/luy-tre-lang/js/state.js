@@ -37,18 +37,22 @@ export function newGame(seed = Date.now() >>> 0) {
     quests: freshQuests(), npc: { active: false, x: 0, y: 0, fx: -1, fy: -1 },
     mobs: [], spawnT: 0, mode: 'play', bossSpawnedDay: 0, boss2SpawnedDay: 0, crops: [],
     animals: [], pets: [], animalSpawnT: 0, riding: false,
+    xp: 0, level: 1, skillPoints: 0, skills: freshSkills(),
   });
   invAdd(G.inv, 'tre', 6);
 }
+
+export function freshSkills() { return { warrior: [false, false, false], miner: [false, false, false] }; }
 
 export function isNight() { return G.time >= .5; }
 
 export function buildSave() {
   return {
-    v: 1, seed: G.seed, day: G.day, time: G.time, px: G.px, py: G.py, hp: G.hp,
+    v: 1, seed: G.seed, day: G.day, time: G.time, px: G.px, py: G.py, hp: G.hp, maxHp: G.maxHp,
     inv: G.inv, sel: G.sel, gold: G.gold, quests: G.quests, bossSpawnedDay: G.bossSpawnedDay,
     boss2SpawnedDay: G.boss2SpawnedDay,
     npc: G.npc, tilesRLE: encodeTiles(G.tiles), crops: G.crops, pets: G.pets,
+    xp: G.xp, level: G.level, skillPoints: G.skillPoints, skills: G.skills,
   };
 }
 export function saveGame() { writeJSON(STORE_KEY, buildSave()); }
@@ -59,11 +63,12 @@ export function loadGame() {
   if (tiles.length !== COLS * ROWS) return false;
   Object.assign(G, {
     seed: s.seed, tiles, day: s.day, time: s.time, px: s.px, py: s.py, vx: 0, vy: 0, grounded: false, face: 1,
-    hp: s.hp, maxHp: 100, hurt: 0, atkCd: 0,
+    hp: s.hp, maxHp: s.maxHp || 100, hurt: 0, atkCd: 0,
     inv: s.inv, sel: s.sel || 0, gold: s.gold, quests: s.quests, npc: s.npc || { active: false, x: 0, y: 0, fx: -1, fy: -1 },
     mobs: [], spawnT: 0, mode: 'play', bossSpawnedDay: s.bossSpawnedDay || 0,
     boss2SpawnedDay: s.boss2SpawnedDay || 0, crops: s.crops || [],
     animals: [], pets: s.pets || [], animalSpawnT: 0, riding: false,
+    xp: s.xp || 0, level: s.level || 1, skillPoints: s.skillPoints || 0, skills: s.skills || freshSkills(),
   });
   return true;
 }

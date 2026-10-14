@@ -121,3 +121,10 @@ export const SHOP_SELL = { dong: 2, sat: 3, bac: 5, vang: 8, lua: 2, rau: 3, dua
 export const HOTBAR_SLOTS = 8;
 export const PLAYER_W = 16, PLAYER_H = 40, GRAV = 2300, MOVE_SPEED = 230, JUMP_V = 760, REACH = 5 * TS;
 export const MAX_MOBS = 6, SPAWN_EVERY = 4.5, BENCH_RADIUS = 3 * TS, NPC_RADIUS = 2.5 * TS, HIT_COOLDOWN = .35;
+
+// Hệ kỹ năng: XP theo hành động, ngưỡng lên cấp, hiệu ứng từng bậc.
+export const XP_MINE = { dong: 2, sat: 3, bac: 4, vang: 6 };
+export const XP_KILL_MOB = 5, XP_KILL_BOSS = 50, XP_QUEST = 10;
+export const XP_LEVEL_BASE = 100; // ngưỡng lên cấp N->N+1 = level hiện tại * XP_LEVEL_BASE
+export const SKILL_WARRIOR = { dmgMult: 1.10, hpBonus: 20, cooldownMult: .70 };
+export const SKILL_MINER = { digSpeedMult: 1.20, doubleDropChance: .15, sellBonusMult: 1.10 };
