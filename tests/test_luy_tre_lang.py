@@ -323,4 +323,108 @@ def test_kiem_ngoc_recipe_needs_gem_and_bench(pg, browser, base):
     assert pg.evaluate("WEAPON_DMG.kiem_ngoc") == 36
 
 
+@test
+def test_tilling_converts_dirt_to_farmland(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    col = pg.evaluate("Math.floor(G.px / TS)")
+    row = pg.evaluate("Math.floor(G.py / TS) + 1")
+    pg.evaluate(f"setTile(G.tiles, {col}, {row}, TILE.DIRT); setTile(G.tiles, {col}, {row - 1}, TILE.AIR)")
+    pg.evaluate("G.inv = freshInventory(); invAdd(G.inv, 'cuoc_tre', 1); G.sel = 0")
+    assert pg.evaluate(f"tillSoil({col}, {row})") is True
+    assert pg.evaluate(f"getTile(G.tiles, {col}, {row})") == pg.evaluate("TILE.FARMLAND")
+
+
+@test
+def test_tilling_fails_without_hoe(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    col = pg.evaluate("Math.floor(G.px / TS)")
+    row = pg.evaluate("Math.floor(G.py / TS) + 1")
+    pg.evaluate(f"setTile(G.tiles, {col}, {row}, TILE.DIRT); setTile(G.tiles, {col}, {row - 1}, TILE.AIR)")
+    pg.evaluate("G.inv = freshInventory(); G.sel = 0")
+    assert pg.evaluate(f"tillSoil({col}, {row})") is False
+
+
+@test
+def test_planting_consumes_one_seed(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    col = pg.evaluate("Math.floor(G.px / TS)")
+    row = pg.evaluate("Math.floor(G.py / TS) + 1")
+    pg.evaluate(f"setTile(G.tiles, {col}, {row}, TILE.FARMLAND)")
+    pg.evaluate("G.inv = freshInventory(); invAdd(G.inv, 'hat_lua', 3); G.crops.length = 0")
+    assert pg.evaluate(f"plantCrop({col}, {row}, 'hat_lua')") is True
+    assert pg.evaluate("invCount(G.inv, 'hat_lua')") == 2
+    assert pg.evaluate("G.crops.length") == 1
+
+
+@test
+def test_cannot_plant_on_occupied_farmland(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    col = pg.evaluate("Math.floor(G.px / TS)")
+    row = pg.evaluate("Math.floor(G.py / TS) + 1")
+    pg.evaluate(f"setTile(G.tiles, {col}, {row}, TILE.FARMLAND)")
+    pg.evaluate("G.inv = freshInventory(); invAdd(G.inv, 'hat_rau', 3); G.crops.length = 0")
+    assert pg.evaluate(f"plantCrop({col}, {row}, 'hat_rau')") is True
+    assert pg.evaluate(f"plantCrop({col}, {row}, 'hat_rau')") is False
+    assert pg.evaluate("G.crops.length") == 1
+
+
+@test
+def test_crop_grows_through_stages_by_day(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.crops.length = 0; G.crops.push({c: 10, r: 10, kind: 'lua', plantedDay: 2}); G.day = 2")
+    assert pg.evaluate("cropStage(G.crops[0])") == 0
+    pg.evaluate("G.day = 3")
+    assert pg.evaluate("cropStage(G.crops[0])") == 1
+    pg.evaluate("G.day = 5")
+    assert pg.evaluate("cropStage(G.crops[0])") == 3
+
+
+@test
+def test_harvest_before_maturity_fails(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    col = pg.evaluate("Math.floor(G.px / TS)")
+    row = pg.evaluate("Math.floor(G.py / TS) + 1")
+    pg.evaluate(f"setTile(G.tiles, {col}, {row}, TILE.FARMLAND)")
+    pg.evaluate(f"G.crops.length = 0; G.crops.push({{c: {col}, r: {row}, kind: 'lua', plantedDay: G.day}})")
+    assert pg.evaluate(f"harvestCrop({col}, {row})") is False
+    assert pg.evaluate("G.crops.length") == 1
+
+
+@test
+def test_harvest_at_maturity_grants_produce_and_clears_crop(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    col = pg.evaluate("Math.floor(G.px / TS)")
+    row = pg.evaluate("Math.floor(G.py / TS) + 1")
+    pg.evaluate(f"setTile(G.tiles, {col}, {row}, TILE.FARMLAND)")
+    pg.evaluate(f"G.inv = freshInventory(); G.crops.length = 0; G.crops.push({{c: {col}, r: {row}, kind: 'dua', plantedDay: G.day - 3}})")
+    assert pg.evaluate(f"harvestCrop({col}, {row})") is True
+    assert pg.evaluate("G.crops.length") == 0
+    assert pg.evaluate("invCount(G.inv, 'dua')") >= 2
+    assert pg.evaluate(f"getTile(G.tiles, {col}, {row})") == pg.evaluate("TILE.FARMLAND")
+
+
+@test
+def test_save_and_load_keeps_crops(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.crops.length = 0; G.crops.push({c: 12, r: 30, kind: 'rau', plantedDay: 1})")
+    pg.evaluate("saveGame()")
+    pg.evaluate("newGame(1)")
+    assert pg.evaluate("loadGame()") is True
+    assert pg.evaluate("G.crops.length") == 1
+    assert pg.evaluate("G.crops[0].kind") == 'rau'
+
+
+@test
+def test_shop_buys_seeds_and_sells_produce(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.gold = 20; G.inv = freshInventory()")
+    assert pg.evaluate("SHOP_BUY.some(x => x.item === 'hat_lua')") is True
+    assert pg.evaluate("buy('hat_lua', 2)") is True
+    assert pg.evaluate("invCount(G.inv, 'hat_lua')") == 1
+    pg.evaluate("invAdd(G.inv, 'lua', 2)")
+    assert pg.evaluate("SHOP_SELL.lua") == 2
+    assert pg.evaluate("sell('lua', 2, 2)") is True
+    assert pg.evaluate("invCount(G.inv, 'lua')") == 0
+
+
 run(TESTS)

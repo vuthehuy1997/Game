@@ -15,23 +15,28 @@ export const BIOME_SKY = {
 
 export const TILE = {
   AIR: 0, DIRT: 1, STONE: 2, BAMBOO: 3, COPPER: 4, IRON: 5, SILVER: 6, GOLD: 7,
-  WALL: 8, ROOF: 9, BRICK: 10, DOOR: 11, TORCH: 12, BENCH: 13, BEDROCK: 14,
+  WALL: 8, ROOF: 9, BRICK: 10, DOOR: 11, TORCH: 12, BENCH: 13, BEDROCK: 14, FARMLAND: 15,
 };
 export const SOLID = new Set([TILE.DIRT, TILE.STONE, TILE.BAMBOO, TILE.COPPER, TILE.IRON, TILE.SILVER, TILE.GOLD,
-  TILE.WALL, TILE.BRICK, TILE.BENCH, TILE.BEDROCK]);
+  TILE.WALL, TILE.BRICK, TILE.BENCH, TILE.BEDROCK, TILE.FARMLAND]);
 // Tile coi là "tường/mái" hợp lệ khi xét nhà (tường, mái, gạch, cửa đều tính)
 export const HOUSE_BOUND = new Set([TILE.WALL, TILE.ROOF, TILE.BRICK, TILE.DOOR]);
 
 export const HARDNESS = {
   [TILE.DIRT]: 1, [TILE.STONE]: 2, [TILE.BAMBOO]: 1, [TILE.COPPER]: 3, [TILE.IRON]: 4, [TILE.SILVER]: 5, [TILE.GOLD]: 6,
   [TILE.WALL]: 2, [TILE.ROOF]: 1, [TILE.BRICK]: 3, [TILE.DOOR]: 2, [TILE.TORCH]: 1, [TILE.BENCH]: 2, [TILE.BEDROCK]: Infinity,
+  [TILE.FARMLAND]: 1,
 };
 // Vật phẩm rơi ra khi đào vỡ một tile
 export const DROP = {
   [TILE.DIRT]: 'dat', [TILE.STONE]: 'da', [TILE.BAMBOO]: 'tre', [TILE.COPPER]: 'dong', [TILE.IRON]: 'sat',
   [TILE.SILVER]: 'bac', [TILE.GOLD]: 'vang', [TILE.WALL]: 'tuong_tre', [TILE.ROOF]: 'mai_tranh', [TILE.BRICK]: 'gach_gom',
-  [TILE.DOOR]: 'cua_tre', [TILE.TORCH]: 'duoc', [TILE.BENCH]: 'ban_che',
+  [TILE.DOOR]: 'cua_tre', [TILE.TORCH]: 'duoc', [TILE.BENCH]: 'ban_che', [TILE.FARMLAND]: 'dat',
 };
+// Hạt giống -> loại nông sản thu hoạch được
+export const SEED_TO_CROP = { hat_lua: 'lua', hat_rau: 'rau', hat_dua: 'dua' };
+export const CROP_STAGES = 4;
+export const CROP_GROW_DAYS = 3; // số ngày trôi qua để chín (giai đoạn 3)
 // Vật phẩm đặt được -> tile sẽ đặt xuống
 export const PLACE_TILE = {
   tuong_tre: TILE.WALL, mai_tranh: TILE.ROOF, gach_gom: TILE.BRICK, cua_tre: TILE.DOOR, duoc: TILE.TORCH, ban_che: TILE.BENCH,
@@ -50,6 +55,9 @@ export const ITEMS = {
   kiem_dong: { name: 'Kiếm đồng', color: '#c97a45', tool: true }, kiem_sat: { name: 'Kiếm sắt', color: '#9a8a7a', tool: true },
   ngoc_quy: { name: 'Ngọc quý', color: '#7fe0ff' },
   kiem_ngoc: { name: 'Kiếm Ngọc', color: '#7fe0ff', tool: true },
+  hat_lua: { name: 'Hạt lúa', color: '#e9c349', seed: true }, hat_rau: { name: 'Hạt rau', color: '#5a9a3a', seed: true },
+  hat_dua: { name: 'Hạt dưa', color: '#4a8a4a', seed: true },
+  lua: { name: 'Lúa', color: '#e9c349' }, rau: { name: 'Rau', color: '#5a9a3a' }, dua: { name: 'Dưa', color: '#4a8a4a' },
 };
 export const TOOL_POWER = { cuoc_tre: 3, cuoc_da: 5, cuoc_dong: 7, cuoc_sat: 10 };
 export const WEAPON_DMG = { giao_tre: 8, kiem_da: 12, kiem_dong: 18, kiem_sat: 26, kiem_ngoc: 36 };
@@ -89,8 +97,9 @@ export const QUESTS = [
   { id: 'q3', text: 'Đào 3 quặng sắt', type: 'mine', item: 'sat', need: 3, reward: { gold: 50, item: 'cuoc_sat' } },
 ];
 
-export const SHOP_BUY = [{ item: 'duoc', price: 3 }, { item: 'gach_gom', price: 4 }, { item: 'tre', price: 1 }];
-export const SHOP_SELL = { dong: 2, sat: 3, bac: 5, vang: 8 };
+export const SHOP_BUY = [{ item: 'duoc', price: 3 }, { item: 'gach_gom', price: 4 }, { item: 'tre', price: 1 },
+  { item: 'hat_lua', price: 2 }, { item: 'hat_rau', price: 3 }, { item: 'hat_dua', price: 4 }];
+export const SHOP_SELL = { dong: 2, sat: 3, bac: 5, vang: 8, lua: 2, rau: 3, dua: 4 };
 
 export const HOTBAR_SLOTS = 8;
 export const PLAYER_W = 16, PLAYER_H = 40, GRAV = 2300, MOVE_SPEED = 230, JUMP_V = 760, REACH = 5 * TS;

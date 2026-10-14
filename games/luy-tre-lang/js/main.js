@@ -10,7 +10,7 @@ import * as WLD from './world.js';
 import * as ST from './state.js';
 import { G, newGame, saveGame, loadGame, invCount } from './state.js';
 import * as PL from './player.js';
-import { heldItem, hitTile, placeTile, craft, nearBench, nearNpc, claimQuest, buy, sell } from './player.js';
+import { heldItem, hitTile, placeTile, craft, nearBench, nearNpc, claimQuest, buy, sell, tillSoil, plantCrop, harvestCrop } from './player.js';
 import * as MB from './mobs.js';
 import { attackMobs } from './mobs.js';
 import * as FL from './flow.js';
@@ -37,10 +37,15 @@ function screenToWorld(e) {
 cv.addEventListener('pointerdown', e => {
   const { wx, wy } = screenToWorld(e);
   const c = Math.floor(wx / TS), r = Math.floor(wy / TS);
-  if (e.button === 2 || placeMode) { placeTile(c, r, heldItem()); return; }
+  if (e.button === 2 || placeMode) {
+    const item = heldItem();
+    if (D.SEED_TO_CROP[item]) { plantCrop(c, r, item); return; }
+    placeTile(c, r, item); return;
+  }
   if (G.npc.active && Math.hypot(G.npc.x - wx, G.npc.y - wy) < 28) { openShop(); return; }
   const mob = G.mobs.find(m => Math.hypot(m.x - wx, m.y - wy) < 24);
   if (mob) { attackMobs(); return; }
+  if (harvestCrop(c, r)) return;
   hitTile(c, r);
 });
 
@@ -127,7 +132,7 @@ function renderHotbar() {
   });
 }
 
-const keymap = { KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right', Space: 'jump', KeyW: 'jump', ArrowUp: 'jump', KeyE: 'craft', KeyF: 'trade' };
+const keymap = { KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right', Space: 'jump', KeyW: 'jump', ArrowUp: 'jump', KeyE: 'craft', KeyF: 'trade', KeyT: 'till' };
 for (let i = 0; i < 8; i++) keymap['Digit' + (i + 1)] = 'slot' + i;
 bindKeys(keymap, {
   onPress: k => {
@@ -143,7 +148,11 @@ mountHomeLink(stage);
 loadGame();
 
 let paused = false;
-function update(dt) { if (!paused) tick(dt); }
+function update(dt) {
+  if (paused) return;
+  if (pressed.has('till')) tillSoil(Math.floor(G.px / TS) + G.face, Math.floor(G.py / TS));
+  tick(dt);
+}
 function frame() { render(cv.getContext('2d')); btnTrade.hidden = !nearNpc(); renderHotbar(); }
 
 setInterval(saveGame, 5000);

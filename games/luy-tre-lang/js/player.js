@@ -4,7 +4,7 @@ import { tone } from '../../../platform/core/audio.js';
 import { clamp } from '../../../platform/core/util.js';
 import {
   TS, COLS, ROWS, TILE, HARDNESS, DROP, PLACE_TILE, ITEMS, RECIPES, QUESTS, TOOL_POWER, WEAPON_DMG, HAND_POWER, HAND_DMG,
-  PLAYER_W, PLAYER_H, GRAV, MOVE_SPEED, JUMP_V, REACH, BENCH_RADIUS,
+  PLAYER_W, PLAYER_H, GRAV, MOVE_SPEED, JUMP_V, REACH, BENCH_RADIUS, SEED_TO_CROP, CROP_GROW_DAYS,
 } from './data.js';
 import { G, invAdd, invRemove, invCount } from './state.js';
 import { getTile, setTile, isSolid, findHouse, checkHouse } from './world.js';
@@ -82,6 +82,47 @@ export function placeTile(c, r, item) {
   setTile(G.tiles, c, r, PLACE_TILE[item]);
   tone(260, .06, 'triangle', .05);
   maybeSpawnNpc();
+  return true;
+}
+
+// Cày đất: ô (c,r) phải là DIRT, ô phía trên trống, đang cầm cuốc bất kỳ.
+export function tillSoil(c, r) {
+  if (!inReach(c, r)) return false;
+  if (getTile(G.tiles, c, r) !== TILE.DIRT) return false;
+  if (getTile(G.tiles, c, r - 1) !== TILE.AIR) return false;
+  const item = heldItem();
+  if (!item || !item.startsWith('cuoc')) return false;
+  setTile(G.tiles, c, r, TILE.FARMLAND);
+  tone(240, .06, 'triangle', .05);
+  return true;
+}
+
+export function cropStage(crop) {
+  return Math.max(0, Math.min(CROP_GROW_DAYS, G.day - crop.plantedDay));
+}
+
+export function plantCrop(c, r, seedItem) {
+  if (!SEED_TO_CROP[seedItem]) return false;
+  if (!inReach(c, r)) return false;
+  if (getTile(G.tiles, c, r) !== TILE.FARMLAND) return false;
+  if (G.crops.some(cr => cr.c === c && cr.r === r)) return false;
+  if (invCount(G.inv, seedItem) <= 0) return false;
+  invRemove(G.inv, seedItem, 1);
+  G.crops.push({ c, r, kind: SEED_TO_CROP[seedItem], plantedDay: G.day });
+  tone(300, .06, 'triangle', .05);
+  return true;
+}
+
+export function harvestCrop(c, r) {
+  if (!inReach(c, r)) return false;
+  const idx = G.crops.findIndex(cr => cr.c === c && cr.r === r);
+  if (idx < 0) return false;
+  const crop = G.crops[idx];
+  if (cropStage(crop) < CROP_GROW_DAYS) return false;
+  const qty = Math.random() < .5 ? 2 : 3;
+  invAdd(G.inv, crop.kind, qty);
+  G.crops.splice(idx, 1);
+  tone(500, .08, 'square', .05);
   return true;
 }
 

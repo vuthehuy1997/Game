@@ -6,7 +6,7 @@ export const TILE_COLOR = {
   [TILE.DIRT]: '#6b4a2e', [TILE.STONE]: '#787c82', [TILE.BAMBOO]: '#6fae46',
   [TILE.COPPER]: '#787c82', [TILE.IRON]: '#787c82', [TILE.SILVER]: '#787c82', [TILE.GOLD]: '#787c82',
   [TILE.WALL]: '#9a7a4a', [TILE.ROOF]: '#c9a54a', [TILE.BRICK]: '#b5583a', [TILE.DOOR]: '#6b4a2a',
-  [TILE.BENCH]: '#5a4228', [TILE.BEDROCK]: '#2a2420',
+  [TILE.BENCH]: '#5a4228', [TILE.BEDROCK]: '#2a2420', [TILE.FARMLAND]: '#5a3f24',
 };
 const ORE_FLECK = {
   [TILE.COPPER]: '#e08a4a', [TILE.IRON]: '#d8dde2', [TILE.SILVER]: '#f0f4f8', [TILE.GOLD]: '#ffd93a',
@@ -17,6 +17,13 @@ export function drawTile(c, code, x, y, s, grassTop) {
   if (code === TILE.TORCH) {
     c.fillStyle = '#6b4a2a'; c.fillRect(x + s * .44, y + s * .3, s * .12, s * .7);
     ell(c, x + s * .5, y + s * .22, s * .22, s * .2, '#ffb23a');
+    return;
+  }
+  if (code === TILE.FARMLAND) {
+    c.fillStyle = TILE_COLOR[code]; c.fillRect(x, y, s + .6, s + .6);
+    c.strokeStyle = shade(TILE_COLOR[code], -22); c.lineWidth = 1; c.strokeRect(x + .5, y + .5, s - 1, s - 1);
+    c.strokeStyle = shade(TILE_COLOR[code], -32); c.lineWidth = 1.2;
+    for (let i = 1; i < 4; i++) { c.beginPath(); c.moveTo(x + s * i / 4, y + s * .18); c.lineTo(x + s * i / 4, y + s * .92); c.stroke(); }
     return;
   }
   c.fillStyle = TILE_COLOR[code] || '#444';
@@ -68,6 +75,22 @@ export function drawTile(c, code, x, y, s, grassTop) {
     c.strokeStyle = shade('#b5583a', -35); c.lineWidth = 1;
     c.beginPath(); c.moveTo(x, y + s * .33); c.lineTo(x + s, y + s * .33); c.moveTo(x, y + s * .66); c.lineTo(x + s, y + s * .66); c.stroke();
     c.beginPath(); c.moveTo(x + s * .5, y); c.lineTo(x + s * .5, y + s * .33); c.moveTo(x + s * .2, y + s * .33); c.lineTo(x + s * .2, y + s * .66); c.moveTo(x + s * .75, y + s * .66); c.lineTo(x + s * .75, y + s); c.stroke();
+  }
+}
+
+const CROP_COLOR = { lua: '#e9c349', rau: '#5a9a3a', dua: '#4a8a4a' };
+// Cây trồng trên 1 ô FARMLAND: lớn dần theo stage (0..3), chín (stage 3) ra quả/bông rõ rệt
+export function drawCrop(c, kind, stage, x, y, s) {
+  const cx = x + s / 2, baseY = y + s * .95, h = (stage + 1) / 4 * s * .85;
+  c.strokeStyle = '#3a6a2a'; c.lineWidth = Math.max(1.4, s * .07);
+  c.beginPath(); c.moveTo(cx, baseY); c.lineTo(cx, baseY - h); c.stroke();
+  const col = CROP_COLOR[kind] || '#e9c349';
+  if (stage >= 3) {
+    ell(c, cx, baseY - h, s * .22, s * .18, col);
+    c.strokeStyle = shade(col, -30); c.lineWidth = 1; c.stroke();
+  } else if (stage >= 1) {
+    c.strokeStyle = shade(col, 10); c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(cx - s * .1, baseY - h * .6); c.lineTo(cx, baseY - h * .82); c.lineTo(cx + s * .1, baseY - h * .6); c.stroke();
   }
 }
 
@@ -140,6 +163,23 @@ export function drawItemIcon(c, id, cx, cy, size) {
   } else if (id === 'ban_che') {
     c.fillStyle = col; rr(c, -s * .34, -s * .1, s * .68, s * .3, s * .05); c.fill();
     c.fillStyle = shade(col, -25); c.fillRect(-s * .28, s * .2, s * .08, s * .18); c.fillRect(s * .2, s * .2, s * .08, s * .18);
+  } else if (def.seed) {
+    c.fillStyle = '#d8c9a0'; rr(c, -s * .28, -s * .34, s * .56, s * .6, s * .06); c.fill();
+    c.strokeStyle = shade('#d8c9a0', -30); c.lineWidth = 1; c.stroke();
+    ell(c, 0, -s * .02, s * .13, s * .13, col);
+  } else if (id === 'lua') {
+    c.strokeStyle = col; c.lineWidth = s * .05;
+    for (const dx of [-.14, 0, .14]) { c.beginPath(); c.moveTo(s * dx, s * .34); c.lineTo(s * dx * 1.4, -s * .3); c.stroke(); }
+    c.fillStyle = shade(col, 25);
+    for (const dx of [-.14, 0, .14]) ell(c, s * dx * 1.4, -s * .32, s * .07, s * .1, shade(col, 25));
+  } else if (id === 'rau') {
+    c.fillStyle = col;
+    for (const [dx, dy] of [[0, -.3], [-.22, -.05], [.22, -.05], [0, .15]]) ell(c, s * dx, s * dy, s * .2, s * .16, col);
+    c.fillStyle = shade(col, -20); c.fillRect(-s * .03, s * .1, s * .06, s * .3);
+  } else if (id === 'dua') {
+    ell(c, 0, 0, s * .34, s * .3, col);
+    c.strokeStyle = shade(col, -30); c.lineWidth = 1;
+    for (const dy of [-.1, 0, .1]) { c.beginPath(); c.moveTo(-s * .32, s * dy); c.lineTo(s * .32, s * dy); c.stroke(); }
   } else if (id === 'ngoc_quy') {
     c.fillStyle = col;
     c.beginPath(); c.moveTo(0, -s * .38); c.lineTo(s * .28, -s * .05); c.lineTo(s * .16, s * .36); c.lineTo(-s * .16, s * .36); c.lineTo(-s * .28, -s * .05); c.closePath(); c.fill();

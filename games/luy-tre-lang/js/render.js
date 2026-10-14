@@ -6,8 +6,8 @@ import { FD, FB } from '../../../platform/ui/theme.js';
 import { COLS, ROWS, TS, TILE, WEAPON_LOOK, BIOME_SKY, BIOME_NAME, MOB_DEF } from './data.js';
 import { G } from './state.js';
 import { getTile, biomeAt } from './world.js';
-import { drawTile, drawMob, drawBackdrop } from './art.js';
-import { heldItem } from './player.js';
+import { drawTile, drawMob, drawBackdrop, drawCrop } from './art.js';
+import { heldItem, cropStage } from './player.js';
 
 export const W = 960, H = 540;
 const HERO = { skin: '#f6d2ae', hair: '#1c1410', hat: 'nonla', shirt: '#2f6b57', trim: '#e9b949', pants: '#2a2630', belt: '#e9b949' };
@@ -35,6 +35,10 @@ export function render(ctx) {
     const code = getTile(G.tiles, c, r); if (code === TILE.AIR) continue;
     const grassTop = getTile(G.tiles, c, r - 1) === TILE.AIR;
     drawTile(ctx, code, c * TS - cam.x, r * TS - cam.y, TS, grassTop);
+  }
+  for (const crop of G.crops) {
+    if (crop.c < c0 - 1 || crop.c > c1 + 1 || crop.r < r0 - 1 || crop.r > r1 + 1) continue;
+    drawCrop(ctx, crop.kind, cropStage(crop), crop.c * TS - cam.x, crop.r * TS - cam.y, TS);
   }
   if (night) { ctx.fillStyle = 'rgba(6,10,30,.38)'; ctx.fillRect(0, 0, W, H); }
 
