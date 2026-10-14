@@ -1,5 +1,12 @@
 // Sinh thế giới theo seed, truy cập/sửa tile, kiểm tra nhà hợp lệ, nén lưu dạng RLE.
-import { COLS, ROWS, TS, TILE, SOLID, HOUSE_BOUND } from './data.js';
+import { COLS, ROWS, TS, TILE, SOLID, HOUSE_BOUND, BAND_W, BIOME } from './data.js';
+
+// Khu vực theo cột: 3 dải liên tiếp cố định trái -> phải
+export function biomeAt(col) {
+  if (col < BAND_W) return BIOME.PLAINS;
+  if (col < BAND_W * 2) return BIOME.BAMBOO_FOREST;
+  return BIOME.MOUNTAIN;
+}
 
 export function mulberry32(seed) {
   let a = seed >>> 0;
@@ -17,21 +24,27 @@ export function makeWorld(seed) {
   const jitter = []; for (let c = 0; c < COLS; c++) jitter.push(rnd());
   const oreRoll = []; for (let i = 0; i < COLS * ROWS; i++) oreRoll.push(rnd());
 
-  const surf = c => Math.round(28 + Math.sin(c * 0.07) * 4 + Math.sin(c * 0.023 + 1.7) * 6 + (jitter[c] - .5) * 4);
+  const surf = c => {
+    const amp = biomeAt(c) === BIOME.MOUNTAIN ? 1.8 : 1;
+    return Math.round(28 + Math.sin(c * 0.07) * 4 * amp + Math.sin(c * 0.023 + 1.7) * 6 * amp + (jitter[c] - .5) * 4 * amp);
+  };
 
   for (let c = 0; c < COLS; c++) {
+    const biome = biomeAt(c);
     const s = Math.max(6, Math.min(ROWS - 20, surf(c)));
+    const dirtThick = biome === BIOME.BAMBOO_FOREST ? 7 : 5;
+    const oreBoost = biome === BIOME.MOUNTAIN ? 1.5 : 1; // núi: sắt/bạc nhiều hơn
     for (let r = 0; r < ROWS; r++) {
       const i = r * COLS + c;
       if (c === 0 || c === COLS - 1 || r === ROWS - 1) { tiles[i] = TILE.BEDROCK; continue; }
       if (r < s) { tiles[i] = TILE.AIR; continue; }
-      if (r < s + 5) { tiles[i] = TILE.DIRT; continue; }
+      if (r < s + dirtThick) { tiles[i] = TILE.DIRT; continue; }
       let t = TILE.STONE;
       const d = r - s;
       const roll = oreRoll[i];
       if (d >= 6 && d < 16 && roll < .10) t = TILE.COPPER;
-      else if (d >= 16 && d < 28 && roll < .09) t = TILE.IRON;
-      else if (d >= 28 && d < 40 && roll < .07) t = TILE.SILVER;
+      else if (d >= 16 && d < 28 && roll < .09 * oreBoost) t = TILE.IRON;
+      else if (d >= 28 && d < 40 && roll < .07 * oreBoost) t = TILE.SILVER;
       else if (d >= 40 && roll < .05) t = TILE.GOLD;
       // hang động: không đục ngay sát mặt đất để tránh sập nền
       if (d >= 6) {
@@ -40,8 +53,10 @@ export function makeWorld(seed) {
       }
       tiles[i] = t;
     }
-    // Bụi tre trên mặt đất, cách quãng
-    if (c % 7 === 3 && s - 3 >= 1) {
+    // Bụi tre trên mặt đất: rừng tre rậm dày hơn hẳn các khu vực khác
+    const bambooEvery = biome === BIOME.BAMBOO_FOREST ? 3 : 7;
+    const bambooPhase = biome === BIOME.BAMBOO_FOREST ? 1 : 3;
+    if (c % bambooEvery === bambooPhase && s - 3 >= 1) {
       for (let k = 1; k <= 3; k++) tiles[(s - k) * COLS + c] = TILE.BAMBOO;
     }
   }

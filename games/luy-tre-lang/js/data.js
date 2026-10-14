@@ -3,6 +3,16 @@ export const COLS = 160, ROWS = 90, TS = 24;
 export const DAY_LEN = 90; // giây mỗi ngày
 export const STORE_KEY = 'luy-tre-lang-v1';
 
+// Khu vực: chia thế giới thành 3 dải cột liên tiếp, cố định trái -> phải
+export const BAND_W = Math.ceil(COLS / 3);
+export const BIOME = { PLAINS: 'plains', BAMBOO_FOREST: 'bamboo_forest', MOUNTAIN: 'mountain' };
+export const BIOME_NAME = { plains: 'Đồng Bằng', bamboo_forest: 'Rừng Tre Rậm', mountain: 'Núi Đá Vôi' };
+export const BIOME_SKY = {
+  plains: { day: ['#7ec8e3', '#cfe8d0'], night: ['#0a1430', '#1a2440'], hill: 'rgba(130,180,110,.35)' },
+  bamboo_forest: { day: ['#79c48a', '#def0cf'], night: ['#08201a', '#13332a'], hill: 'rgba(60,110,55,.45)' },
+  mountain: { day: ['#92a8d6', '#e4ecf5'], night: ['#121a34', '#222c48'], hill: 'rgba(120,130,155,.4)' },
+};
+
 export const TILE = {
   AIR: 0, DIRT: 1, STONE: 2, BAMBOO: 3, COPPER: 4, IRON: 5, SILVER: 6, GOLD: 7,
   WALL: 8, ROOF: 9, BRICK: 10, DOOR: 11, TORCH: 12, BENCH: 13, BEDROCK: 14,
@@ -38,11 +48,13 @@ export const ITEMS = {
   cuoc_dong: { name: 'Cuốc đồng', color: '#c97a45', tool: true }, cuoc_sat: { name: 'Cuốc sắt', color: '#9a8a7a', tool: true },
   giao_tre: { name: 'Giáo tre', color: '#7fae4a', tool: true }, kiem_da: { name: 'Kiếm đá', color: '#8a8a8f', tool: true },
   kiem_dong: { name: 'Kiếm đồng', color: '#c97a45', tool: true }, kiem_sat: { name: 'Kiếm sắt', color: '#9a8a7a', tool: true },
+  ngoc_quy: { name: 'Ngọc quý', color: '#7fe0ff' },
+  kiem_ngoc: { name: 'Kiếm Ngọc', color: '#7fe0ff', tool: true },
 };
 export const TOOL_POWER = { cuoc_tre: 3, cuoc_da: 5, cuoc_dong: 7, cuoc_sat: 10 };
-export const WEAPON_DMG = { giao_tre: 8, kiem_da: 12, kiem_dong: 18, kiem_sat: 26 };
+export const WEAPON_DMG = { giao_tre: 8, kiem_da: 12, kiem_dong: 18, kiem_sat: 26, kiem_ngoc: 36 };
 export const HAND_POWER = 1, HAND_DMG = 3;
-export const WEAPON_LOOK = { giao_tre: 'spear', kiem_da: 'saber', kiem_dong: 'saber', kiem_sat: 'saber',
+export const WEAPON_LOOK = { giao_tre: 'spear', kiem_da: 'saber', kiem_dong: 'saber', kiem_sat: 'saber', kiem_ngoc: 'saber',
   cuoc_tre: 'club', cuoc_da: 'club', cuoc_dong: 'club', cuoc_sat: 'club' };
 
 export const RECIPES = [
@@ -60,12 +72,16 @@ export const RECIPES = [
   { id: 'kiem_dong', out: 'kiem_dong', qty: 1, need: { dong: 3, tre: 1 }, bench: true },
   { id: 'cuoc_sat', out: 'cuoc_sat', qty: 1, need: { sat: 3, tre: 1 }, bench: true },
   { id: 'kiem_sat', out: 'kiem_sat', qty: 1, need: { sat: 3, tre: 1 }, bench: true },
+  { id: 'kiem_ngoc', out: 'kiem_ngoc', qty: 1, need: { ngoc_quy: 1, sat: 2 }, bench: true },
 ];
 
 export const MOB_DEF = {
   ma_troi: { name: 'Ma trơi', hp: 16, dmg: 6, speed: 70, fly: true, color: '#bfe6a0' },
   quai_rung: { name: 'Quái rừng', hp: 24, dmg: 9, speed: 55, fly: false, color: '#5a3a2a' },
+  boss_vua_quai: { name: 'Vua Quái Rừng', hp: 220, dmg: 18, speed: 45, fly: false, color: '#3a1f14',
+    boss: true, lungeDmg: 36, lungeEvery: 3 },
 };
+export const BOSS_EVERY_DAYS = 5;
 
 export const QUESTS = [
   { id: 'q1', text: 'Đào 5 quặng đồng', type: 'mine', item: 'dong', need: 5, reward: { gold: 30 } },

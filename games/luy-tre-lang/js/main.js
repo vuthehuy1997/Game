@@ -17,6 +17,7 @@ import * as FL from './flow.js';
 import { tick } from './flow.js';
 import * as RD from './render.js';
 import { render, getCamera, W, H } from './render.js';
+import { drawItemIcon } from './art.js';
 
 const cv = $('cv'), stage = $('stage');
 const hotbarEl = $('hotbar'), craftPanel = $('craftPanel'), craftList = $('craftList');
@@ -55,6 +56,12 @@ function toggle(panel, fill) {
   if (open) { panel.hidden = false; fill(); }
 }
 
+function iconCanvas(itemId, size = 28) {
+  const cv = document.createElement('canvas'); cv.className = 'icon'; cv.width = size; cv.height = size;
+  if (itemId) drawItemIcon(cv.getContext('2d'), itemId, size / 2, size / 2, size * .92);
+  return cv;
+}
+
 function fmtNeed(need) { return Object.entries(need).map(([it, q]) => `x${q} ${ITEMS[it].name}`).join(', '); }
 function renderCraftList() {
   craftList.innerHTML = '';
@@ -62,7 +69,10 @@ function renderCraftList() {
   for (const rec of RECIPES) {
     const ok = Object.entries(rec.need).every(([it, q]) => invCount(G.inv, it) >= q) && (!rec.bench || nearBench());
     const row = document.createElement('div'); row.className = 'row';
-    row.innerHTML = `<span><b>${ITEMS[rec.out].name}</b> x${rec.qty}<small>${fmtNeed(rec.need)}${rec.bench ? ' · cần bàn chế tác' : ''}</small></span>`;
+    row.appendChild(iconCanvas(rec.out));
+    const span = document.createElement('span');
+    span.innerHTML = `<b>${ITEMS[rec.out].name}</b> x${rec.qty}<small>${fmtNeed(rec.need)}${rec.bench ? ' · cần bàn chế tác' : ''}</small>`;
+    row.appendChild(span);
     const b = document.createElement('button'); b.className = 'btn'; b.textContent = 'Làm'; b.disabled = !ok;
     b.addEventListener('click', () => { craft(rec.id); renderCraftList(); });
     row.appendChild(b); craftList.appendChild(row);
@@ -75,7 +85,9 @@ function renderShopList() {
   const h = document.createElement('h2'); h.textContent = 'Thương nhân · ' + G.gold + ' vàng'; shopList.appendChild(h);
   for (const it of SHOP_BUY) {
     const row = document.createElement('div'); row.className = 'row';
-    row.innerHTML = `<span><b>${ITEMS[it.item].name}</b><small>${it.price} vàng</small></span>`;
+    row.appendChild(iconCanvas(it.item));
+    const span = document.createElement('span'); span.innerHTML = `<b>${ITEMS[it.item].name}</b><small>${it.price} vàng</small>`;
+    row.appendChild(span);
     const b = document.createElement('button'); b.className = 'btn'; b.textContent = 'Mua'; b.disabled = G.gold < it.price;
     b.addEventListener('click', () => { buy(it.item, it.price); renderShopList(); });
     row.appendChild(b); shopList.appendChild(row);
@@ -83,7 +95,9 @@ function renderShopList() {
   for (const [item, price] of Object.entries(SHOP_SELL)) {
     const have = invCount(G.inv, item);
     const row = document.createElement('div'); row.className = 'row';
-    row.innerHTML = `<span><b>${ITEMS[item].name}</b><small>bán ${price} vàng/cái · đang có ${have}</small></span>`;
+    row.appendChild(iconCanvas(item));
+    const span = document.createElement('span'); span.innerHTML = `<b>${ITEMS[item].name}</b><small>bán ${price} vàng/cái · đang có ${have}</small>`;
+    row.appendChild(span);
     const b = document.createElement('button'); b.className = 'btn'; b.textContent = 'Bán'; b.disabled = have <= 0;
     b.addEventListener('click', () => { sell(item, price, 1); renderShopList(); });
     row.appendChild(b); shopList.appendChild(row);
@@ -91,7 +105,9 @@ function renderShopList() {
   for (const q of G.quests) {
     const def = QUESTS.find(x => x.id === q.id);
     const row = document.createElement('div'); row.className = 'row';
-    row.innerHTML = `<span><b>${def.text}</b><small>${q.have}/${q.need}${q.claimed ? ' · đã nhận' : ''}</small></span>`;
+    if (def.item) row.appendChild(iconCanvas(def.item));
+    const span = document.createElement('span'); span.innerHTML = `<b>${def.text}</b><small>${q.have}/${q.need}${q.claimed ? ' · đã nhận' : ''}</small>`;
+    row.appendChild(span);
     const b = document.createElement('button'); b.className = 'btn'; b.textContent = 'Nhận'; b.disabled = q.claimed || q.have < q.need;
     b.addEventListener('click', () => { claimQuest(q.id); renderShopList(); });
     row.appendChild(b); shopList.appendChild(row);
@@ -104,7 +120,7 @@ function renderHotbar() {
   hotbarEl.innerHTML = '';
   G.inv.forEach((s, i) => {
     const b = document.createElement('button'); b.className = 'slot' + (i === G.sel ? ' sel' : '');
-    const icon = document.createElement('i'); icon.style.background = s ? ITEMS[s.item].color : 'transparent'; b.appendChild(icon);
+    b.appendChild(iconCanvas(s ? s.item : null));
     if (s) { const n = document.createElement('b'); n.textContent = s.count; b.appendChild(n); }
     b.addEventListener('pointerdown', e => { e.preventDefault(); G.sel = i; });
     hotbarEl.appendChild(b);

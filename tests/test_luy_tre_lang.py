@@ -251,4 +251,76 @@ def test_mobile_viewport_layout(pg, browser, base):
     assert pg.locator('#hotbar').count() == 1
 
 
+@test
+def test_biome_bands_match_expected(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    assert pg.evaluate("biomeAt(0)") == 'plains'
+    assert pg.evaluate("biomeAt(80)") == 'bamboo_forest'
+    assert pg.evaluate("biomeAt(140)") == 'mountain'
+
+
+@test
+def test_boss_spawns_on_fifth_night_once(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.day = 5; G.time = 0.5; G.mobs.length = 0; G.bossSpawnedDay = 0")
+    assert pg.evaluate("maybeSpawnBoss()") is True
+    assert pg.evaluate("G.mobs.filter(m => m.kind === 'boss_vua_quai').length") == 1
+    assert pg.evaluate("maybeSpawnBoss()") is False
+    assert pg.evaluate("G.mobs.filter(m => m.kind === 'boss_vua_quai').length") == 1
+
+
+@test
+def test_boss_does_not_spawn_on_non_multiple_day(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.day = 6; G.time = 0.5; G.mobs.length = 0; G.bossSpawnedDay = 0")
+    assert pg.evaluate("maybeSpawnBoss()") is False
+    assert pg.evaluate("G.mobs.length") == 0
+
+
+@test
+def test_boss_lunge_deals_double_damage(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    hp0 = pg.evaluate("G.hp = 200; G.hurt = 0; 200")
+    pg.evaluate("""() => {
+      G.mobs.push({ kind: 'boss_vua_quai', hp: 220, x: G.px, y: G.py, baseY: G.py, atkCd: 0, lungeT: 0 });
+      updateMobs(0.016);
+    }""")
+    assert pg.evaluate("G.hp") == hp0 - 36
+
+
+@test
+def test_boss_normal_contact_deals_normal_damage_outside_lunge_window(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    hp0 = pg.evaluate("G.hp = 200; G.hurt = 0; 200")
+    pg.evaluate("""() => {
+      G.mobs.push({ kind: 'boss_vua_quai', hp: 220, x: G.px, y: G.py, baseY: G.py, atkCd: 0, lungeT: 3 });
+      updateMobs(0.016);
+    }""")
+    assert pg.evaluate("G.hp") == hp0 - 18
+
+
+@test
+def test_kill_boss_grants_gold_and_rare_gem(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    gold0 = pg.evaluate("G.gold")
+    pg.evaluate("G.mobs.push({ kind: 'boss_vua_quai', hp: 1, x: G.px, y: G.py, baseY: G.py, atkCd: 0, lungeT: 3 })")
+    assert pg.evaluate("attackMobs()") is True
+    assert pg.evaluate("G.mobs.length") == 0
+    assert pg.evaluate("G.gold") == gold0 + 150
+    assert pg.evaluate("invCount(G.inv, 'ngoc_quy')") == 1
+
+
+@test
+def test_kiem_ngoc_recipe_needs_gem_and_bench(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("G.inv = freshInventory(); invAdd(G.inv, 'ngoc_quy', 1); invAdd(G.inv, 'sat', 2)")
+    assert pg.evaluate("craft('kiem_ngoc')") is False
+    col = pg.evaluate("Math.floor(G.px / TS)")
+    row = pg.evaluate("Math.floor(G.py / TS) - 1")
+    pg.evaluate(f"setTile(G.tiles, {col}, {row}, TILE.BENCH)")
+    assert pg.evaluate("craft('kiem_ngoc')") is True
+    assert pg.evaluate("invCount(G.inv, 'kiem_ngoc')") == 1
+    assert pg.evaluate("WEAPON_DMG.kiem_ngoc") == 36
+
+
 run(TESTS)
