@@ -3,22 +3,25 @@ export const COLS = 160, ROWS = 90, TS = 24;
 export const DAY_LEN = 90; // giây mỗi ngày
 export const STORE_KEY = 'luy-tre-lang-v1';
 
-// Khu vực: chia thế giới thành 3 dải cột liên tiếp, cố định trái -> phải
-export const BAND_W = Math.ceil(COLS / 3);
-export const BIOME = { PLAINS: 'plains', BAMBOO_FOREST: 'bamboo_forest', MOUNTAIN: 'mountain' };
-export const BIOME_NAME = { plains: 'Đồng Bằng', bamboo_forest: 'Rừng Tre Rậm', mountain: 'Núi Đá Vôi' };
+// Khu vực: chia thế giới thành 4 dải cột liên tiếp, cố định trái -> phải
+export const BAND_W = Math.ceil(COLS / 4);
+export const BIOME = { PLAINS: 'plains', BAMBOO_FOREST: 'bamboo_forest', SWAMP: 'swamp', MOUNTAIN: 'mountain' };
+export const BIOME_NAME = { plains: 'Đồng Bằng', bamboo_forest: 'Rừng Tre Rậm', swamp: 'Đầm Lầy', mountain: 'Núi Đá Vôi' };
 export const BIOME_SKY = {
   plains: { day: ['#7ec8e3', '#cfe8d0'], night: ['#0a1430', '#1a2440'], hill: 'rgba(130,180,110,.35)' },
   bamboo_forest: { day: ['#79c48a', '#def0cf'], night: ['#08201a', '#13332a'], hill: 'rgba(60,110,55,.45)' },
+  swamp: { day: ['#8aa29c', '#cdd9cf'], night: ['#141f1c', '#233530'], hill: 'rgba(90,120,110,.4)' },
   mountain: { day: ['#92a8d6', '#e4ecf5'], night: ['#121a34', '#222c48'], hill: 'rgba(120,130,155,.4)' },
 };
 
 export const TILE = {
   AIR: 0, DIRT: 1, STONE: 2, BAMBOO: 3, COPPER: 4, IRON: 5, SILVER: 6, GOLD: 7,
   WALL: 8, ROOF: 9, BRICK: 10, DOOR: 11, TORCH: 12, BENCH: 13, BEDROCK: 14, FARMLAND: 15,
+  WATER: 16, REED: 17,
 };
 export const SOLID = new Set([TILE.DIRT, TILE.STONE, TILE.BAMBOO, TILE.COPPER, TILE.IRON, TILE.SILVER, TILE.GOLD,
   TILE.WALL, TILE.BRICK, TILE.BENCH, TILE.BEDROCK, TILE.FARMLAND]);
+export const WATER_SPEED_MULT = .6, WATER_JUMP_MULT = .7;
 // Tile coi là "tường/mái" hợp lệ khi xét nhà (tường, mái, gạch, cửa đều tính)
 export const HOUSE_BOUND = new Set([TILE.WALL, TILE.ROOF, TILE.BRICK, TILE.DOOR]);
 

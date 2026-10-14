@@ -255,8 +255,56 @@ def test_mobile_viewport_layout(pg, browser, base):
 def test_biome_bands_match_expected(pg, browser, base):
     pg.goto(root(base) + URL); pg.wait_for_timeout(300)
     assert pg.evaluate("biomeAt(0)") == 'plains'
-    assert pg.evaluate("biomeAt(80)") == 'bamboo_forest'
-    assert pg.evaluate("biomeAt(140)") == 'mountain'
+    assert pg.evaluate("biomeAt(50)") == 'bamboo_forest'
+    assert pg.evaluate("biomeAt(90)") == 'swamp'
+    assert pg.evaluate("biomeAt(150)") == 'mountain'
+
+
+@test
+def test_water_reduces_move_speed_and_jump(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("""() => {
+      const col = Math.floor(G.px / TS), row = Math.floor((G.py - 1) / TS);
+      setTile(G.tiles, col, row, TILE.AIR);
+    }""")
+    pg.evaluate("held.add('right')")
+    pg.evaluate("physicsStep(1 / 60)")
+    vx_normal = pg.evaluate("G.vx")
+    pg.evaluate("""() => {
+      const col = Math.floor(G.px / TS), row = Math.floor((G.py - 1) / TS);
+      setTile(G.tiles, col, row, TILE.WATER);
+    }""")
+    pg.evaluate("physicsStep(1 / 60)")
+    vx_water = pg.evaluate("G.vx")
+    pg.evaluate("held.delete('right')")
+    assert abs(vx_water) < abs(vx_normal) * .7, (vx_normal, vx_water)
+
+    pg.evaluate("G.grounded = true; pressed.add('jump')")
+    pg.evaluate("physicsStep(1 / 60)")
+    vy_water = pg.evaluate("G.vy")
+    pg.evaluate("pressed.delete('jump')")
+    pg.evaluate("""() => {
+      const col = Math.floor(G.px / TS), row = Math.floor((G.py - 1) / TS);
+      setTile(G.tiles, col, row, TILE.AIR);
+    }""")
+    pg.evaluate("G.grounded = true; pressed.add('jump')")
+    pg.evaluate("physicsStep(1 / 60)")
+    vy_normal = pg.evaluate("G.vy")
+    pg.evaluate("pressed.delete('jump')")
+    assert abs(vy_water) < abs(vy_normal) * .85, (vy_normal, vy_water)
+
+
+@test
+def test_swamp_biome_has_water(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    has_water = pg.evaluate("""() => {
+      for (let c = 0; c < COLS; c++) {
+        if (biomeAt(c) !== 'swamp') continue;
+        for (let r = 0; r < ROWS; r++) if (getTile(G.tiles, c, r) === TILE.WATER) return true;
+      }
+      return false;
+    }""")
+    assert has_water is True
 
 
 @test

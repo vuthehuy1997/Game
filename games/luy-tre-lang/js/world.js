@@ -1,10 +1,11 @@
 // Sinh thế giới theo seed, truy cập/sửa tile, kiểm tra nhà hợp lệ, nén lưu dạng RLE.
 import { COLS, ROWS, TS, TILE, SOLID, HOUSE_BOUND, BAND_W, BIOME } from './data.js';
 
-// Khu vực theo cột: 3 dải liên tiếp cố định trái -> phải
+// Khu vực theo cột: 4 dải liên tiếp cố định trái -> phải
 export function biomeAt(col) {
   if (col < BAND_W) return BIOME.PLAINS;
   if (col < BAND_W * 2) return BIOME.BAMBOO_FOREST;
+  if (col < BAND_W * 3) return BIOME.SWAMP;
   return BIOME.MOUNTAIN;
 }
 
@@ -25,8 +26,10 @@ export function makeWorld(seed) {
   const oreRoll = []; for (let i = 0; i < COLS * ROWS; i++) oreRoll.push(rnd());
 
   const surf = c => {
-    const amp = biomeAt(c) === BIOME.MOUNTAIN ? 1.8 : 1;
-    return Math.round(28 + Math.sin(c * 0.07) * 4 * amp + Math.sin(c * 0.023 + 1.7) * 6 * amp + (jitter[c] - .5) * 4 * amp);
+    const biome = biomeAt(c);
+    const amp = biome === BIOME.MOUNTAIN ? 1.8 : 1;
+    const base = 28 + (biome === BIOME.SWAMP ? 10 : 0); // đầm lầy: mặt đất thấp hơn
+    return Math.round(base + Math.sin(c * 0.07) * 4 * amp + Math.sin(c * 0.023 + 1.7) * 6 * amp + (jitter[c] - .5) * 4 * amp);
   };
 
   for (let c = 0; c < COLS; c++) {
@@ -34,10 +37,13 @@ export function makeWorld(seed) {
     const s = Math.max(6, Math.min(ROWS - 20, surf(c)));
     const dirtThick = biome === BIOME.BAMBOO_FOREST ? 7 : 5;
     const oreBoost = biome === BIOME.MOUNTAIN ? 1.5 : 1; // núi: sắt/bạc nhiều hơn
+    // Đầm lầy: cứ ~10 cột có 1 rãnh nước nông sâu 2 tile ngay trên bề mặt
+    const isWaterDitch = biome === BIOME.SWAMP && c % 10 === 0;
     for (let r = 0; r < ROWS; r++) {
       const i = r * COLS + c;
       if (c === 0 || c === COLS - 1 || r === ROWS - 1) { tiles[i] = TILE.BEDROCK; continue; }
       if (r < s) { tiles[i] = TILE.AIR; continue; }
+      if (isWaterDitch && r < s + 2) { tiles[i] = TILE.WATER; continue; }
       if (r < s + dirtThick) { tiles[i] = TILE.DIRT; continue; }
       let t = TILE.STONE;
       const d = r - s;
@@ -53,11 +59,14 @@ export function makeWorld(seed) {
       }
       tiles[i] = t;
     }
-    // Bụi tre trên mặt đất: rừng tre rậm dày hơn hẳn các khu vực khác
+    // Bụi tre trên mặt đất: rừng tre rậm dày hơn hẳn các khu vực khác; đầm lầy không có tre, có bụi sậy thay thế
     const bambooEvery = biome === BIOME.BAMBOO_FOREST ? 3 : 7;
     const bambooPhase = biome === BIOME.BAMBOO_FOREST ? 1 : 3;
-    if (c % bambooEvery === bambooPhase && s - 3 >= 1) {
+    if (biome !== BIOME.SWAMP && c % bambooEvery === bambooPhase && s - 3 >= 1) {
       for (let k = 1; k <= 3; k++) tiles[(s - k) * COLS + c] = TILE.BAMBOO;
+    }
+    if (biome === BIOME.SWAMP && !isWaterDitch && c % 4 === 2 && s - 1 >= 1) {
+      tiles[(s - 1) * COLS + c] = TILE.REED;
     }
   }
   return tiles;

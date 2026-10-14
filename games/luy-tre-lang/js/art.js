@@ -6,7 +6,7 @@ export const TILE_COLOR = {
   [TILE.DIRT]: '#6b4a2e', [TILE.STONE]: '#787c82', [TILE.BAMBOO]: '#6fae46',
   [TILE.COPPER]: '#787c82', [TILE.IRON]: '#787c82', [TILE.SILVER]: '#787c82', [TILE.GOLD]: '#787c82',
   [TILE.WALL]: '#9a7a4a', [TILE.ROOF]: '#c9a54a', [TILE.BRICK]: '#b5583a', [TILE.DOOR]: '#6b4a2a',
-  [TILE.BENCH]: '#5a4228', [TILE.BEDROCK]: '#2a2420', [TILE.FARMLAND]: '#5a3f24',
+  [TILE.BENCH]: '#5a4228', [TILE.BEDROCK]: '#2a2420', [TILE.FARMLAND]: '#5a3f24', [TILE.WATER]: '#3a6a7a',
 };
 const ORE_FLECK = {
   [TILE.COPPER]: '#e08a4a', [TILE.IRON]: '#d8dde2', [TILE.SILVER]: '#f0f4f8', [TILE.GOLD]: '#ffd93a',
@@ -24,6 +24,22 @@ export function drawTile(c, code, x, y, s, grassTop) {
     c.strokeStyle = shade(TILE_COLOR[code], -22); c.lineWidth = 1; c.strokeRect(x + .5, y + .5, s - 1, s - 1);
     c.strokeStyle = shade(TILE_COLOR[code], -32); c.lineWidth = 1.2;
     for (let i = 1; i < 4; i++) { c.beginPath(); c.moveTo(x + s * i / 4, y + s * .18); c.lineTo(x + s * i / 4, y + s * .92); c.stroke(); }
+    return;
+  }
+  if (code === TILE.WATER) {
+    c.globalAlpha = .82; c.fillStyle = TILE_COLOR[code]; c.fillRect(x, y, s + .6, s + .6); c.globalAlpha = 1;
+    c.strokeStyle = shade(TILE_COLOR[code], 35); c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(x, y + s * .32); c.lineTo(x + s, y + s * .32); c.stroke();
+    c.beginPath(); c.moveTo(x, y + s * .68); c.lineTo(x + s, y + s * .68); c.stroke();
+    return;
+  }
+  if (code === TILE.REED) {
+    c.strokeStyle = '#5a8a4a'; c.lineWidth = 1.5; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(x + s * .28, y + s); c.lineTo(x + s * .22, y + s * .08); c.stroke();
+    c.beginPath(); c.moveTo(x + s * .52, y + s); c.lineTo(x + s * .58, y - s * .05); c.stroke();
+    c.beginPath(); c.moveTo(x + s * .76, y + s); c.lineTo(x + s * .72, y + s * .18); c.stroke();
+    c.fillStyle = shade('#5a8a4a', -15);
+    ell(c, x + s * .58, y - s * .05, s * .05, s * .14, shade('#5a8a4a', -15));
     return;
   }
   c.fillStyle = TILE_COLOR[code] || '#444';

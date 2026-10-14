@@ -5,6 +5,7 @@ import { clamp } from '../../../platform/core/util.js';
 import {
   TS, COLS, ROWS, TILE, HARDNESS, DROP, PLACE_TILE, ITEMS, RECIPES, QUESTS, TOOL_POWER, WEAPON_DMG, HAND_POWER, HAND_DMG,
   PLAYER_W, PLAYER_H, GRAV, MOVE_SPEED, JUMP_V, REACH, BENCH_RADIUS, SEED_TO_CROP, CROP_GROW_DAYS, RIDE_SPEED_MULT,
+  WATER_SPEED_MULT, WATER_JUMP_MULT,
 } from './data.js';
 import { G, invAdd, invRemove, invCount } from './state.js';
 import { getTile, setTile, isSolid, findHouse, checkHouse } from './world.js';
@@ -26,13 +27,20 @@ function moveAxis(dx, axis) {
   }
 }
 
+// Chân người chơi (vị trí G.py là cạnh dưới của hộp va chạm) có đang ở trong tile WATER không.
+export function playerInWater() {
+  const col = Math.floor(G.px / TS), row = Math.floor((G.py - 1) / TS);
+  return getTile(G.tiles, col, row) === TILE.WATER;
+}
+
 export function physicsStep(dt) {
   const dir = (held.has('right') ? 1 : 0) - (held.has('left') ? 1 : 0);
-  const speed = MOVE_SPEED * (G.riding ? RIDE_SPEED_MULT : 1);
+  const inWater = playerInWater();
+  const speed = MOVE_SPEED * (G.riding ? RIDE_SPEED_MULT : 1) * (inWater ? WATER_SPEED_MULT : 1);
   G.vx = dir * speed; if (dir) G.face = dir;
   if (pressed.has('jump')) {
     if (G.riding) G.riding = false; // nhảy để xuống trâu, lần nhảy này không nhảy thật
-    else if (G.grounded) { G.vy = -JUMP_V; tone(330, .12, 'triangle', .05, 260); }
+    else if (G.grounded) { G.vy = -JUMP_V * (inWater ? WATER_JUMP_MULT : 1); tone(330, .12, 'triangle', .05, 260); }
   }
   G.vy += GRAV * dt;
   G.grounded = false;
@@ -56,7 +64,7 @@ G.dig = {}; // tiến độ đào tạm thời, không lưu: key "c,r" -> số l
 // Đập một nhát vào tile (c,r). Trả về true nếu tile vỡ hẳn trong lần này.
 export function hitTile(c, r) {
   const code = getTile(G.tiles, c, r);
-  if (code === TILE.AIR || code === TILE.BEDROCK) return false;
+  if (code === TILE.AIR || code === TILE.BEDROCK || code === TILE.WATER || code === TILE.REED) return false;
   if (!inReach(c, r)) return false;
   const key = c + ',' + r;
   if (G.dig[key] == null) G.dig[key] = HARDNESS[code];
