@@ -556,4 +556,57 @@ def test_save_and_load_keeps_pets_and_tamed_state(pg, browser, base):
     assert pg.evaluate("G.pets[0].tamed") is True
 
 
+@test
+def test_boss2_spawns_on_fifteenth_night_and_blocks_boss1_same_night(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("pause(true)")
+    pg.evaluate("G.day = 15; G.time = 0.5; G.mobs.length = 0; G.bossSpawnedDay = 0; G.boss2SpawnedDay = 0")
+    assert pg.evaluate("maybeSpawnBoss2()") is True
+    assert pg.evaluate("G.mobs.filter(m => m.kind === 'boss_than_dam').length") == 1
+    assert pg.evaluate("maybeSpawnBoss2()") is False
+    # ngày 15 chia hết cho 5 -> Vua Quái Rừng phải bị chặn, không spawn chung đêm
+    assert pg.evaluate("maybeSpawnBoss()") is False
+    assert pg.evaluate("G.mobs.filter(m => m.kind === 'boss_vua_quai').length") == 0
+    pg.evaluate("pause(false)")
+
+
+@test
+def test_boss1_still_spawns_on_fifth_day_not_multiple_of_fifteen(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("pause(true)")
+    pg.evaluate("G.day = 10; G.time = 0.5; G.mobs.length = 0; G.bossSpawnedDay = 0; G.boss2SpawnedDay = 0")
+    assert pg.evaluate("maybeSpawnBoss2()") is False
+    assert pg.evaluate("maybeSpawnBoss()") is True
+    assert pg.evaluate("G.mobs.filter(m => m.kind === 'boss_vua_quai').length") == 1
+    pg.evaluate("pause(false)")
+
+
+@test
+def test_boss2_summons_minions_up_to_cap(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("pause(true)")
+    pg.evaluate("""
+      G.time = 0.5;
+      G.mobs.length = 0;
+      G.mobs.push({ kind: 'boss_than_dam', hp: 350, x: G.px, y: G.py, baseY: G.py, atkCd: 0, summonT: 8 });
+    """)
+    # chạy đủ lâu để vượt quá 3 lần triệu hồi (8s/lần) nhưng giới hạn tối đa 3 lính
+    pg.evaluate("for (let i = 0; i < 2400; i++) updateMobs(1/60)")
+    assert pg.evaluate("G.mobs.filter(m => m.summonedByBoss).length") == 3
+    pg.evaluate("pause(false)")
+
+
+@test
+def test_kill_boss2_grants_gold_and_two_swamp_gems(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("pause(true)")
+    pg.evaluate("G.mobs.length = 0; G.gold = 0")
+    pg.evaluate("G.mobs.push({ kind: 'boss_than_dam', hp: 1, x: G.px, y: G.py, baseY: G.py, atkCd: 0, summonT: 8 })")
+    pg.evaluate("G.inv[0] = { item: 'kiem_sat', count: 1 }; G.sel = 0")
+    assert pg.evaluate("attackMobs()") is True
+    assert pg.evaluate("G.gold") == 250
+    assert pg.evaluate("invCount(G.inv, 'ngoc_dam_lay')") == 2
+    pg.evaluate("pause(false)")
+
+
 run(TESTS)

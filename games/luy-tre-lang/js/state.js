@@ -35,7 +35,7 @@ export function newGame(seed = Date.now() >>> 0) {
     hp: 100, maxHp: 100, hurt: 0, atkCd: 0,
     inv: freshInventory(), sel: 0, gold: 10,
     quests: freshQuests(), npc: { active: false, x: 0, y: 0, fx: -1, fy: -1 },
-    mobs: [], spawnT: 0, mode: 'play', bossSpawnedDay: 0, crops: [],
+    mobs: [], spawnT: 0, mode: 'play', bossSpawnedDay: 0, boss2SpawnedDay: 0, crops: [],
     animals: [], pets: [], animalSpawnT: 0, riding: false,
   });
   invAdd(G.inv, 'tre', 6);
@@ -47,6 +47,7 @@ export function buildSave() {
   return {
     v: 1, seed: G.seed, day: G.day, time: G.time, px: G.px, py: G.py, hp: G.hp,
     inv: G.inv, sel: G.sel, gold: G.gold, quests: G.quests, bossSpawnedDay: G.bossSpawnedDay,
+    boss2SpawnedDay: G.boss2SpawnedDay,
     npc: G.npc, tilesRLE: encodeTiles(G.tiles), crops: G.crops, pets: G.pets,
   };
 }
@@ -60,7 +61,8 @@ export function loadGame() {
     seed: s.seed, tiles, day: s.day, time: s.time, px: s.px, py: s.py, vx: 0, vy: 0, grounded: false, face: 1,
     hp: s.hp, maxHp: 100, hurt: 0, atkCd: 0,
     inv: s.inv, sel: s.sel || 0, gold: s.gold, quests: s.quests, npc: s.npc || { active: false, x: 0, y: 0, fx: -1, fy: -1 },
-    mobs: [], spawnT: 0, mode: 'play', bossSpawnedDay: s.bossSpawnedDay || 0, crops: s.crops || [],
+    mobs: [], spawnT: 0, mode: 'play', bossSpawnedDay: s.bossSpawnedDay || 0,
+    boss2SpawnedDay: s.boss2SpawnedDay || 0, crops: s.crops || [],
     animals: [], pets: s.pets || [], animalSpawnT: 0, riding: false,
   });
   return true;

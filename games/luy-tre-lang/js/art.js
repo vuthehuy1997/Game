@@ -160,6 +160,21 @@ export function drawMob(c, kind, x, y, t) {
     const glow = .55 + Math.sin(t * .25) * .35;
     c.globalAlpha = glow; ell(c, x - 8, y - 36, 4.5, 4.5, '#ff5a3a'); ell(c, x + 8, y - 36, 4.5, 4.5, '#ff5a3a'); c.globalAlpha = 1;
     ell(c, x - 8, y - 36, 1.8, 1.8, '#fff'); ell(c, x + 8, y - 36, 1.8, 1.8, '#fff');
+  } else if (kind === 'boss_than_dam') {
+    rr(c, x - 24, y - 60, 48, 60, 10); c.fillStyle = '#2a4a3a'; c.fill();
+    c.strokeStyle = shade('#2a4a3a', -25); c.lineWidth = 2.5; c.stroke();
+    // vây lưng (thay sừng): 3 tam giác rong rêu dọc sống lưng
+    c.fillStyle = '#3f7a5a';
+    for (const dx of [-10, 0, 10]) {
+      c.beginPath(); c.moveTo(x + dx - 6, y - 58); c.lineTo(x + dx, y - 74); c.lineTo(x + dx + 6, y - 58); c.closePath(); c.fill();
+    }
+    // rong rêu rủ hai bên thân
+    c.strokeStyle = '#4a8a5a'; c.lineWidth = 2.5; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(x - 23, y - 40); c.quadraticCurveTo(x - 32, y - 22, x - 20, y - 6); c.stroke();
+    c.beginPath(); c.moveTo(x + 23, y - 40); c.quadraticCurveTo(x + 32, y - 22, x + 20, y - 6); c.stroke();
+    const glow = .5 + Math.sin(t * .2) * .3;
+    c.globalAlpha = glow; ell(c, x - 9, y - 34, 4.5, 4.5, '#7fffb0'); ell(c, x + 9, y - 34, 4.5, 4.5, '#7fffb0'); c.globalAlpha = 1;
+    ell(c, x - 9, y - 34, 1.8, 1.8, '#0a2a1a'); ell(c, x + 9, y - 34, 1.8, 1.8, '#0a2a1a');
   } else {
     rr(c, x - 12, y - 30, 24, 30, 6); c.fillStyle = '#5a3a2a'; c.fill();
     ell(c, x - 4, y - 20, 2.2, 3, '#ffd35a'); ell(c, x + 5, y - 20, 2.2, 3, '#ffd35a');

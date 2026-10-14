@@ -58,6 +58,7 @@ export const ITEMS = {
   kiem_dong: { name: 'Kiếm đồng', color: '#c97a45', tool: true }, kiem_sat: { name: 'Kiếm sắt', color: '#9a8a7a', tool: true },
   ngoc_quy: { name: 'Ngọc quý', color: '#7fe0ff' },
   kiem_ngoc: { name: 'Kiếm Ngọc', color: '#7fe0ff', tool: true },
+  ngoc_dam_lay: { name: 'Ngọc Đầm Lầy', color: '#4a8a6a' },
   hat_lua: { name: 'Hạt lúa', color: '#e9c349', seed: true }, hat_rau: { name: 'Hạt rau', color: '#5a9a3a', seed: true },
   hat_dua: { name: 'Hạt dưa', color: '#4a8a4a', seed: true },
   lua: { name: 'Lúa', color: '#e9c349' }, rau: { name: 'Rau', color: '#5a9a3a' }, dua: { name: 'Dưa', color: '#4a8a4a' },
@@ -101,8 +102,11 @@ export const MOB_DEF = {
   quai_rung: { name: 'Quái rừng', hp: 24, dmg: 9, speed: 55, fly: false, color: '#5a3a2a' },
   boss_vua_quai: { name: 'Vua Quái Rừng', hp: 220, dmg: 18, speed: 45, fly: false, color: '#3a1f14',
     boss: true, lungeDmg: 36, lungeEvery: 3 },
+  boss_than_dam: { name: 'Thần Đầm Lầy', hp: 350, dmg: 22, speed: 40, fly: false, color: '#2a4a3a',
+    boss: true, summonEvery: 8, summonMax: 3 },
 };
 export const BOSS_EVERY_DAYS = 5;
+export const BOSS2_EVERY_DAYS = 15;
 
 export const QUESTS = [
   { id: 'q1', text: 'Đào 5 quặng đồng', type: 'mine', item: 'dong', need: 5, reward: { gold: 30 } },
