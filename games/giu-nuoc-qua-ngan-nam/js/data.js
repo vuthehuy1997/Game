@@ -7,25 +7,21 @@ function makeEra(i, flavor) {
   const k = 1 + i * 0.3;
   const troopTypes = flavor.troops.map((t, lvl) => ({
     id: `t${lvl}`, name: t.name, look: t.look,
-    hp: Math.round((40 + lvl * 24) * k),
-    dmg: Math.round((7 + lvl * 5) * k),
+    hp: Math.round((40 + lvl * 24) * k), dmg: Math.round((7 + lvl * 5) * k),
     reach: 22, spd: 42,
-    spawnCost: 8 + lvl * 7,
-    spawnEvery: 3.6 - lvl * 0.5,
-  }));
-  const waves = [0, 1, 2, 3, 4].map(w => ({
-    mix: [{ type: 'grunt', count: 3 + w + i }],
-    bossFinal: w === 4,
+    cost: 8 + lvl * 7, trainTime: 2 + lvl * 1.2,
   }));
   return {
     id: flavor.id, name: flavor.name, year: flavor.year, foe: flavor.foe, bg: flavor.bg,
-    hq: { hp: Math.round(90 * k), income: [4, 7, 11], upgradeCost: [40, 90] },
-    campCost: 30, campUpgradeCost: [35, 60],
-    towerDef: { cost: 35, dmg: Math.round(10 * k), range: 170, rate: 1 },
-    stakeDef: { cost: 25, dmg: Math.round(50 * k) },
-    enemy: { hp: Math.round(30 * k), dmg: Math.round(6 * k), reach: 22, spd: 40, look: flavor.enemyLook },
+    hq: { hp: Math.round(140 * k) }, oppHq: { hp: Math.round(160 * k) },
+    mine: { perMinerRate: 2.2 + i * .3 },
+    minerCost: 18, minerTrainTime: 2.5, maxMiners: 4,
+    enemy: {
+      hp: Math.round(30 * k), dmg: Math.round(6 * k), reach: 22, spd: 40, look: flavor.enemyLook,
+      spawnEvery: Math.max(1.6, 3.4 - i * .3), maxAlive: 5 + i,
+    },
+    bossAt: 70,
     troopTypes,
-    waves,
   };
 }
 
