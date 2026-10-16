@@ -106,4 +106,53 @@ def test_train_queue_processes_miner_after_train_time(pg, browser, base):
     assert r["queueLenAfter"] == 0
 
 
+@test
+def test_train_troop_spawns_ally_after_train_time(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        startEra(0);
+        const goldBefore = G.gold;
+        const def = G.era.troopTypes[0];
+        const ok = trainTroop(def.id);
+        const goldAfterTrain = G.gold;
+        updateTrainQueue(def.trainTime + 0.01);
+        return {
+            ok, goldBefore, goldAfterTrain, cost: def.cost, expectedName: def.name,
+            troopsLen: troops.length,
+            allyName: troops[0] && troops[0].name,
+        };
+    }""")
+    assert r["ok"] is True
+    assert r["goldAfterTrain"] == r["goldBefore"] - r["cost"]
+    assert r["troopsLen"] == 1
+    assert r["allyName"] == r["expectedName"]
+
+
+@test
+def test_train_troop_fails_without_enough_gold(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        startEra(0);
+        G.gold = 0;
+        return trainTroop(G.era.troopTypes[0].id);
+    }""")
+    assert r is False
+
+
+@test
+def test_train_troop_respects_max_allies_cap(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        startEra(0);
+        G.gold = 1000;
+        const def = G.era.troopTypes[0];
+        const results = [];
+        for (let i = 0; i < 9; i++) results.push(trainTroop(def.id));
+        return { results, queueLen: G.train.queue.length };
+    }""")
+    assert r["results"][:8] == [True] * 8
+    assert r["results"][8] is False  # vượt MAX_ALLIES (8) phải thất bại
+    assert r["queueLen"] == 8
+
+
 run(TESTS)
