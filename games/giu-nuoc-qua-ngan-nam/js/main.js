@@ -9,32 +9,28 @@ import { G, troops, startEra, ALLY_HOLD_X, OPP_HQ_FRONT_X } from './state.js';
 import { trainMiner, assignMinerToMine, unassignMinerFromMine, updateMineIncome, updateTrainQueue, trainTroop } from './buildings.js';
 import { spawnTroop, setStance, updateTroops } from './troops.js';
 import { updateEnemySpawns, checkEnd } from './enemy.js';
+import { toTitle, initHud, updateHud } from './flow.js';
+import { render } from './render.js';
 
-// Task 1-4/7: nền tảng chiến trường 1 làn + kinh tế mỏ vàng + huấn luyện lính (Doanh trại) +
-// thế trận Phòng thủ/Tấn công. HUD/render/luồng chơi đầy đủ (AI địch, thắng/thua, HUD) sẽ
-// được Task 5-7 nối lại dần — tạm thời chỉ vẽ nền trống để trang chạy không crash trong lúc
-// chờ render.js/flow.js được viết lại theo state.js mới.
-const cv = $('cv'), ctx = cv.getContext('2d');
-function render() {
-  ctx.fillStyle = G.era ? G.era.bg : '#12141a';
-  ctx.fillRect(0, 0, 960, 540);
-}
-
+// Task 7/7 (hoàn tất): HUD/luồng chơi đầy đủ nối lại qua flow.js (initHud/updateHud), vẽ
+// chiến trường thật qua render.js (thay placeholder nền trống của Task 1).
 let paused = false;
 function update(dt) {
   if (paused) return;
   if (G.phase === 'battle') {
     G.t += dt; G.shake = Math.max(0, G.shake - dt * 30);
     updateMineIncome(dt); updateTrainQueue(dt); updateTroops(dt); updateEnemySpawns(dt);
-    checkEnd();
+    checkEnd(); updateHud();
   }
   updateParticles(dt, G.t);
 }
 
 mountHomeLink($('stage'));
+initHud();
 if (debugOn()) exposeGlobals([{
   G, troops, startEra, S, unlocked, ERAS, update, render, pause: v => { paused = v; },
   trainMiner, assignMinerToMine, unassignMinerFromMine, updateMineIncome, updateTrainQueue,
   trainTroop, spawnTroop, setStance, updateTroops, updateEnemySpawns, checkEnd, ALLY_HOLD_X, OPP_HQ_FRONT_X,
 }]);
 startLoop(update, render);
+toTitle();

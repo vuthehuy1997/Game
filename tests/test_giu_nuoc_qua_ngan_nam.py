@@ -278,4 +278,26 @@ def test_check_end_noop_while_both_hq_alive(pg, browser, base):
     assert r == "battle"
 
 
+@test
+def test_hud_has_no_leftover_plot_or_wave_elements(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    pg.evaluate("startEra(0)")
+    assert pg.evaluate("document.getElementById('plots')") is None
+    assert pg.evaluate("document.getElementById('btnHqUp')") is None
+    assert pg.evaluate("document.getElementById('btnStartWave')") is None
+    assert pg.evaluate("document.getElementById('btnStance')") is not None
+
+
+@test
+def test_stance_button_click_toggles_label_and_state(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        startEra(0);
+        document.getElementById('btnStance').click();
+        return { stance: G.stance, label: document.getElementById('btnStance').textContent };
+    }""")
+    assert r["stance"] == "attack"
+    assert "Tấn công" in r["label"]
+
+
 run(TESTS)

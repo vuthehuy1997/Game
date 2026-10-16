@@ -1,12 +1,11 @@
-// Luồng game: menu, bản đồ thời kỳ, kết quả. Task 1 đã xoá hệ 6-lô-đất/waves.js — HUD trận
-// đấu (nút thế trận/mỏ vàng/doanh trại) sẽ được Task 7 nối lại hoàn toàn, nên các hàm
-// onPlotClick/initHud/updateHud kiểu cũ (dựa vào buildingOn/BUILD_KINDS/canUpgradeHQ đã xoá)
-// bị bỏ khỏi file này ở Task 6 để tránh import vỡ (enemy.js→flow.js nay nằm trong chuỗi
-// import của main.js qua checkEnd/showResult).
+// Luồng game: menu, bản đồ thời kỳ, kết quả, HUD trận đấu (Task 7: nút thế trận/mỏ vàng/
+// doanh trại nối tới API Task 2-6).
 import { $ } from '../../../platform/core/util.js';
 import { ERAS } from './data.js';
 import { S, unlocked } from './save.js';
 import { G, startEra } from './state.js';
+import { setStance } from './troops.js';
+import { trainMiner, assignMinerToMine, unassignMinerFromMine, trainTroop } from './buildings.js';
 
 export function showOnly(id) {
   ['menu', 'cardWrap'].forEach(k => $(k).hidden = k !== id);
@@ -33,7 +32,40 @@ export function showEraSelect() {
     $('eBack').onclick = toTitle;
   });
 }
-export function beginEra(i) { startEra(i); showOnly(null); }
+export function beginEra(i) { startEra(i); showOnly(null); updateHud(); }
+
+// HUD trận đấu: nút thế trận/mỏ vàng/doanh trại. Gắn 1 lần khi trang tải (initHud, gọi từ
+// main.js) — dùng .onclick (không addEventListener) nên gọi lại không bị trùng lặp handler.
+export function initHud() {
+  $('btnStance').onclick = () => { setStance(G.stance === 'defend' ? 'attack' : 'defend'); updateHud(); };
+  $('btnMineAdd').onclick = () => { assignMinerToMine(); updateHud(); };
+  $('btnMineSub').onclick = () => { unassignMinerFromMine(); updateHud(); };
+  $('btnTrainHouse').onclick = () => { trainMiner(); updateHud(); };
+  $('btnBarracks').onclick = showBarracks;
+  updateHud();
+}
+
+// Gọi mỗi khung hình (từ main.js update()) khi đang chiến đấu: nhãn nút thế trận + bật/tắt
+// nút theo điều kiện hợp lệ của Task 2/3 (assignMinerToMine/unassignMinerFromMine/trainMiner).
+export function updateHud() {
+  const stanceBtn = $('btnStance');
+  if (stanceBtn) stanceBtn.textContent = G.stance === 'defend' ? 'Phòng thủ' : 'Tấn công';
+  if (!G.era) return;
+  const mineAdd = $('btnMineAdd'); if (mineAdd) mineAdd.disabled = G.miners.atMine >= G.miners.total;
+  const mineSub = $('btnMineSub'); if (mineSub) mineSub.disabled = G.miners.atMine <= 0;
+  const trainHouse = $('btnTrainHouse');
+  if (trainHouse) trainHouse.disabled = G.phase !== 'battle' || G.gold < G.era.minerCost;
+}
+
+// Doanh trại: bảng chọn lính theo troopTypes của thời kỳ hiện tại (Task 3: trainTroop).
+export function showBarracks() {
+  showCard(`<p class="eyebrow">Doanh trại</p><h2>Huấn luyện lính</h2>
+    <div class="eras">${G.era.troopTypes.map(t => `<button type="button" class="eraBtn" data-troop="${t.id}">${t.name}<br><small>${t.cost} vàng · ${t.trainTime.toFixed(1)}s</small></button>`).join('')}</div>
+    <div class="actions"><button type="button" class="btn ghost" id="bClose">Đóng</button></div>`, el => {
+    el.querySelectorAll('[data-troop]').forEach(b => b.onclick = () => { trainTroop(b.dataset.troop); updateHud(); showOnly(null); });
+    $('bClose').onclick = () => showOnly(null);
+  });
+}
 
 export function showResult() {
   const win = G.phase === 'win';
