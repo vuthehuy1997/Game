@@ -1,10 +1,12 @@
-// Luồng game: menu, bản đồ thời kỳ, HUD tương tác trong trận, kết quả. Task 2-3-4-6 mở rộng file này.
+// Luồng game: menu, bản đồ thời kỳ, kết quả. Task 1 đã xoá hệ 6-lô-đất/waves.js — HUD trận
+// đấu (nút thế trận/mỏ vàng/doanh trại) sẽ được Task 7 nối lại hoàn toàn, nên các hàm
+// onPlotClick/initHud/updateHud kiểu cũ (dựa vào buildingOn/BUILD_KINDS/canUpgradeHQ đã xoá)
+// bị bỏ khỏi file này ở Task 6 để tránh import vỡ (enemy.js→flow.js nay nằm trong chuỗi
+// import của main.js qua checkEnd/showResult).
 import { $ } from '../../../platform/core/util.js';
 import { ERAS } from './data.js';
 import { S, unlocked } from './save.js';
-import { startEra, startWave } from './waves.js';
-import { BUILD_KINDS, buildLabel, costOf, build, campUpgradeCost, upgrade, canUpgradeHQ, upgradeHQ } from './buildings.js';
-import { G, buildingOn } from './state.js';
+import { G, startEra } from './state.js';
 
 export function showOnly(id) {
   ['menu', 'cardWrap'].forEach(k => $(k).hidden = k !== id);
@@ -33,49 +35,13 @@ export function showEraSelect() {
 }
 export function beginEra(i) { startEra(i); showOnly(null); }
 
-function onPlotClick(id) {
-  if (G.phase !== 'prep') return;
-  const b = buildingOn(id);
-  if (!b) {
-    showCard(`<p class="eyebrow">Lô ${id + 1}</p><h2>Xây công trình</h2>
-      <div class="actions">${BUILD_KINDS.map(k => `<button type="button" class="btn" data-k="${k}" ${costOf(k) > G.gold ? 'disabled' : ''}>${buildLabel(k)} (${costOf(k)}v)</button>`).join('')}
-      <button type="button" class="btn ghost" id="pCancel">Huỷ</button></div>`, el => {
-      el.querySelectorAll('[data-k]').forEach(btn => btn.onclick = () => { build(id, btn.dataset.k); showOnly(null); });
-      $('pCancel').onclick = () => showOnly(null);
-    });
-  } else if (b.kind === 'camp' && b.lvl < 3) {
-    showCard(`<p class="eyebrow">Lô ${id + 1} · Trại lính cấp ${b.lvl}</p><h2>Nâng cấp trại</h2>
-      <div class="actions"><button type="button" class="btn" id="pUp" ${campUpgradeCost(b) > G.gold ? 'disabled' : ''}>Nâng lên cấp ${b.lvl + 1} (${campUpgradeCost(b)}v)</button>
-      <button type="button" class="btn ghost" id="pCancel">Đóng</button></div>`, el => {
-      $('pUp').onclick = () => { upgrade(b); showOnly(null); }; $('pCancel').onclick = () => showOnly(null);
-    });
-  } else {
-    showCard(`<p class="eyebrow">Lô ${id + 1}</p><h2>${buildLabel(b.kind)}${b.kind === 'camp' ? ' (cấp tối đa)' : ''}</h2>
-      <div class="actions"><button type="button" class="btn ghost" id="pCancel">Đóng</button></div>`, el => { $('pCancel').onclick = () => showOnly(null); });
-  }
-}
-export function initHud() {
-  $('plots').querySelectorAll('.plot').forEach(btn => btn.onclick = () => onPlotClick(+btn.dataset.plot));
-  $('btnHqUp').onclick = () => upgradeHQ();
-  $('btnStartWave').onclick = () => startWave();
-}
-export function updateHud() {
-  $('plots').querySelectorAll('.plot').forEach(btn => {
-    const id = +btn.dataset.plot, b = buildingOn(id);
-    btn.querySelector('small').textContent = b ? `${buildLabel(b.kind)}${b.kind === 'camp' ? ' c' + b.lvl : ''}` : 'Trống';
-    btn.classList.toggle('filled', !!b);
-  });
-  $('btnHqUp').disabled = !canUpgradeHQ();
-  $('btnStartWave').hidden = G.phase !== 'prep';
-}
-
 export function showResult() {
   const win = G.phase === 'win';
   const hasNext = win && G.eraIdx + 1 < ERAS.length;
-  const title = win ? (hasNext ? 'Giữ vững giang sơn!' : 'Giữ nước trọn vẹn qua ngàn năm!') : 'Thành đã mất…';
+  const title = win ? (hasNext ? 'Đã phá thành địch!' : 'Giữ nước trọn vẹn qua ngàn năm!') : 'Thành ta đã mất…';
   const body = win
-    ? (hasNext ? `Đã đánh bại ${G.era.foe}, mở thời kỳ kế tiếp.` : `Đã đánh bại ${G.era.foe} — hoàn thành cả 6 thời kỳ!`)
-    : `${G.era.foe} đã hạ được Nhà chính. Luyện thêm và thử lại.`;
+    ? (hasNext ? `Đã phá thành ${G.era.foe}, mở thời kỳ kế tiếp.` : `Đã phá thành ${G.era.foe} — hoàn thành cả 6 thời kỳ!`)
+    : `${G.era.foe} đã phá được Nhà chính của ta. Luyện thêm và thử lại.`;
   showCard(`<p class="eyebrow">${G.era.name} · ${G.era.year}</p><h2>${title}</h2>
     <p>${body}</p>
     <div class="actions">

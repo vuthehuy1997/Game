@@ -241,4 +241,41 @@ def test_boss_spawns_once_at_boss_at_mark(pg, browser, base):
     assert r["bossSpawned"] is True
 
 
+@test
+def test_check_end_win_destroys_opp_hq_and_advances_max_era(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        startEra(0);
+        const maxEraBefore = S.maxEra;
+        G.oppHq.hp = 0;
+        checkEnd();
+        return { phase: G.phase, maxEraAfter: S.maxEra, maxEraBefore };
+    }""")
+    assert r["phase"] == "win"
+    assert r["maxEraAfter"] == max(r["maxEraBefore"], 1)
+
+
+@test
+def test_check_end_lose_when_hq_destroyed(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        startEra(0);
+        G.hq.hp = 0;
+        checkEnd();
+        return { phase: G.phase };
+    }""")
+    assert r["phase"] == "lose"
+
+
+@test
+def test_check_end_noop_while_both_hq_alive(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        startEra(0);
+        checkEnd();
+        return G.phase;
+    }""")
+    assert r == "battle"
+
+
 run(TESTS)
