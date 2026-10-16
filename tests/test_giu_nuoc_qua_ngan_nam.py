@@ -37,4 +37,73 @@ def test_start_era_resets_battlefield_state(pg, browser, base):
     assert r["trainQueueLen"] == 0
 
 
+@test
+def test_mine_income_only_when_miner_assigned(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        startEra(0);
+        updateMineIncome(1); // 1s, chưa gán thợ nào
+        const goldAfterNoMiner = G.gold;
+        G.miners.total = 1;
+        assignMinerToMine();
+        updateMineIncome(1); // 1s, đã gán 1 thợ
+        return { goldAfterNoMiner, goldAfterMiner: G.gold, rate: G.era.mine.perMinerRate };
+    }""")
+    assert r["goldAfterNoMiner"] == 40  # G.gold khởi tạo 40 (hằng số trong startEra), không đổi
+    assert abs(r["goldAfterMiner"] - (40 + r["rate"])) < 0.01
+
+
+@test
+def test_train_miner_respects_cost_and_cap(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        startEra(0);
+        G.gold = 1000;
+        const results = [];
+        for (let i = 0; i < G.era.maxMiners + 1; i++) results.push(trainMiner());
+        return { results, queueLen: G.train.queue.length, maxMiners: G.era.maxMiners };
+    }""")
+    assert r["results"][:r["maxMiners"]] == [True] * r["maxMiners"]
+    assert r["results"][r["maxMiners"]] is False  # vượt maxMiners phải thất bại
+    assert r["queueLen"] == r["maxMiners"]
+
+
+@test
+def test_assign_unassign_miner_bounds(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        startEra(0);
+        const noFreeMiner = assignMinerToMine(); // chưa có thợ nào
+        G.miners.total = 1;
+        const assignOk = assignMinerToMine();
+        const assignOverflow = assignMinerToMine(); // đã gán hết thợ rảnh
+        const unassignOk = unassignMinerFromMine();
+        const unassignUnderflow = unassignMinerFromMine(); // đã rút hết
+        return { noFreeMiner, assignOk, assignOverflow, unassignOk, unassignUnderflow };
+    }""")
+    assert r["noFreeMiner"] is False
+    assert r["assignOk"] is True
+    assert r["assignOverflow"] is False
+    assert r["unassignOk"] is True
+    assert r["unassignUnderflow"] is False
+
+
+@test
+def test_train_queue_processes_miner_after_train_time(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        startEra(0);
+        G.gold = 1000;
+        trainMiner();
+        const totalBefore = G.miners.total;
+        const queueLenBefore = G.train.queue.length;
+        updateTrainQueue(G.era.minerTrainTime + 0.01);
+        return { totalBefore, queueLenBefore, totalAfter: G.miners.total, queueLenAfter: G.train.queue.length };
+    }""")
+    assert r["totalBefore"] == 0
+    assert r["queueLenBefore"] == 1
+    assert r["totalAfter"] == 1
+    assert r["queueLenAfter"] == 0
+
+
 run(TESTS)

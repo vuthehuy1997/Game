@@ -6,6 +6,7 @@ import { mountHomeLink } from '../../../platform/ui/bar.js';
 import { ERAS } from './data.js';
 import { S, unlocked } from './save.js';
 import { G, troops, startEra } from './state.js';
+import { trainMiner, assignMinerToMine, unassignMinerFromMine, updateMineIncome, updateTrainQueue } from './buildings.js';
 
 // Task 1/7: nền tảng chiến trường 1 làn + dữ liệu era mới. HUD/render/luồng chơi đầy đủ
 // (Mỏ vàng, Doanh trại, thế trận, AI địch, thắng/thua, HUD) sẽ được Task 2-7 nối lại dần —
@@ -22,12 +23,15 @@ function update(dt) {
   if (paused) return;
   if (G.phase === 'battle') {
     G.t += dt; G.shake = Math.max(0, G.shake - dt * 30);
-    // Task 2-6 sẽ gọi lại ở đây: updateMineIncome, updateTrainQueue, updateTroops,
-    // updateEnemySpawns, checkEnd.
+    updateMineIncome(dt); updateTrainQueue(dt);
+    // Task 3-6 sẽ gọi lại ở đây: updateTroops, updateEnemySpawns, checkEnd.
   }
   updateParticles(dt, G.t);
 }
 
 mountHomeLink($('stage'));
-if (debugOn()) exposeGlobals([{ G, troops, startEra, S, unlocked, ERAS, update, render, pause: v => { paused = v; } }]);
+if (debugOn()) exposeGlobals([{
+  G, troops, startEra, S, unlocked, ERAS, update, render, pause: v => { paused = v; },
+  trainMiner, assignMinerToMine, unassignMinerFromMine, updateMineIncome, updateTrainQueue,
+}]);
 startLoop(update, render);
