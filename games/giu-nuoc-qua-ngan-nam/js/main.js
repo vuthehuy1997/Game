@@ -5,14 +5,14 @@ import { debugOn, exposeGlobals } from '../../../platform/core/debug.js';
 import { mountHomeLink } from '../../../platform/ui/bar.js';
 import { ERAS } from './data.js';
 import { S, unlocked } from './save.js';
-import { G, troops, startEra } from './state.js';
+import { G, troops, startEra, ALLY_HOLD_X, OPP_HQ_FRONT_X } from './state.js';
 import { trainMiner, assignMinerToMine, unassignMinerFromMine, updateMineIncome, updateTrainQueue, trainTroop } from './buildings.js';
-import { spawnTroop } from './troops.js';
+import { spawnTroop, setStance, updateTroops } from './troops.js';
 
-// Task 1-3/7: nền tảng chiến trường 1 làn + kinh tế mỏ vàng + huấn luyện lính (Doanh trại).
-// HUD/render/luồng chơi đầy đủ (thế trận, AI địch, thắng/thua, HUD) sẽ được Task 4-7 nối lại
-// dần — tạm thời chỉ vẽ nền trống để trang chạy không crash trong lúc chờ render.js/flow.js
-// được viết lại theo state.js mới, và updateTroops (Task 4) được gọi lại trong update().
+// Task 1-4/7: nền tảng chiến trường 1 làn + kinh tế mỏ vàng + huấn luyện lính (Doanh trại) +
+// thế trận Phòng thủ/Tấn công. HUD/render/luồng chơi đầy đủ (AI địch, thắng/thua, HUD) sẽ
+// được Task 5-7 nối lại dần — tạm thời chỉ vẽ nền trống để trang chạy không crash trong lúc
+// chờ render.js/flow.js được viết lại theo state.js mới.
 const cv = $('cv'), ctx = cv.getContext('2d');
 function render() {
   ctx.fillStyle = G.era ? G.era.bg : '#12141a';
@@ -24,8 +24,8 @@ function update(dt) {
   if (paused) return;
   if (G.phase === 'battle') {
     G.t += dt; G.shake = Math.max(0, G.shake - dt * 30);
-    updateMineIncome(dt); updateTrainQueue(dt);
-    // Task 3-6 sẽ gọi lại ở đây: updateTroops, updateEnemySpawns, checkEnd.
+    updateMineIncome(dt); updateTrainQueue(dt); updateTroops(dt);
+    // Task 5-6 sẽ gọi lại ở đây: updateEnemySpawns, checkEnd.
   }
   updateParticles(dt, G.t);
 }
@@ -34,6 +34,6 @@ mountHomeLink($('stage'));
 if (debugOn()) exposeGlobals([{
   G, troops, startEra, S, unlocked, ERAS, update, render, pause: v => { paused = v; },
   trainMiner, assignMinerToMine, unassignMinerFromMine, updateMineIncome, updateTrainQueue,
-  trainTroop, spawnTroop,
+  trainTroop, spawnTroop, setStance, updateTroops, ALLY_HOLD_X, OPP_HQ_FRONT_X,
 }]);
 startLoop(update, render);

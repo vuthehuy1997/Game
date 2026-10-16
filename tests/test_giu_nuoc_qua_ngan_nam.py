@@ -155,4 +155,53 @@ def test_train_troop_respects_max_allies_cap(pg, browser, base):
     assert r["queueLen"] == 8
 
 
+@test
+def test_stance_defend_moves_ally_toward_hold_x(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        startEra(0);
+        G.stance = 'defend';
+        spawnTroop('ally', G.era.troopTypes[0]);
+        const u = troops[0];
+        u.x = 400; // xa ALLY_HOLD_X (230), không có địch nên phải lùi về
+        const before = u.x;
+        updateTroops(0.1);
+        return { before, after: u.x, holdX: ALLY_HOLD_X };
+    }""")
+    assert r["after"] < r["before"]  # phải di chuyển VỀ hướng ALLY_HOLD_X (giảm x vì 230 < 400)
+
+
+@test
+def test_stance_attack_moves_ally_toward_enemy_hq_and_damages_it(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        startEra(0);
+        G.stance = 'attack';
+        spawnTroop('ally', G.era.troopTypes[0]);
+        const u = troops[0];
+        u.x = OPP_HQ_FRONT_X; // đã áp sát, không có địch nào chặn
+        const hpBefore = G.oppHq.hp;
+        updateTroops(0.5);
+        return { hpBefore, hpAfter: G.oppHq.hp, dmg: u.dmg };
+    }""")
+    assert r["hpAfter"] == r["hpBefore"] - r["dmg"] * 0.5
+
+
+@test
+def test_stance_switch_mid_battle_redirects_immediately(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        startEra(0);
+        G.stance = 'defend';
+        spawnTroop('ally', G.era.troopTypes[0]);
+        const u = troops[0];
+        u.x = ALLY_HOLD_X; // đã ở vị trí giữ
+        setStance('attack');
+        const before = u.x;
+        updateTroops(0.1);
+        return { before, after: u.x };
+    }""")
+    assert r["after"] > r["before"]  # đổi thế trận → tiến về phía địch ngay khung kế tiếp
+
+
 run(TESTS)
