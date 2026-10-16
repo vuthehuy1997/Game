@@ -204,4 +204,41 @@ def test_stance_switch_mid_battle_redirects_immediately(pg, browser, base):
     assert r["after"] > r["before"]  # đổi thế trận → tiến về phía địch ngay khung kế tiếp
 
 
+@test
+def test_enemy_spawns_on_schedule_capped_at_max_alive(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        pause(true);
+        startEra(0);
+        G.era.enemy.maxAlive = 1; // ép giới hạn nhỏ để test nhanh
+        updateEnemySpawns(G.era.enemy.spawnEvery + 0.01);
+        const afterFirst = troops.filter(u => u.side === 'enemy').length;
+        updateEnemySpawns(G.era.enemy.spawnEvery + 0.01); // đã đạt maxAlive, không sinh thêm
+        const afterSecond = troops.filter(u => u.side === 'enemy').length;
+        pause(false);
+        return { afterFirst, afterSecond };
+    }""")
+    assert r["afterFirst"] == 1
+    assert r["afterSecond"] == 1
+
+
+@test
+def test_boss_spawns_once_at_boss_at_mark(pg, browser, base):
+    pg.goto(root(base) + URL); pg.wait_for_timeout(300)
+    r = pg.evaluate("""() => {
+        pause(true);
+        startEra(0);
+        G.t = G.era.bossAt + 50; // nhảy cóc qua mốc trong 1 bước dt lớn
+        updateEnemySpawns(0.016);
+        const bossNameAfterFirst = troops.filter(u => u.name === 'Tướng giặc').length;
+        updateEnemySpawns(0.016); // vẫn ở sau mốc, không sinh thêm
+        const bossNameAfterSecond = troops.filter(u => u.name === 'Tướng giặc').length;
+        pause(false);
+        return { bossNameAfterFirst, bossNameAfterSecond, bossSpawned: G.bossSpawned };
+    }""")
+    assert r["bossNameAfterFirst"] == 1
+    assert r["bossNameAfterSecond"] == 1
+    assert r["bossSpawned"] is True
+
+
 run(TESTS)
